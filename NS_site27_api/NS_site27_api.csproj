@@ -165,7 +165,9 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
+    <Reference Include="System.Data">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
@@ -189,6 +191,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\czsz.cs" />
+    <Compile Include="Core\UI\IUIPart.cs" />
+    <Compile Include="Modules\Admin\AdminLoggerModule.cs" />
+    <Compile Include="Modules\Admin\AdminAssignModule.cs" />
+    <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVerifer.cs" />
     <Compile Include="Modules\LobbyMusic\audioPlayerB.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4GroundModel.cs" />
@@ -246,6 +252,7 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" C:\Users\kill\AppData\Roaming\EXILED\Plugins</PostBuildEvent>

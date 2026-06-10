@@ -88,7 +88,6 @@ namespace NS_site27_api
 
             DiscoverAndLoadModules();
 
-            WireModuleDependencies();
 
             ServerHandlers.WaitingForPlayers += OnWaitingForPlayers;
             ServerHandlers.RestartingRound += OnRestartingRound;
@@ -117,7 +116,7 @@ namespace NS_site27_api
             CorePlugin.Harmony.UnpatchAll();
             CorePlugin.Harmony = null;
             CorePlugin.Instance = null;
-
+            UIManager.Finish();
             connect.Close();
 
             Log.Info("NS_site27 plugin disabled.");
@@ -141,9 +140,9 @@ namespace NS_site27_api
             base.OnReloaded();
         }
 
-        private void DiscoverAndLoadModules()
+        public static void DiscoverAndLoadModules()
         {
-            var assembly = Assembly.GetExecutingAssembly();
+            var assembly = Assembly.GetCallingAssembly();
             var moduleTypes = assembly.GetTypes()
                 .Where(t => !t.IsAbstract && !t.IsInterface && typeof(IModule).IsAssignableFrom(t))
                 .ToList();
@@ -167,23 +166,6 @@ namespace NS_site27_api
             }
 
         }
-
-        private void WireModuleDependencies()
-        {
-            var keycardModule = CorePlugin.Modules.OfType<KeycardModule>().FirstOrDefault();
-            var eventHandleModule = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
-            var playerMgmtModule = CorePlugin.Modules.OfType<PlayerManagementModule>().FirstOrDefault();
-
-            if (keycardModule != null)
-                keycardModule.SetSQL(connect);
-
-            if (eventHandleModule != null)
-                eventHandleModule.SetSQL(connect);
-
-            if (playerMgmtModule != null)
-                playerMgmtModule.SetSQL(connect);
-        }
-
         private void OnWaitingForPlayers()
         {
             CorePlugin.RestartingRound();
@@ -196,7 +178,7 @@ namespace NS_site27_api
 
         private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
         {
-            _uiService?.CleanupPlayer(ev.Player);
+            ev.Player.CleanupPlayer();
             PlayerMenuCache.Remove(ev.Player);
         }
     }

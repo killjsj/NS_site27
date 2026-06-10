@@ -17,25 +17,25 @@ namespace NS_site27_api.Modules.MySQL
 
     public class MySQLConnect
     {
-        private MySqlConnection _connection;
-        private string _connectionString;
+        private MySqlConnection _Connection;
+        private string _ConnectionString;
         public bool Connected { get; private set; }
 
         public void Connect(string ip, uint port, string username, string password, string database)
         {
-            _connectionString = $"Server={ip};Port={port};Database={database};Uid={username};Pwd={password};allowPublicKeyRetrieval=true;Connection Timeout=30;";
+            _ConnectionString = $"Server={ip};Port={port};Database={database};Uid={username};Pwd={password};allowPublicKeyRetrieval=true;Connection Timeout=30;";
 
             try
             {
-                _connection = new MySqlConnection(_connectionString);
-                _connection.Open();
-                _connection.Close();
+                _Connection = new MySqlConnection(_ConnectionString);
+                _Connection.Open();
+                _Connection.Close();
                 Connected = true;
                 Log.Info("Database connected.");
             }
             catch (Exception ex)
             {
-                Log.Error($"Database connection failed: {ex}");
+                Log.Error($"Database Connection failed: {ex}");
             }
         }
 
@@ -47,8 +47,8 @@ namespace NS_site27_api.Modules.MySQL
 
             try
             {
-                _connection.Open();
-                using (var cmd = new MySqlCommand(query, _connection))
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(query, _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     using (var reader = cmd.ExecuteReader())
@@ -72,7 +72,7 @@ namespace NS_site27_api.Modules.MySQL
             catch (Exception ex) { Log.Error($"QueryUser error: {ex.Message}"); }
             finally
             {
-                if (_connection.State == ConnectionState.Open) _connection.Close();
+                if (_Connection.State == ConnectionState.Open) _Connection.Close();
             }
             return (0, null, 0, 0, 1, null, null, null, null);
         }
@@ -99,8 +99,8 @@ namespace NS_site27_api.Modules.MySQL
                     ON DUPLICATE KEY UPDATE name=VALUES(name), experience=VALUES(experience), experience_multiplier=VALUES(experience_multiplier),
                     ip=VALUES(ip), point=VALUES(point), today_duration=VALUES(today_duration), total_duration=VALUES(total_duration), last_time=VALUES(last_time);";
 
-                _connection.Open();
-                using (var cmd = new MySqlCommand(sql, _connection))
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(sql, _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     cmd.Parameters.AddWithValue("@name", name ?? string.Empty);
@@ -117,7 +117,7 @@ namespace NS_site27_api.Modules.MySQL
             catch (Exception ex) { Log.Error($"Update error: {ex.Message}"); }
             finally
             {
-                if (_connection.State == ConnectionState.Open) _connection.Close();
+                if (_Connection.State == ConnectionState.Open) _Connection.Close();
             }
         }
 
@@ -126,10 +126,10 @@ namespace NS_site27_api.Modules.MySQL
             if (!Connected || string.IsNullOrEmpty(userid)) return;
             try
             {
-                _connection.Open();
+                _Connection.Open();
                 using (var cmd = new MySqlCommand(
                     "INSERT INTO chat_log (userid, name, message, channel, time, port) VALUES (@userid, @name, @message, @channel, @time, @port)",
-                    _connection))
+                    _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     cmd.Parameters.AddWithValue("@name", name ?? "");
@@ -141,7 +141,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"InsertChatLog: {ex.Message}"); }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
         }
 
         public int CountUserViolations(string userid)
@@ -149,15 +149,15 @@ namespace NS_site27_api.Modules.MySQL
             if (!Connected || string.IsNullOrEmpty(userid)) return 0;
             try
             {
-                _connection.Open();
-                using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM ban WHERE userid = @userid", _connection))
+                _Connection.Open();
+                using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM ban WHERE userid = @userid", _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
             catch (Exception ex) { Log.Error($"CountUserViolations: {ex.Message}"); return 0; }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
         }
         public List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)> QueryAllBan(string INuserid)
         {
@@ -181,8 +181,8 @@ WHERE userid = @userid";
 
             try
             {
-                _connection.Open();
-                using (var cmd = new MySqlCommand(query, _connection))
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(query, _Connection))
                 {
                     // ✅ 先添加参数，再执行
                     cmd.Parameters.AddWithValue("@userid", INuserid);
@@ -211,8 +211,8 @@ WHERE userid = @userid";
             }
             finally
             {
-                if (_connection.State == ConnectionState.Open)
-                    _connection.Close();
+                if (_Connection.State == ConnectionState.Open)
+                    _Connection.Close();
             }
 
             return bans;
@@ -222,10 +222,10 @@ WHERE userid = @userid";
             if (!Connected || string.IsNullOrEmpty(userid)) return false;
             try
             {
-                _connection.Open();
+                _Connection.Open();
                 using (var cmd = new MySqlCommand(
                     "INSERT INTO ban (issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port) VALUES (@issuer_name, @issuer_userid, @name, @userid, @reason, @start_time, @end_time, @port)",
-                    _connection))
+                    _Connection))
                 {
                     cmd.Parameters.AddWithValue("@issuer_name", issuer_name ?? "Unknown");
                     cmd.Parameters.AddWithValue("@issuer_userid", issuer_userid ?? "Unknown");
@@ -240,7 +240,7 @@ WHERE userid = @userid";
                 return true;
             }
             catch (Exception ex) { Log.Error($"InsertBanRecord: {ex.Message}"); return false; }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
         }
 
         public (string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start, DateTime end, string port)? QueryBan(string userid)
@@ -248,10 +248,10 @@ WHERE userid = @userid";
             if (!Connected || string.IsNullOrEmpty(userid)) return null;
             try
             {
-                _connection.Open();
+                _Connection.Open();
                 using (var cmd = new MySqlCommand(
                     "SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port FROM ban WHERE userid = @userid AND end_time > NOW() ORDER BY end_time DESC LIMIT 1",
-                    _connection))
+                    _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     using (var reader = cmd.ExecuteReader())
@@ -264,7 +264,7 @@ WHERE userid = @userid";
                 }
             }
             catch (Exception ex) { Log.Error($"QueryBan: {ex.Message}"); }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
             return null;
         }
 
@@ -274,10 +274,10 @@ WHERE userid = @userid";
             if (!Connected || string.IsNullOrEmpty(userid)) return result;
             try
             {
-                _connection.Open();
+                _Connection.Open();
                 using (var cmd = new MySqlCommand(
                     "SELECT player_name, port, permissions, expiration_date, is_permanent, notes FROM admin WHERE userid = @userid AND (is_permanent = 1 OR expiration_date > NOW()) ORDER BY is_permanent DESC, expiration_date ASC",
-                    _connection))
+                    _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     using (var reader = cmd.ExecuteReader())
@@ -290,19 +290,80 @@ WHERE userid = @userid";
                 }
             }
             catch (Exception ex) { Log.Error($"QueryAdmin: {ex.Message}"); }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
             return result;
         }
+        //public void UpdateOrNewAdminPermissionTable(List<string> groupName)
+        //{
 
+        //}
+        //public string QueryAdminGroupName(int index)
+        //{
+
+        //}
+        public List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)> QueryBadge(string userid)
+        {
+            var badges = new List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)>();
+
+            if (!Connected || string.IsNullOrEmpty(userid))
+                return badges;
+
+            string query = @"
+        SELECT 
+            player_name,
+            badge,
+            color,
+            expiration_date,
+            is_permanent,
+            notes
+        FROM badge 
+        WHERE userid = @userid 
+          AND (is_permanent = 1 OR expiration_date > NOW())
+        ORDER BY is_permanent DESC, expiration_date ASC";
+
+            try
+            {
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(query, _Connection))
+                {
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string player_name = reader["player_name"] as string ?? string.Empty;
+                            string badgeName = reader["badge"] as string ?? "未知徽章";
+                            string color = reader["color"] as string ?? "white";
+                            DateTime expiration_date = reader.GetDateTime("expiration_date");
+                            bool is_permanent = reader.GetInt32("is_permanent") == 1;
+                            string notes = reader["notes"] as string ?? string.Empty;
+
+                            badges.Add((player_name, badgeName, color, expiration_date, is_permanent, notes));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"❌ 查询用户 {userid} 的徽章失败: {ex.Message}");
+            }
+            finally
+            {
+                if (_Connection.State == ConnectionState.Open)
+                    _Connection.Close();
+            }
+
+            return badges;
+        }
         public void LogAdminPermission(string userid, string name, int port, string command, string result, string additionalInfo = "", string group = "")
         {
             if (!Connected) return;
             try
             {
-                _connection.Open();
+                _Connection.Open();
                 using (var cmd = new MySqlCommand(
                     "INSERT INTO admin_log (userid, name, operation_time, port, command_name, command_result, additional_info, admingroup) VALUES (@userid, @name, @operation_time, @port, @command_name, @command_result, @additional_info, @admingroup)",
-                    _connection))
+                    _Connection))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid ?? "");
                     cmd.Parameters.AddWithValue("@name", name ?? "");
@@ -316,12 +377,12 @@ WHERE userid = @userid";
                 }
             }
             catch (Exception ex) { Log.Error($"LogAdminPermission: {ex.Message}"); }
-            finally { if (_connection.State == ConnectionState.Open) _connection.Close(); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
         }
 
         public void Close()
         {
-            _connection?.Close();
+            _Connection?.Close();
         }
 
         ~MySQLConnect()

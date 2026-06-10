@@ -9,6 +9,8 @@ using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
 using NS_site27_api.Extensions;
+using NS_site27_api.Modules.Chat;
+using Org.BouncyCastle.Crypto.Prng.Drbg;
 using PlayerRoles;
 using Respawning;
 using Respawning.Waves;
@@ -39,6 +41,8 @@ namespace NS_site27_api.Modules.PlayerManagement
         public struct ScoreChange { public Player Player; public int Amount; public string Reason; public float Time; }
         public struct ElevatorInteractInfo { public Vector3 InteractAt; public Player Interactor; public float InteractTime; }
         public static List<ElevatorInteractInfo> ElevatorInteractions = new List<ElevatorInteractInfo>();
+
+
 
         public static void Init()
         {
@@ -108,6 +112,7 @@ namespace NS_site27_api.Modules.PlayerManagement
 
             player.AddMessage("914Hint", Scp914Getter, -1,
                 UIPosition.FromXY(0, 800));
+            ChatManager.SetupPlayer(player);
         }
 
         public static void UnregisterPlayer(Player player)
@@ -187,7 +192,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             {
                 try
                 {
-                    
+
                 }
                 catch (Exception e)
                 {
@@ -228,7 +233,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                     v += $"<color=#00FFFF>{doc}:博士数量</color>\n<color=#808080>{gruad}:保安数量</color>\n<color=#0000FF>{ntf}:九尾数量</color>";
                 else if (player.Role.Team == Team.ChaosInsurgency || player.Role.Team == Team.ClassD)
                     v += $"<color=yellow>{dd}:dd数量</color>\n<color=#009900>{chaos}:混沌数量</color>";
-            }else if(player != null)
+            }
+            else if (player != null)
             {
                 v += "<size=17>";
                 var ZombieCount = 0;
@@ -243,7 +249,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                     else if (item.Role is Scp079Role scp079)
                     {
                         v += $"<color=red>SCP079:<color=green>LV {scp079.Level.ToString()} <color=yellow>Power {scp079.Energy:F2}/{scp079.MaxEnergy}</color>\n";
-                    }else if(item.Role is Scp096Role scp096)
+                    }
+                    else if (item.Role is Scp096Role scp096)
                     {
                         string RageStatuts = "";
                         switch (scp096.RageState)
@@ -288,16 +295,34 @@ namespace NS_site27_api.Modules.PlayerManagement
 
             var stats = PlayerManagementModule.GetOrCreateStats(target);
             bool isSpec = player.Role is SpectatorRole;
-
+            string re = "<align=center><size=22>";
             string upLine = BuildFirstLine(target, isSpec);
             string downLine = BuildSecondLine(target, stats, specCount, isSpec);
+            re += upLine + "\n" + downLine;
+            //bool UIParted = false;
+            //foreach (var item in UIParts)
+            //{
+            //    try
+            //    {
+            //        re += item.GetMessagePart(player,isSpec);
+            //        if (!re.EndsWith("\n"))
+            //        {
+            //            re += " | ";
+            //            UIParted = true;
+            //        }
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        Log.Error(e);
+            //    }
+            //}
+            //if(UIParted)
+            //    re.Remove(re.Length - 3, 3);
+            re += "</size></align>";
+            
 
-            if (!target.IsAlive && isSpec)
-                return new[] { upLine, downLine };
-
-            return new[] { upLine, downLine };
+            return new[] { re };
         }
-
         private static string BuildFirstLine(Player player, bool isSpec)
         {
             if (player == null) return "";
@@ -325,12 +350,12 @@ namespace NS_site27_api.Modules.PlayerManagement
             var conduct = ConductManager.GetConduct(player);
             var phase = PhaseManager.GetPhase(player);
 
-            return $"<align=center><size=21>" +
+            return $"" +
                    $"<color=#FFFF00>{(isSpec ? "玩家:" : "欢迎回来:")} {player.Nickname}</color> | " +
                    $"<color={ConductManager.ConductToColor(conduct)}>品行:{ConductManager.ConductToName(conduct)}</color> | " +
                    $"<color={PhaseManager.PhaseToColor(phase)}>阶段:{PhaseManager.GetPhaseProgressString(player, phase)}</color> | " +
                    $"<color={teamColor}>阵营:{teamName}</color>" +
-                   $"</size></align>";
+                   $"";
         }
 
         private static string BuildSecondLine(Player player, PlayerManagementModule.RoundStatistics stats, int specCount, bool isSpec)
@@ -340,13 +365,13 @@ namespace NS_site27_api.Modules.PlayerManagement
             var dur = ExperienceManager.GetTodayTime(player);
             int waves = GetWaveCount(player);
 
-            return $"<align=center><size=22>" +
+            return $"" +
                    $"<color=#FFD700>总得分:{stats.Points}</color> | " +
                    $"<color=#00FF00>击杀:{stats.Kills}</color> | " +
                    $"<color=#FF0000>死亡:{stats.Deaths}</color> | " +
                    (isSpec ? "" : $"<color=#FF00FF>时长:{dur.Hours:D2}:{dur.Minutes:D2}:{dur.Seconds:D2}</color> | ") +
                    $"<color=#87CEEB>观众:{specCount}</color>" +
-                   $"</size></align>";
+                   $"";
         }
 
         private static int GetWaveCount(Player player)
@@ -507,5 +532,31 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev) => ntfWave++;
         public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev) => ChaosCount++;
+        static List<IUIPart> UIParts = new List<IUIPart>();
+
+        public static IUIPart GetUIPart(int index)
+        {
+            return UIParts[index];
+        }
+
+        public static IUIPart[] GetUIParts()
+        {
+            return UIParts.ToArray();
+        }
+
+        public static void AddUIPart(IUIPart part)
+        {
+            UIParts.Add(part);
+        }
+
+        public static void AddUIPart(IUIPart part, int index)
+        {
+            UIParts.Insert(index, part);
+        }
+
+        public static void RemoveUIPart(int index)
+        {
+            UIParts.RemoveAt(index);
+        }
     }
 }

@@ -28,8 +28,6 @@ namespace NS_site27_api.Modules.EventHandle
     {
         public override string ModuleName => "EventHandle";
 
-        private MySQLConnect _sql;
-
         public Dictionary<string, List<(bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll)>> CachedCards
             = new Dictionary<string, List<(bool, string, string, string, string, string, string, int?, bool)>>();
 
@@ -71,8 +69,6 @@ namespace NS_site27_api.Modules.EventHandle
             CachedCards.Clear();
             CachedCardTypes.Clear();
         }
-
-        public void SetSQL(MySQLConnect sql) => _sql = sql;
     }
 
     public interface IFFManager

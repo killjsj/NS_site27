@@ -5,6 +5,7 @@ using Exiled.Events.EventArgs.Player;
 using Interactables.Interobjects.DoorUtils;
 using MEC;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.Admin;
 using NS_site27_api.Modules.Duel;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
@@ -111,15 +112,21 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static void HandleBadgeSync(Player player, ReferenceHub hub)
         {
-            if (!badges.TryGetValue(player.UserId, out var badgeData)) return;
+            (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes) badgeData = ("","",new List<string>(new[]{ "white" }),DateTime.UtcNow,true,"");
+            if (!badges.TryGetValue(player.UserId, out badgeData) && !player.RemoteAdminAccess) return;
             if (DuelManager.PlayerBadges.ContainsKey(player.UserId)) return;
+            var text = badgeData.badge;
+            if (player.RemoteAdminAccess && AdminAssignModule.CachedGroups.ContainsKey(player))
+            {
+                text += $"({AdminAssignModule.CachedGroups[player].BadgeText})";
+            }
             if (hub.serverRoles.Network_myText == null)
-                player.RankName = badgeData.badge;
+                player.RankName = text;
 
-            if (!hub.serverRoles.Network_myText.Contains(badgeData.badge))
-                player.RankName = badgeData.badge;
+            if (!hub.serverRoles.Network_myText.Contains(text))
+                player.RankName = text;
 
-            if (badgeData.color.Contains("rainbow"))
+            if (badgeData.color != null && badgeData.color.Contains("rainbow"))
             {
                 if (!rainbowC.ContainsKey(player))
                     rainbowC[player] = Timing.RunCoroutine(RainbowTimeCoroutine(player, colors));

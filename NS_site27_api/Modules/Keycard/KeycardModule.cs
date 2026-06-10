@@ -25,8 +25,8 @@ namespace NS_site27_api.Modules._Keycard
     public class KeycardModule : ModuleBase<KeycardConfig>
     {
         public override string ModuleName => "Keycard";
+        public static MySQLConnect SQL => Plugin.Instance?.connect;
 
-        private MySQLConnect _sql;
 
         internal Dictionary<string, List<(bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll)>> _cachedCards
             = new Dictionary<string, List<(bool, string, string, string, string, string, string, int?, bool)>>();
@@ -52,15 +52,9 @@ namespace NS_site27_api.Modules._Keycard
             _cachedCards.Clear();
             _cachedCardTypes.Clear();
         }
-
-        internal void SetSQL(MySQLConnect sql)
-        {
-            _sql = sql;
-        }
-
         private void OnVerified(VerifiedEventArgs ev)
         {
-            if (_sql != null && !_cachedCards.ContainsKey(ev.Player.UserId))
+            if (SQL != null && !_cachedCards.ContainsKey(ev.Player.UserId))
             {
                 var cards = QueryPlayerCards(ev.Player.UserId);
                 _cachedCards[ev.Player.UserId] = cards;

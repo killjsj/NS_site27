@@ -3,6 +3,7 @@ using Exiled.API.Features;
 using Exiled.Events.Commands.Config;
 using MEC;
 using NS_site27_api.Core;
+using NS_site27_api.Core.UI;
 using PlayerRoles;
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,6 @@ namespace NS_site27_api.Modules.Chat
         {
 
             ChatManager.SetConfig(Config);
-            _updateHandle = CorePlugin.RunCoroutine(ChatManager.UpdateLoop());
         }
 
         public override void OnDisable()
@@ -79,60 +79,14 @@ namespace NS_site27_api.Modules.Chat
         {
             _cfg = config;
         }
-
-        public static IEnumerator<float> UpdateLoop()
+        public static void SetupPlayer(Player player)
         {
-            while (true)
-            {
-                try
-                {
-                    ProcessChatList(ChatList, ref ChatDisplayString, _cfg.ChatMessageDuration, "<align=left><size=" + _cfg.ChatFontSize + ">", false);
-                    ProcessChatList(AdminList, ref AdminDisplayString, _cfg.AdminMessageDuration, "<align=right><size=" + _cfg.ChatFontSize + ">", true);
-
-                    foreach (var team in TeamList.Keys.ToArray())
-                    {
-                        var teamList = TeamList[team];
-                        if (teamList.Count > 0)
-                            TeamDisplayStrings[team] = BuildTeamString(teamList, _cfg.ChatMessageDuration);
-                        else
-                            TeamDisplayStrings[team] = "";
-                    }
-
-                    foreach (var player in Player.List)
-                    {
-                        if (player == null || !player.IsConnected) continue;
-
-                        string display = "";
-
-                        if (!string.IsNullOrEmpty(ChatDisplayString))
-                            display += ChatDisplayString + "\n";
-
-                        string teamStr = "";
-                        switch (player.Role.Team)
-                        {
-                            case Team.SCPs: teamStr = TeamDisplayStrings[Team.SCPs]; break;
-                            case Team.Scientists: case Team.FoundationForces: teamStr = TeamDisplayStrings[Team.FoundationForces]; break;
-                            case Team.ChaosInsurgency: case Team.ClassD: teamStr = TeamDisplayStrings[Team.ChaosInsurgency]; break;
-                            case Team.Dead: teamStr = TeamDisplayStrings[Team.Dead]; break;
-                            case Team.OtherAlive: teamStr = TeamDisplayStrings[Team.OtherAlive]; break;
-                            case Team.Flamingos: teamStr = TeamDisplayStrings[Team.Flamingos]; break;
-                        }
-                        if (!string.IsNullOrEmpty(teamStr))
-                            display += teamStr + "\n";
-
-                        if (!string.IsNullOrEmpty(display))
-                            player.ShowHint(display, 1.5f);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Info(e.ToString());
-                }
-                yield return Timing.WaitForSeconds(0.2f);
-            }
+            player.AddMessage("ChatAll", UpdateLoopAll, -1f,0,800);
+            player.AddMessage("ChatAdmin", UpdateLoopAdmin, -1f,200,800);
+            player.AddMessage("ChatTeam", UpdateLoopTeam, -1f,0,800);
         }
-
-        private static void ProcessChatList(List<ChatMessage> list, ref string displayString, float duration, string prefix, bool isAdmin)
+        private static void ProcessChatList(List<ChatMessage> list, ref string displayString,
+            float duration, string prefix, bool isAdmin)
         {
             int maxSize = _cfg.MaxQueueSize;
             if (list.Count > maxSize)
@@ -143,7 +97,7 @@ namespace NS_site27_api.Modules.Chat
 
             if (list.Count > 0)
             {
-                displayString = prefix;
+                displayString = $"{prefix}";
                 for (int i = 0; i < list.Count; i++)
                 {
                     var msg = list[i];
@@ -161,16 +115,105 @@ namespace NS_site27_api.Modules.Chat
 
                     string colorTag = isAdmin ? "<color=red>" : "";
                     string colorEnd = isAdmin ? "</color>" : "";
-                    displayString += $"{colorTag}[{(msg.exp - Time.time):F0}] {msg.text}{colorEnd}\n";
+                    displayString += $"{colorTag}[{(msg.exp - Time.time):F0}] {msg.text}{colorEnd}";
+                    if (i < list.Count - 1)
+                        displayString += "\n";
                 }
-                displayString += "</size></align>";
+                displayString += "</size>";
             }
             else
             {
                 displayString = "";
             }
         }
+        public static string[] UpdateLoopAll(Player player)
+        {
+            string display = "<align=left>";
+            try
+            {
+                ProcessChatList(ChatList, ref ChatDisplayString, _cfg.ChatMessageDuration,
+                    "<size=" + _cfg.ChatFontSize + ">", false);
+                if (player != null && player.IsConnected)
+                {
+                    if (!string.IsNullOrEmpty(ChatDisplayString))
+                    {
+                        display += $"<indent=-50>{ChatDisplayString}</indent>";
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Info(e.ToString());
+            }
+            display += "</align>";
+            return new[] { display };
+        }
+        public static string[] UpdateLoopAdmin(Player player)
+        {
+            string display = "<margin=200>";
+            try
+            {
+                // ★ 将 margin 放到 size 之后
+                ProcessChatList(AdminList, ref AdminDisplayString, _cfg.AdminMessageDuration,
+                    "<align=right><size=" + _cfg.ChatFontSize + ">", true);
+                if (player != null && player.IsConnected)
+                {
+                    if (player.RemoteAdminAccess)
+                    {
+                        if (!string.IsNullOrEmpty(AdminDisplayString))
+                        {
+                            // AdminDisplayString 末尾已有 </size>，现在关闭 margin
+                            display += $"{AdminDisplayString}";
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Info(e.ToString());
+            }
+            display += "</align></margin>";
+            return new[] { display };
+        }
+        public static string[] UpdateLoopTeam(Player player)
+        {
 
+            string display = "";
+            try
+            {
+                foreach (var team in TeamList.Keys.ToArray())
+                {
+                    var teamList = TeamList[team];
+                    if (teamList.Count > 0)
+                        TeamDisplayStrings[team] = BuildTeamString(teamList, _cfg.ChatMessageDuration);
+                    else
+                        TeamDisplayStrings[team] = "";
+                }
+                if (player != null && player.IsConnected)
+                {
+                    string teamStr = "";
+                    switch (player.Role.Team)
+                    {
+                        case Team.SCPs: teamStr = TeamDisplayStrings[Team.SCPs]; break;
+                        case Team.Scientists: case Team.FoundationForces: teamStr = TeamDisplayStrings[Team.FoundationForces]; break;
+                        case Team.ChaosInsurgency: case Team.ClassD: teamStr = TeamDisplayStrings[Team.ChaosInsurgency]; break;
+                        case Team.Dead: teamStr = TeamDisplayStrings[Team.Dead]; break;
+                        case Team.OtherAlive: teamStr = TeamDisplayStrings[Team.OtherAlive]; break;
+                        case Team.Flamingos: teamStr = TeamDisplayStrings[Team.Flamingos]; break;
+                    }
+                    if (!string.IsNullOrEmpty(teamStr))
+                    {
+                        display += teamStr;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Info(e.ToString());
+            }
+            return new[] { display };
+
+        }
         private static string BuildTeamString(List<ChatMessage> list, float duration)
         {
             string result = "<align=center><size=" + _cfg.ChatFontSize + ">";

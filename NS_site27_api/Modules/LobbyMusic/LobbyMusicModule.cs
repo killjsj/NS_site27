@@ -91,9 +91,6 @@ namespace NS_site27_api.Modules.LobbyMusic
         public readonly ConcurrentQueue<SongReq> WaitForProcess = new ConcurrentQueue<SongReq>();
         private SongReq _processing;
         private CoroutineHandle _processor;
-
-        private bool _canPlay => Round.IsLobby || AdminOverrideEnable;
-
         public void Init()
         {
             Instance = this;
@@ -104,12 +101,12 @@ namespace NS_site27_api.Modules.LobbyMusic
 
         public void Cleanup()
         {
-            if (r.IsRunning) Timing.KillCoroutines(r);
+            if (_processor.IsRunning) Timing.KillCoroutines(_processor);
             Instance = null;
             //Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
             Exiled.Events.Handlers.Server.RestartingRound -= restart;
-            if (r.IsRunning) Timing.KillCoroutines(r);
+            if (_processor.IsRunning) Timing.KillCoroutines(_processor);
             if (DummyHub != null) DummyHub.Destroy();
             VoicePlayerBase.OnFinishedTrack -= VoicePlayerBase_OnFinishedTrack;
         }
@@ -143,7 +140,6 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
         bool SongAble => Round.IsLobby || AdminOverrideEnable;
         SongReq Processing;
-        CoroutineHandle r;
         readonly NeteaseAPI api = new();
         public Npc DummyHub;
         VoicePlayerBase vpb;
@@ -153,8 +149,8 @@ namespace NS_site27_api.Modules.LobbyMusic
         {
             restart();
             //createDummy();
-            if (r.IsRunning) Timing.KillCoroutines(r);
-            r = Timing.RunCoroutine(Processer());
+            if (_processor.IsRunning) Timing.KillCoroutines(_processor);
+            _processor = Timing.RunCoroutine(Processer());
             _AdminOverride = false;
             AdminOverrideEnable = false;
         }
@@ -189,6 +185,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 yield return Timing.WaitForSeconds(0.4f);
                 if (SongAble && readytonext && WaitForProcess.TryDequeue(out Processing))
                 {
+                    _processing = Processing;
                     if (!long.TryParse(Processing.id, out long songId)) { Processing.player?.SendConsoleMessage($"歌曲加载 - {songId} 无效id!", "yellow"); continue; }
                     readytonext = false;
 #pragma warning disable CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
@@ -196,8 +193,6 @@ namespace NS_site27_api.Modules.LobbyMusic
 #pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
                 }
             }
-            Log.Info("exit!");
-
             yield break;
         }
 

@@ -27,7 +27,6 @@ namespace NS_site27_api.Modules.PlayerManagement
     public class PlayerManagementModule : ModuleBase<PlayerManagementConfig>
     {
         public override string ModuleName => "PlayerManagement";
-        private MySQLConnect _sql;
 
         public override void OnEnable()
         {
@@ -61,9 +60,8 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHUDManager.Deinit();
         }
 
-        public void SetSQL(MySQLConnect sql) { _sql = sql; }
 
-        private MySQLConnect SQL => _sql ?? Plugin.Instance?.connect;
+        private MySQLConnect SQL => Plugin.Instance?.connect;
 
         private void OnVerified(VerifiedEventArgs ev)
         {

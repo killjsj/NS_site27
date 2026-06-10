@@ -20,6 +20,7 @@ namespace NS_site27_api.Core.UI
             var r = RueDisplay.Get(player);
             var e = new DynamicElement(position.Y,x =>
             {
+                if (x == null) return "";
                 var re = getter(Player.Get(x));
                 List<string> strings = new();
                 string rf = "<line-height=70%>";

@@ -1,16 +1,22 @@
 using AudioApi;
 using CommandSystem;
 using Exiled.API.Features;
+using Exiled.Events.EventArgs.Player;
 using MEC;
 using NeteaseMusicAPI;
 using NS_site27_api.Core;
+using NS_site27_api.Core.UI;
+using Org.BouncyCastle.Crypto;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using UnityEngine;
 using Player = Exiled.API.Features.Player;
 using ServerHandlers = Exiled.Events.Handlers.Server;
@@ -20,12 +26,17 @@ namespace NS_site27_api.Modules.LobbyMusic
     public class LobbyMusicConfig : ModuleConfigBase
     {
     }
-
+    public enum SongSource
+    {
+        NeteaseCloud = 0,
+        MonsterSiren = 1,
+    }
     public struct SongReq
     {
         public string id;
+        public SongSource source;
         public Player player;
-        public SongReq(string id, Player player) { this.id = id; this.player = player; }
+        public SongReq(string id, Player player, SongSource ss = SongSource.NeteaseCloud) { this.id = id; this.player = player; source = ss; }
 
         public override bool Equals(object obj) => obj is SongReq other && other.id == id && other.player == player;
         public override int GetHashCode() => id.GetHashCode();
@@ -50,11 +61,29 @@ namespace NS_site27_api.Modules.LobbyMusic
             return true;
         }
     }
+    [CommandHandler(typeof(ClientCommandHandler))]
+    public class OrderSong_Monster_Siren_Command : ICommand
+    {
+        public string Command => "orderSongMSR";
+        public string[] Aliases => new[] { "osMSR" };
+        public string Description => "大厅点歌(仅MSR-id(https://monster-siren.hypergryph.com/music/....)),用法:osMSR <歌曲id>";
 
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (arguments.Count < 1) { response = "需要歌曲id!"; return false; }
+            if (LobbyMusicManager.Instance == null) { response = "点歌系统未初始化"; return false; }
+            if (LobbyMusicManager.Instance.AdminOverride && !LobbyMusicManager.Instance.AdminOverrideEnable) { response = "管理禁止点歌!"; return false; }
+            if (Round.InProgress && !LobbyMusicManager.Instance.AdminOverrideEnable) { response = "回合已开始,禁止点歌!"; return false; }
+
+            LobbyMusicManager.Instance.WaitForProcess.Enqueue(new SongReq(arguments.At(0), Player.Get(sender), SongSource.MonsterSiren));
+            response = "Done!";
+            return true;
+        }
+    }
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class DisOrderSongCommand : ICommand
     {
-        public string Command => "DisOrderSOng";
+        public string Command => "DisOrderSong";
         public string[] Aliases => new[] { "Dos" };
         public string Description => "禁止/允许点歌(toggle)";
 
@@ -70,7 +99,7 @@ namespace NS_site27_api.Modules.LobbyMusic
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class EnOrderSongCommand : ICommand
     {
-        public string Command => "EnOrderSOng";
+        public string Command => "EnOrderSong";
         public string[] Aliases => new[] { "Eos" };
         public string Description => "强制允许回合中点歌(toggle)";
 
@@ -91,12 +120,15 @@ namespace NS_site27_api.Modules.LobbyMusic
         public readonly ConcurrentQueue<SongReq> WaitForProcess = new ConcurrentQueue<SongReq>();
         private SongReq _processing;
         private CoroutineHandle _processor;
+        private CancellationTokenSource _cts;
         public void Init()
         {
             Instance = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += WaitingForPlayers;
+            Exiled.Events.Handlers.Player.Verified += Verified;
             VoicePlayerBase.OnFinishedTrack += VoicePlayerBase_OnFinishedTrack;
             Exiled.Events.Handlers.Server.RestartingRound += restart;
+            _cts = new CancellationTokenSource();
         }
 
         public void Cleanup()
@@ -105,10 +137,13 @@ namespace NS_site27_api.Modules.LobbyMusic
             Instance = null;
             //Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
+            Exiled.Events.Handlers.Player.Verified -= Verified;
             Exiled.Events.Handlers.Server.RestartingRound -= restart;
             if (_processor.IsRunning) Timing.KillCoroutines(_processor);
             if (DummyHub != null) DummyHub.Destroy();
             VoicePlayerBase.OnFinishedTrack -= VoicePlayerBase_OnFinishedTrack;
+            _cts?.Cancel();
+            _cts?.Dispose();
         }
 
         public void RoundStarted()
@@ -133,11 +168,102 @@ namespace NS_site27_api.Modules.LobbyMusic
                     {
                         if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
                         readytonext = true;
+                        StopLyrics();
+                        _cts?.Cancel();
+
                     }
                 }
                 _AdminOverride = value;
             }
         }
+        //private CoroutineHandle _lyricsCoroutine;
+        private List<LrcLine> _lrcLines;
+        private float _songStartTime;
+
+        private struct LrcLine
+        {
+            public float Time;
+            public string Text;
+        }
+
+        private List<LrcLine> ParseLrc(string lrcContent)
+        {
+            var lines = new List<LrcLine>();
+            var regex = new System.Text.RegularExpressions.Regex(@"\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)");
+            foreach (var line in lrcContent.Split('\n'))
+            {
+                var match = regex.Match(line);
+                if (!match.Success) continue;
+
+                int min = int.Parse(match.Groups[1].Value);
+                int sec = int.Parse(match.Groups[2].Value);
+                int ms = int.Parse(match.Groups[3].Value.PadRight(3, '0'));
+                float time = min * 60 + sec + ms / 1000f;
+                string text = match.Groups[4].Value.Trim();
+                if (!string.IsNullOrEmpty(text))
+                    lines.Add(new LrcLine { Time = time, Text = text });
+            }
+            lines.Sort((a, b) => a.Time.CompareTo(b.Time));
+            return lines;
+        }
+
+        private string[] GetLyricsDisplay(Player player)
+        {
+            if (_lrcLines == null || _lrcLines.Count == 0) return new[] { "" };
+            float elapsed = Time.time - _songStartTime;
+            // 逆序查找当前歌词行
+            for (int i = _lrcLines.Count - 1; i >= 0; i--)
+            {
+                if (_lrcLines[i].Time <= elapsed)
+                    return new[] { $"<color=#00FFFF88>{_lrcLines[i].Text}</color>" };
+            }
+            return new[] { "" };
+        }
+
+        private void StartLyrics(string lrcContent, float startTime)
+        {
+            StopLyrics(); // 确保之前的歌词协程停止
+            _lrcLines = ParseLrc(lrcContent);
+            _songStartTime = startTime;
+            //_lyricsCoroutine = Timing.RunCoroutine(LyricsUpdateCoroutine());
+
+            foreach (var player in Player.List)
+            {
+                if (player != null && player.HasMessage("LobbyMusicLyrics"))
+                {
+                    player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 950));
+                }
+            }
+        }
+        private void Verified(VerifiedEventArgs ev)
+        {
+            if (_lrcLines != null)
+            {
+                ev.Player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 950));
+            }
+        }
+        private void StopLyrics()
+        {
+            //if (_lyricsCoroutine.IsRunning)
+            //    Timing.KillCoroutines(_lyricsCoroutine);
+            foreach (var player in Player.List)
+            {
+                if (player != null && player.HasMessage("LobbyMusicLyrics"))
+                {
+                    player.RemoveMessage("LobbyMusicLyrics");
+                }
+            }
+            _lrcLines = null;
+        }
+
+        //private IEnumerator<float> LyricsUpdateCoroutine()
+        //{
+        //    while (_lrcLines != null && DummyHub != null)
+        //    {
+        //        // 只需触发一次UI刷新即可，AddMessage内部已自动处理更新
+        //        yield return Timing.WaitForSeconds(0.2f);
+        //    }
+        //}
         bool SongAble => Round.IsLobby || AdminOverrideEnable;
         SongReq Processing;
         readonly NeteaseAPI api = new();
@@ -174,6 +300,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
 
                 File.Delete(obj.Track);
+                StopLyrics();
             }
         }
 
@@ -195,127 +322,224 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
             yield break;
         }
-
         private async Awaitable ProcessSongAsync(long songId)
         {
             int retries = 3;
-            await Awaitable.BackgroundThreadAsync();
+            CancellationToken ct = _cts.Token;
+
             while (retries >= 0)
             {
+                ct.ThrowIfCancellationRequested();
                 try
                 {
                     Log.Info($"Loading {songId}");
-                    Processing.player?.SendConsoleMessage($"歌曲加载 - 开始处理{songId} 解析中", "yellow");
-                    var urlTask = api.GetSongUrl(songId, NeteaseMusicAPI.QualityLevel.STANDARD, new Dictionary<string, string>());
-                    var detailTask = api.GetSongDetail(songId);
-                    await Task.WhenAll(urlTask, detailTask);
+                    Processing.player?.SendConsoleMessage($"歌曲加载 - 开始处理 {songId} 解析中", "yellow");
 
-                    var url = await urlTask;
-                    var del = await detailTask;
-                    Log.Info($"Loading {songId} - ana");
-                    if (url.exception != null)
+                    string songDownloadPath = "";
+                    string name = "";
+                    string lrcContent = null;
+
+                    if (Processing.source == SongSource.NeteaseCloud)
                     {
-                        Log.Info($"Loading {songId} ana- exception {url.exception}");
-                        Processing.player?.SendConsoleMessage($"歌曲加载错误 ana- {url.exception}", "red");
-                        if (retries == 0)
+                        Log.Info($"Loading {songId}");
+                        Processing.player?.SendConsoleMessage($"歌曲加载 - 开始处理{songId} 解析中", "yellow");
+                        var urlTask = api.GetSongUrl(songId, NeteaseMusicAPI.QualityLevel.STANDARD, new Dictionary<string, string>());
+                        var detailTask = api.GetSongDetail(songId);
+                        await Task.WhenAll(urlTask, detailTask);
+
+                        var url = await urlTask;
+                        var del = await detailTask;
+                        Log.Info($"Loading {songId} - ana");
+                        if (url.exception != null)
                         {
-                            readytonext = true;
-                            if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
-                            break;
-                        }
-                        continue;
-                    }
-                    Processing.player?.SendConsoleMessage($"歌曲加载 - 解析完成", "green");
-                    if (url.result.data.Count > 0)
-                    {
-                        var target = url.result.data[0];
-                        var name = del.result.songs[0].name;
-                        var author = del.result.songs[0].ar;
-
-                        Log.Info($"Loading {songId} - downlaoding");
-                        Processing.player?.SendConsoleMessage("歌曲加载 - 下载中", "green");
-                        var p = Path.GetTempFileName();
-                        var pn = Path.GetTempFileName() + ".ogg";
-
-                        try
-                        {
-                            using (var c = new HttpClient())
-                            {
-                                var response = await c.GetAsync(target.url);
-                                using (var f = File.OpenWrite(p))
-                                {
-                                    await response.Content.CopyToAsync(f);
-                                }
-                            }
-                            Log.Info($"Loading {songId} - decoding");
-                            Processing.player?.SendConsoleMessage("歌曲加载 - 解码中", "green");
-                            NeteaseAPI.ConvertToOggMono48kHz(p, pn);
-                            await Awaitable.MainThreadAsync();
-                            if (!_AdminOverride && SongAble)
-                            {
-                                createDummy();
-                                Timing.CallDelayed(0.5f, () => // wait for dummy init
-                                {
-                                    vpb.BroadcastChannel = VoiceChat.VoiceChatChannel.Intercom;
-                                    if (!_AdminOverride && SongAble)
-                                    {
-                                        DummyHub.ReferenceHub.nicknameSync.MyNick = $"正在播放 - {name}";
-                                        DummyHub.ReferenceHub.nicknameSync.Network_myNickSync = $"正在播放 - {name}";
-                                        vpb.Enqueue(pn, -1);
-                                        vpb.Play(0);
-                                        Log.Info($"Loading {songId} done!");
-                                        Processing.player?.SendConsoleMessage("歌曲加载成功!", "green");
-                                    }
-                                    else
-                                    {
-                                        readytonext = true;
-                                        if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
-                                        Processing.player?.SendConsoleMessage($"歌曲加载 - 处理失败 禁止点歌", "red");
-
-                                    }
-                                });
-
-                            }
-                            else
-                            {
-                                Processing.player?.SendConsoleMessage($"歌曲加载 - 处理失败 禁止点歌", "red");
-
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"歌曲 {Processing.id} 处理失败 HttpClient: {ex}");
-                            Processing.player?.SendConsoleMessage($"歌曲加载 - 处理失败 {ex}", "red");
+                            Log.Info($"Loading {songId} ana- exception {url.exception}");
+                            Processing.player?.SendConsoleMessage($"歌曲加载错误 ana- {url.exception}", "red");
                             if (retries == 0)
                             {
                                 readytonext = true;
                                 if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
                                 break;
                             }
+                            continue;
                         }
-                        finally
+                        if (url.result.data.Count > 0)
                         {
-                            File.Delete(p);
-
+                            songDownloadPath = url.result.data[0].url;
+                            name = del.result.songs[0].name;
                         }
-
-                        break;
                     }
+                    else if (Processing.source == SongSource.MonsterSiren)
+                    {
+                        // MSR API 请求
+                        string apiUrl = $"https://monster-siren.hypergryph.com/api/song/{songId}";
+                        using (var httpClient = new HttpClient())
+                        {
+                            var response = await httpClient.GetStringAsync(apiUrl);
+                            var json = Newtonsoft.Json.Linq.JObject.Parse(response);
+                            var data = json["data"];
+                            if (data == null)
+                            {
+                                Log.Error($"MSR 歌曲 {songId} 数据为空");
+                                Processing.player?.SendConsoleMessage("歌曲数据获取失败", "red");
+                                readytonext = true;
+                                break;
+                            }
+                            name = data["name"]?.ToString() ?? "未知曲目";
+                            songDownloadPath = data["sourceUrl"]?.ToString();
+                            var lyricUrl = data["lyricUrl"]?.ToString();
+
+                            if (string.IsNullOrEmpty(songDownloadPath))
+                            {
+                                Processing.player?.SendConsoleMessage("该歌曲无播放链接", "red");
+                                readytonext = true;
+                                break;
+                            }
+
+                            // 下载歌词（如果有）
+                            if (!string.IsNullOrEmpty(lyricUrl))
+                            {
+                                try
+                                {
+                                    lrcContent = await httpClient.GetStringAsync(lyricUrl);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Processing.player?.SendConsoleMessage($"歌词下载失败: {ex.Message}，继续播放纯音乐", "yellow");
+                                }
+                            }
+                        }
+                    }
+
+                    Processing.player?.SendConsoleMessage($"歌曲加载 - 解析完成", "green");
+                    await StartPlay(songDownloadPath, name, Processing, ct, lrcContent);
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    Log.Info($"歌曲 {songId} 点歌被取消");
+                    Processing.player?.SendConsoleMessage("点歌被系统取消", "yellow");
+                    readytonext = true;
+                    break;
                 }
                 catch (Exception ex)
                 {
                     Log.Error($"歌曲 {Processing.id} 处理失败: {ex}");
                     if (retries == 0)
                     {
-                        Processing.player?.SendConsoleMessage($"歌曲加载失败 {ex}", "red");
+                        Processing.player?.SendConsoleMessage($"歌曲加载失败 {ex.Message}", "red");
                         readytonext = true;
                     }
                     else
                     {
-                        await Awaitable.WaitForSecondsAsync(1000);
+                        retries--;
+                        await Awaitable.WaitForSecondsAsync(1f);
                     }
                 }
-                retries--;
+            }
+        }
+        private async Awaitable StartPlay(string songDownloadPath, string name, SongReq req, CancellationToken ct, string lrcContent = null)
+        {
+            if (string.IsNullOrEmpty(songDownloadPath))
+            {
+                Processing.player?.SendConsoleMessage("歌曲链接无效", "red");
+                readytonext = true;
+                return;
+            }
+
+            string tempDownloadFile = Path.GetTempFileName();
+            string tempOggFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.ogg");
+            try
+            {
+                Log.Info($"Loading {req.id} - downloading");
+                Processing.player?.SendConsoleMessage("歌曲加载 - 下载中", "green");
+
+                using (var httpClient = new HttpClient())
+                {
+                    using (var response = await httpClient.GetAsync(songDownloadPath, HttpCompletionOption.ResponseHeadersRead, ct))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        using (var fileStream = File.OpenWrite(tempDownloadFile))
+                        {
+                            await response.Content.CopyToAsync(fileStream);
+                        }
+                    }
+                }
+
+                ct.ThrowIfCancellationRequested();
+
+                Log.Info($"Loading {req.id} - decoding");
+                Processing.player?.SendConsoleMessage("歌曲加载 - 解码中", "green");
+
+                ct.ThrowIfCancellationRequested();
+                NeteaseAPI.ConvertToOggMono48kHz(tempDownloadFile, tempOggFile);
+
+                await Awaitable.MainThreadAsync();
+                ct.ThrowIfCancellationRequested();
+
+                if (_AdminOverride || !SongAble)
+                {
+                    Processing.player?.SendConsoleMessage("歌曲加载 - 处理失败 禁止点歌", "red");
+                    readytonext = true;
+                    return;
+                }
+
+                createDummy();
+                Timing.CallDelayed(0.5f, () =>
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        readytonext = true;
+                        CleanupDummy();
+                        return;
+                    }
+                    if (!_AdminOverride && SongAble)
+                    {
+                        vpb.BroadcastChannel = VoiceChat.VoiceChatChannel.Intercom;
+                        DummyHub.ReferenceHub.nicknameSync.Network_myNickSync = $"正在播放 - {name}";
+                        vpb.Enqueue(tempOggFile, -1);
+                        vpb.Play(0);
+                        Log.Info($"Loading {req.id} done!");
+                        Processing.player?.SendConsoleMessage("歌曲加载成功!", "green");
+
+                        // 启动歌词（如果有）
+                        if (!string.IsNullOrEmpty(lrcContent))
+                            StartLyrics(lrcContent, Time.time);
+                    }
+                    else
+                    {
+                        readytonext = true;
+                        CleanupDummy();
+                        Processing.player?.SendConsoleMessage("歌曲加载 - 处理失败 禁止点歌", "red");
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Info($"歌曲 {req.id} 加载被取消");
+                readytonext = true;
+                CleanupDummy();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"StartPlay 异常: {ex}");
+                Processing.player?.SendConsoleMessage($"歌曲加载 - 处理失败 {ex.Message}", "red");
+                readytonext = true;
+                CleanupDummy();
+                throw;
+            }
+            finally
+            {
+            }
+        }
+        // 辅助方法
+        private void CleanupDummy()
+        {
+            StopLyrics();
+            if (DummyHub != null)
+            {
+                DummyHub.Destroy();
+                DummyHub = null;
             }
         }
     }
@@ -329,7 +553,7 @@ namespace NS_site27_api.Modules.LobbyMusic
 
         public override void OnEnable()
         {
-            
+
 
             _manager = new LobbyMusicManager();
             _manager.Init();

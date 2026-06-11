@@ -60,7 +60,7 @@ namespace NS_site27_api.Modules.SpawnProtection
             {
 
                 player.EnableEffect(EffectType.SpawnProtected, Config.ProtectTime);
-                player.RemoveMessage("lossingProtection");
+                if(player.HasMessage("lossingProtection")) player.RemoveMessage("lossingProtection");
 
                 player.AddMessage("ProtectionMessaging", FrontEnd, 7, ScreenPosition.Top);
 
@@ -82,7 +82,6 @@ namespace NS_site27_api.Modules.SpawnProtection
 
         private void Shot(ShotEventArgs ev)
         {
-            //BUG: Intensity check may not work properly under certain conditions
             if (ev.Player.GetEffect(EffectType.SpawnProtected) != null)
             {
                 var effect = ev.Player.GetEffect(EffectType.SpawnProtected);

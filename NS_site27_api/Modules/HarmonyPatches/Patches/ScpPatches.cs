@@ -12,11 +12,11 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
     [HarmonyPatch(typeof(FpcStateProcessor))]
     public static class FpcStateProcessorPatch
     {
+            static PropertyInfo hubField = typeof(FpcStateProcessor).GetProperty("Hub", BindingFlags.NonPublic | BindingFlags.Instance);
         [HarmonyPatch("get_ServerUseRate")]
         [HarmonyPrefix]
         public static bool Prefix(FpcStateProcessor __instance, ref float __result)
         {
-            var hubField = typeof(FpcStateProcessor).GetProperty("Hub", BindingFlags.NonPublic | BindingFlags.Instance);
             var hub = (ReferenceHub)hubField?.GetValue(__instance);
 
             if (hub != null)
@@ -97,6 +97,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         [HarmonyPrefix]
         public static bool Prefix()
         {
+            LobbyMusic.LobbyMusicManager.Instance.RoundStarted();
             return true;
         }
     }

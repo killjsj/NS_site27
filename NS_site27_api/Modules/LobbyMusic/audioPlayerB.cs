@@ -1,19 +1,20 @@
-﻿using MEC;
+﻿using Exiled.API.Features;
+using MEC;
 using Mirror;
-using NVorbis;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using VoiceChat;
 using VoiceChat.Codec;
+using VoiceChat.Codec.Enums;
 using VoiceChat.Networking;
 using Random = UnityEngine.Random;
-using Log = LabApi.Features.Console.Logger;
-using System;
-using VoiceChat.Codec.Enums;
 
-namespace AudioApi
+namespace NS_site27_api.Modules.LobbyMusic
 {
     public class TrackFinishedEventArgs
     {
@@ -50,13 +51,14 @@ namespace AudioApi
         public float allowedSamples;
         public int samplesPerSecond;
         public Queue<float> StreamBuffer { get; } = new();
-        public VorbisReader VorbisReader { get; set; }
+        public AudioFileReader AudioReader { get; set; }
+        public ISampleProvider SampleProvider { get; set; }
         public float[] SendBuffer { get; set; }
         public float[] ReadBuffer { get; set; }
         public float Volume { get; set; } = 100f;
+        private long _playedSamples;
         public List<string> AudioToPlay { get; set; } = new();
         public string CurrentPlay { get; set; }
-        public MemoryStream CurrentPlayStream { get; set; }
         public bool Loop { get; set; } = false;
         public bool Shuffle { get; set; } = false;
         public bool Continue { get; set; } = true;
@@ -66,6 +68,7 @@ namespace AudioApi
         public bool IsFinished { get; set; } = false;
         public bool ClearOnFinish { get; set; } = false;
         public List<ReferenceHub> BroadcastTo { get; set; } = new();
+        public double seconds => _playedSamples / 48000.0;
         public Func<ReferenceHub, bool> BroadcastFunc { get; set; }
         public VoiceChatChannel BroadcastChannel { get; set; } = VoiceChatChannel.Proximity;
         public static event Action<TrackFinishedEventArgs> OnFinishedTrack;
@@ -120,9 +123,11 @@ namespace AudioApi
         }
         public virtual IEnumerator<float> Playback(int position)
         {
+            Log.Info($"Playback...");
             stopTrack = false;
             IsFinished = false;
             int index = position;
+            _playedSamples = 0;
             if (index != -1)
             {
                 if (Shuffle)
@@ -138,15 +143,6 @@ namespace AudioApi
                 Log.Info($"加载音频中...");
             if (File.Exists(CurrentPlay))
             {
-                if (!CurrentPlay.EndsWith(".ogg"))
-                {
-                    Log.Error($"音频 {CurrentPlay} 必须为.ogg格式");
-                    yield return Timing.WaitForSeconds(1);
-                    if (AudioToPlay.Count >= 1)
-                        Timing.RunCoroutine(Playback(0));
-                    yield break;
-                }
-                CurrentPlayStream = new MemoryStream(File.ReadAllBytes(CurrentPlay));
             }
             else
             {
@@ -156,44 +152,55 @@ namespace AudioApi
                     Timing.RunCoroutine(Playback(0));
                 yield break;
             }
-            CurrentPlayStream.Seek(0, SeekOrigin.Begin);
-            VorbisReader = new VorbisReader(CurrentPlayStream);
+            AudioReader = new AudioFileReader(CurrentPlay);
 
-            if (VorbisReader.Channels >= 2)
+            ISampleProvider provider = AudioReader;
+
+            if (AudioReader.WaveFormat.Channels == 2)
             {
-                Log.Error($"音频 {CurrentPlay} 必须为单轨道");
-                yield return Timing.WaitForSeconds(1);
-                if (AudioToPlay.Count >= 1)
-                    Timing.RunCoroutine(Playback(0));
-                VorbisReader.Dispose();
-                CurrentPlayStream.Dispose();
+                provider = new StereoToMonoSampleProvider(provider)
+                {
+                    LeftVolume = 0.5f,
+                    RightVolume = 0.5f
+                };
+            }
+            else if (AudioReader.WaveFormat.Channels > 2)
+            {
+                Log.Error(
+                    $"音频 {CurrentPlay} 只支持单声道或立体声");
+
+                AudioReader.Dispose();
+
                 yield break;
             }
 
-            if (VorbisReader.SampleRate != 48000)
+            if (AudioReader.WaveFormat.SampleRate != 48000)
             {
-                Log.Error($"音频 {CurrentPlay} 采样率必须为48000");
-                yield return Timing.WaitForSeconds(1);
-                if (AudioToPlay.Count >= 1)
-                    Timing.RunCoroutine(Playback(0));
-                VorbisReader.Dispose();
-                CurrentPlayStream.Dispose();
-                yield break;
+                provider = new WdlResamplingSampleProvider(
+                    provider,
+                    48000);
             }
+
+            SampleProvider = provider;
             if (LogInfo)
                 Log.Info($"播放 {CurrentPlay}");
             if (LogInfo)
-                Log.Info($"音频总样本: {VorbisReader.TotalSamples}，时长: {VorbisReader.TotalTime.TotalSeconds} 秒");
+                Log.Info($"时长: {AudioReader.TotalTime.TotalSeconds} 秒");
             samplesPerSecond = VoiceChatSettings.SampleRate * VoiceChatSettings.Channels;
             SendBuffer = new float[samplesPerSecond / 5 + HeadSamples];
             ReadBuffer = new float[samplesPerSecond / 5 + HeadSamples];
             int cnt;
-            while ((cnt = VorbisReader.ReadSamples(ReadBuffer, 0, ReadBuffer.Length)) > 0)
+            while ((cnt = SampleProvider.Read(
+    ReadBuffer,
+    0,
+    ReadBuffer.Length)) > 0)
             {
                 if (stopTrack)
                 {
-                    VorbisReader.SeekTo(VorbisReader.TotalSamples - 1);
+                    AudioReader.Position =
+    AudioReader.Length - 4;
                     stopTrack = false;
+
                 }
                 while (!ShouldPlay)
                 {
@@ -274,6 +281,7 @@ namespace AudioApi
                 {
                     PlaybackBuffer.ReadTo(SendBuffer, 480, 0L);
                     int dataLen = Encoder.Encode(SendBuffer, EncodedBuffer, 480);
+                    _playedSamples += 480;
 
                     foreach (var ply in ReferenceHub.AllHubs)
                     {
@@ -286,7 +294,8 @@ namespace AudioApi
 
                     }
                 }
-            }catch ( Exception ex)
+            }
+            catch (Exception ex)
             {
                 Log.Info(ex);
             }

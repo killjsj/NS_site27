@@ -1,11 +1,14 @@
-using AudioApi;
+
 using CommandSystem;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using MEC;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using NeteaseMusicAPI;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Modules.EventHandle.Handlers;
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Collections.Concurrent;
@@ -14,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Security.Policy;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -29,7 +33,7 @@ namespace NS_site27_api.Modules.LobbyMusic
     public enum SongSource
     {
         NeteaseCloud = 0,
-        MonsterSiren = 1,
+        MonsterSiren = 1,//鹰角网络API
     }
     public struct SongReq
     {
@@ -127,6 +131,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             Exiled.Events.Handlers.Server.WaitingForPlayers += WaitingForPlayers;
             Exiled.Events.Handlers.Player.Verified += Verified;
             VoicePlayerBase.OnFinishedTrack += VoicePlayerBase_OnFinishedTrack;
+            Exiled.Events.Handlers.Server.RoundStarted += RoundStarted;
             Exiled.Events.Handlers.Server.RestartingRound += restart;
             _cts = new CancellationTokenSource();
         }
@@ -135,26 +140,33 @@ namespace NS_site27_api.Modules.LobbyMusic
         {
             if (_processor.IsRunning) Timing.KillCoroutines(_processor);
             Instance = null;
-            //Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
+            Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
             Exiled.Events.Handlers.Player.Verified -= Verified;
             Exiled.Events.Handlers.Server.RestartingRound -= restart;
             if (_processor.IsRunning) Timing.KillCoroutines(_processor);
-            if (DummyHub != null) DummyHub.Destroy();
+            CleanupDummy();
             VoicePlayerBase.OnFinishedTrack -= VoicePlayerBase_OnFinishedTrack;
             _cts?.Cancel();
             _cts?.Dispose();
+            foreach (var item in FilePaths)
+            {
+                if (File.Exists(item))
+                {
+                    File.Delete(item);
+                }
+            }
+            FilePaths.Clear();
         }
 
         public void RoundStarted()
         {
-            if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
-
+            CleanupDummy();
             readytonext = true;
         }
         public void restart()
         {
-            if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
+            CleanupDummy();
             readytonext = true;
 
         }
@@ -166,9 +178,8 @@ namespace NS_site27_api.Modules.LobbyMusic
                 {
                     if (value)
                     {
-                        if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
+                        CleanupDummy();
                         readytonext = true;
-                        StopLyrics();
                         _cts?.Cancel();
 
                     }
@@ -177,9 +188,9 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
         //private CoroutineHandle _lyricsCoroutine;
-        private List<LrcLine> _lrcLines;
+        private List<LrcLine> _lrcLines = null;
         private float _songStartTime;
-
+        public string CurrentSongName = "";
         private struct LrcLine
         {
             public float Time;
@@ -210,28 +221,35 @@ namespace NS_site27_api.Modules.LobbyMusic
         private string[] GetLyricsDisplay(Player player)
         {
             if (_lrcLines == null || _lrcLines.Count == 0) return new[] { "" };
-            float elapsed = Time.time - _songStartTime;
-            // 逆序查找当前歌词行
-            for (int i = _lrcLines.Count - 1; i >= 0; i--)
+            if (vpb != null)
             {
-                if (_lrcLines[i].Time <= elapsed)
-                    return new[] { $"<color=#00FFFF88>{_lrcLines[i].Text}</color>" };
+                for (int i = _lrcLines.Count - 1; i >= 0; i--)
+                {
+                    if (_lrcLines[i].Time <= (float)(vpb?.seconds))
+                    {
+                        float total = (float)(vpb?.AudioReader.TotalTime.TotalSeconds ?? 0f);
+                        string timeStr;
+                        if (total > 0)
+                            timeStr = $"{FormatTime((float)(vpb?.seconds))}/{FormatTime(total)}";
+                        else
+                            timeStr = FormatTime((float)(vpb?.seconds));
+                        return new[] { $"<align=right><size=14><line-height=45%><color=#00FFFF50>[{timeStr}]:{CurrentSongName}\n{_lrcLines[i].Text}</color></line-height></size></align>" };
+                    }
+                }
             }
             return new[] { "" };
         }
 
-        private void StartLyrics(string lrcContent, float startTime)
+        private void StartLyrics(string lrcContent)
         {
             StopLyrics(); // 确保之前的歌词协程停止
             _lrcLines = ParseLrc(lrcContent);
-            _songStartTime = startTime;
             //_lyricsCoroutine = Timing.RunCoroutine(LyricsUpdateCoroutine());
-
             foreach (var player in Player.List)
             {
-                if (player != null && player.HasMessage("LobbyMusicLyrics"))
+                if (player != null && !player.HasMessage("LobbyMusicLyrics"))
                 {
-                    player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 950));
+                    player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 990));
                 }
             }
         }
@@ -239,7 +257,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         {
             if (_lrcLines != null)
             {
-                ev.Player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 950));
+                ev.Player.AddMessage("LobbyMusicLyrics", GetLyricsDisplay, -1f, new UIPosition(0, 990));
             }
         }
         private void StopLyrics()
@@ -280,27 +298,53 @@ namespace NS_site27_api.Modules.LobbyMusic
             _AdminOverride = false;
             AdminOverrideEnable = false;
         }
+        private CoroutineHandle _dummyNameCoroutine;
         void createDummy()
         {
-            if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
+            CleanupDummy();
             DummyHub = Npc.Spawn("音乐播放器");
             //Plugin.plugin.eventhandle.SPD.Add(DummyHub.ReferenceHub);
             DummyHub.ReferenceHub.serverRoles.NetworkHideFromPlayerList = true;
             //Intercom.TrySetOverride(DummyHub, true);
             vpb = VoicePlayerBase.Get(DummyHub.ReferenceHub);
             vpb.BroadcastChannel = VoiceChat.VoiceChatChannel.Intercom;
+            Timing.CallDelayed(Timing.WaitForOneFrame, () =>
+            {
+                if (DummyHub != null)
+                {
+                    RoundEventHandler.DoNotCountDummyHubs.Add(DummyHub.ReferenceHub);
+                }
+            });
+            
         }
-
+        private IEnumerator<float> UpdateDummyNameCoroutine(string songName)
+        {
+            while (vpb != null && DummyHub != null)
+            {
+                float total = (float)(vpb?.AudioReader.TotalTime.TotalSeconds ?? 0f);
+                string timeStr;
+                if (total > 0)
+                    timeStr = $"{FormatTime((float)(vpb?.seconds))}/{FormatTime(total)}";
+                else
+                    timeStr = FormatTime((float)(vpb?.seconds));
+                DummyHub.DisplayNickname = $"正在播放 - {songName} [{timeStr}]";
+                yield return Timing.WaitForSeconds(0.8f);
+            }
+        }
+        private static string FormatTime(float seconds)
+        {
+            int min = (int)(seconds / 60);
+            int sec = (int)(seconds % 60);
+            return $"{min:D2}:{sec:D2}";
+        }
         private void VoicePlayerBase_OnFinishedTrack(TrackFinishedEventArgs obj)
         {
             if (obj == null) return;
             if (obj.VoicePlayerBase == vpb)
             {
                 readytonext = true;
-                if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
-
+                CleanupDummy();
                 File.Delete(obj.Track);
-                StopLyrics();
             }
         }
 
@@ -320,11 +364,10 @@ namespace NS_site27_api.Modules.LobbyMusic
 #pragma warning restore CS4014 // 由于此调用不会等待，因此在调用完成前将继续执行当前方法
                 }
             }
-            yield break;
         }
         private async Awaitable ProcessSongAsync(long songId)
         {
-            int retries = 3;
+            int retries = 2;
             CancellationToken ct = _cts.Token;
 
             while (retries >= 0)
@@ -341,10 +384,9 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                     if (Processing.source == SongSource.NeteaseCloud)
                     {
-                        Log.Info($"Loading {songId}");
-                        Processing.player?.SendConsoleMessage($"歌曲加载 - 开始处理{songId} 解析中", "yellow");
                         var urlTask = api.GetSongUrl(songId, NeteaseMusicAPI.QualityLevel.STANDARD, new Dictionary<string, string>());
                         var detailTask = api.GetSongDetail(songId);
+                        
                         await Task.WhenAll(urlTask, detailTask);
 
                         var url = await urlTask;
@@ -354,10 +396,11 @@ namespace NS_site27_api.Modules.LobbyMusic
                         {
                             Log.Info($"Loading {songId} ana- exception {url.exception}");
                             Processing.player?.SendConsoleMessage($"歌曲加载错误 ana- {url.exception}", "red");
+                            retries--;
                             if (retries == 0)
                             {
                                 readytonext = true;
-                                if (DummyHub != null) { DummyHub.Destroy(); DummyHub = null; }
+                                CleanupDummy();
                                 break;
                             }
                             continue;
@@ -366,6 +409,11 @@ namespace NS_site27_api.Modules.LobbyMusic
                         {
                             songDownloadPath = url.result.data[0].url;
                             name = del.result.songs[0].name;
+                            var Lyc = await api.GetLyric(songId, new());
+                            if(Lyc != null && Lyc.code == 200 && Lyc.lrc != null && !string.IsNullOrEmpty(Lyc.lrc.lyric))
+                            {
+                                lrcContent = Lyc.lrc.lyric;
+                            }
                         }
                     }
                     else if (Processing.source == SongSource.MonsterSiren)
@@ -376,6 +424,13 @@ namespace NS_site27_api.Modules.LobbyMusic
                         {
                             var response = await httpClient.GetStringAsync(apiUrl);
                             var json = Newtonsoft.Json.Linq.JObject.Parse(response);
+                            if (json == null)
+                            {
+                                Log.Error($"MSR json歌曲 {songId} 数据为空 rsp:{response}");
+                                Processing.player?.SendConsoleMessage("歌曲数据获取失败", "red");
+                                readytonext = true;
+                                break;
+                            }
                             var data = json["data"];
                             if (data == null)
                             {
@@ -428,6 +483,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     {
                         Processing.player?.SendConsoleMessage($"歌曲加载失败 {ex.Message}", "red");
                         readytonext = true;
+                        break;
                     }
                     else
                     {
@@ -437,6 +493,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 }
             }
         }
+        private List<string> FilePaths = new();
         private async Awaitable StartPlay(string songDownloadPath, string name, SongReq req, CancellationToken ct, string lrcContent = null)
         {
             if (string.IsNullOrEmpty(songDownloadPath))
@@ -471,8 +528,36 @@ namespace NS_site27_api.Modules.LobbyMusic
                 Processing.player?.SendConsoleMessage("歌曲加载 - 解码中", "green");
 
                 ct.ThrowIfCancellationRequested();
-                NeteaseAPI.ConvertToOggMono48kHz(tempDownloadFile, tempOggFile);
+                using var reader = new AudioFileReader(tempDownloadFile);
 
+                ISampleProvider provider = reader;
+
+                if (reader.WaveFormat.Channels == 2)
+                {
+                    provider = new StereoToMonoSampleProvider(provider)
+                    {
+                        LeftVolume = 0.5f,
+                        RightVolume = 0.5f
+                    };
+                }
+                else if (reader.WaveFormat.Channels > 2)
+                {
+                    throw new NotSupportedException(
+                        $"Unsupported channel count {reader.WaveFormat.Channels}");
+                }
+
+                if (reader.WaveFormat.SampleRate != 48000)
+                {
+                    provider = new WdlResamplingSampleProvider(
+                        provider,
+                        48000);
+                }
+
+                WaveFileWriter.CreateWaveFile16(
+                    tempOggFile,
+                    provider);
+                FilePaths.Add(tempOggFile);
+                FilePaths.Add(tempDownloadFile);
                 await Awaitable.MainThreadAsync();
                 ct.ThrowIfCancellationRequested();
 
@@ -484,7 +569,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 }
 
                 createDummy();
-                Timing.CallDelayed(0.5f, () =>
+                Timing.CallDelayed(0.4f, () =>
                 {
                     if (ct.IsCancellationRequested)
                     {
@@ -494,16 +579,20 @@ namespace NS_site27_api.Modules.LobbyMusic
                     }
                     if (!_AdminOverride && SongAble)
                     {
+                        vpb.LogInfo = true;
                         vpb.BroadcastChannel = VoiceChat.VoiceChatChannel.Intercom;
                         DummyHub.ReferenceHub.nicknameSync.Network_myNickSync = $"正在播放 - {name}";
                         vpb.Enqueue(tempOggFile, -1);
                         vpb.Play(0);
                         Log.Info($"Loading {req.id} done!");
                         Processing.player?.SendConsoleMessage("歌曲加载成功!", "green");
-
+                        CurrentSongName = name;
+                        if (_dummyNameCoroutine.IsRunning) Timing.KillCoroutines(_dummyNameCoroutine);
+                        _dummyNameCoroutine = Timing.RunCoroutine(UpdateDummyNameCoroutine(name));
+                        _songStartTime = Time.time;
                         // 启动歌词（如果有）
                         if (!string.IsNullOrEmpty(lrcContent))
-                            StartLyrics(lrcContent, Time.time);
+                            StartLyrics(lrcContent);
                     }
                     else
                     {
@@ -536,10 +625,14 @@ namespace NS_site27_api.Modules.LobbyMusic
         private void CleanupDummy()
         {
             StopLyrics();
+            if (_dummyNameCoroutine.IsRunning) Timing.KillCoroutines(_dummyNameCoroutine);
             if (DummyHub != null)
             {
+                    RoundEventHandler.DoNotCountDummyHubs.Remove(DummyHub.ReferenceHub);
+                
                 DummyHub.Destroy();
                 DummyHub = null;
+
             }
         }
     }

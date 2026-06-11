@@ -163,7 +163,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, Func<Player, string[]> getter, float duration = 5, ScreenPosition position = ScreenPosition.Center)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -177,7 +177,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration = 5, ScreenPosition position = ScreenPosition.Center)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -191,7 +191,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration, float x, float y)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -205,7 +205,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, Func<Player, string[]> getter, float duration, float x, float y)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -219,7 +219,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, Func<Player, string[]> getter, float duration, UIPosition uIPosition)
         {
-            if (player == null) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -233,7 +233,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration, UIPosition uIPosition)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -247,7 +247,7 @@ namespace NS_site27_api.Core.UI
 
         public static void RemoveMessage(this Player player, string id)
         {
-            if (player == null) return;
+                        if (player == null || player.IsNPC) return;
             if (_playerMessages.TryGetValue(player, out var msgs))
             {
                 msgs.Remove(id);

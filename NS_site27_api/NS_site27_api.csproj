@@ -215,9 +215,6 @@
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
-    <Reference Include="wangyiyunaudiodownload">
-      <HintPath>deps\wangyiyunaudiodownload.dll</HintPath>
-    </Reference>
     <Reference Include="YamlDotNet, Version=11.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
       <HintPath>..\packages\YamlDotNet.11.0.1\lib\net45\YamlDotNet.dll</HintPath>
     </Reference>
@@ -233,7 +230,7 @@
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVerifer.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
-    <Compile Include="Modules\LobbyMusic\audioPlayerB.cs" />
+    <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4GroundModel.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4Usage.cs" />
     <Compile Include="Modules\Weapons\AT4\CustomItemHandler.cs" />

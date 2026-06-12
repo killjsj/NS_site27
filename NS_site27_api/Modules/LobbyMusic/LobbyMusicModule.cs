@@ -130,7 +130,6 @@ namespace NS_site27_api.Modules.LobbyMusic
             Instance = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += WaitingForPlayers;
             Exiled.Events.Handlers.Player.Verified += Verified;
-            VoicePlayerBase.OnFinishedTrack += VoicePlayerBase_OnFinishedTrack;
             Exiled.Events.Handlers.Server.RoundStarted += RoundStarted;
             Exiled.Events.Handlers.Server.RestartingRound += restart;
             _cts = new CancellationTokenSource();
@@ -146,7 +145,6 @@ namespace NS_site27_api.Modules.LobbyMusic
             Exiled.Events.Handlers.Server.RestartingRound -= restart;
             if (_processor.IsRunning) Timing.KillCoroutines(_processor);
             CleanupDummy();
-            VoicePlayerBase.OnFinishedTrack -= VoicePlayerBase_OnFinishedTrack;
             _cts?.Cancel();
             _cts?.Dispose();
             foreach (var item in FilePaths)

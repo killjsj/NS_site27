@@ -181,7 +181,7 @@ namespace NS_site27_api.Modules.Chat
 
             // 拼接所有非空部分
             List<string> parts = new List<string>();
-            if (!string.IsNullOrEmpty(publicContent)) parts.Add("<color=white>公告聊天消息:" + publicContent + "</color>");
+            if (!string.IsNullOrEmpty(publicContent)) parts.Add("<color=white>公告聊天消息:\n" + publicContent + "</color>");
             if (!string.IsNullOrEmpty(teamContent)) parts.Add($"<color={GetTeamColor(team)}>团队聊天消息:\n"+teamContent + "</color>");
             if (!string.IsNullOrEmpty(adminContent)) parts.Add("<color=red>反馈:\n" + adminContent + "</color>");
 

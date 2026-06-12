@@ -6,5 +6,7 @@
   <Project Path="NS_site27_api/NS_site27_api.csproj" Id="37e93a37-47fa-4253-a144-3a7516ac9a03">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
-  <Project Path="NS_site27_heavyThings/NS_site27_heavyThings.csproj" Id="0dd1e5da-8bfc-47d7-827d-5a41d1e99c2a" />
+  <Project Path="NS_site27_heavyThings/NS_site27_heavyThings.csproj" Id="0dd1e5da-8bfc-47d7-827d-5a41d1e99c2a">
+    <Platform Solution="Debug|x64" Project="x64" />
+  </Project>
 </Solution>

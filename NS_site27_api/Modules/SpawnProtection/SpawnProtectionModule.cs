@@ -61,6 +61,7 @@ namespace NS_site27_api.Modules.SpawnProtection
 
                 player.EnableEffect(EffectType.SpawnProtected, Config.ProtectTime);
                 if(player.HasMessage("lossingProtection")) player.RemoveMessage("lossingProtection");
+                if(player.HasMessage("ProtectionMessaging")) player.RemoveMessage("ProtectionMessaging");
 
                 player.AddMessage("ProtectionMessaging", FrontEnd, 7, ScreenPosition.Top);
 
@@ -73,7 +74,7 @@ namespace NS_site27_api.Modules.SpawnProtection
         private string[] FrontEnd(Player player)
         {
             var spawnProtectedEffect = player.GetEffect(EffectType.SpawnProtected);
-            if (spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft > 0 || !spawnProtectedEffect.IsEnabled)
+            if (spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled)
                 return null;
             var remainingTime = spawnProtectedEffect.TimeLeft;
             var text = $"<size=27><color=#{Config.InProtectColor}>保护剩余 {remainingTime:F0} 秒\n开枪将取消保护</color></size>";

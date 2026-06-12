@@ -332,7 +332,7 @@ WHERE userid = @userid";
                         while (reader.Read())
                         {
                             string player_name = reader["player_name"] as string ?? string.Empty;
-                            string badgeName = reader["badge"] as string ?? "未知徽章";
+                            string badgeName = reader["badge"] as string ?? "";
                             string color = reader["color"] as string ?? "white";
                             DateTime expiration_date = reader.GetDateTime("expiration_date");
                             bool is_permanent = reader.GetInt32("is_permanent") == 1;

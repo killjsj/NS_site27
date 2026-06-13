@@ -77,7 +77,7 @@ namespace NS_site27_api.Modules.SpawnProtection
             if (spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled)
                 return null;
             var remainingTime = spawnProtectedEffect.TimeLeft;
-            var text = $"<size=27><color=#{Config.InProtectColor}>保护剩余 {remainingTime:F0} 秒\n开枪将取消保护</color></size>";
+            var text = $"<size=24><color=#{Config.InProtectColor}>保护剩余 {remainingTime:F0} 秒\n开枪将取消保护</color></size>";
             return new[ ]{ text };
         }
 

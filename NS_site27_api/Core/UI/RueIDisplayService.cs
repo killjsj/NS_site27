@@ -20,10 +20,10 @@ namespace NS_site27_api.Core.UI
             var r = RueDisplay.Get(player);
             var e = new DynamicElement(position.Y,x =>
             {
-                if (x == null || getter == null) return "";
+                if (x == null || getter == null || Player.Get(x) == null) return "";
                 var re = getter(Player.Get(x));
                 if (re == null)         // 额外防御，避免 getter 返回 null 数组
-                    return string.Empty;
+                    return "";
                 List<string> strings = new();
                 string rf = "<line-height=70%>";
                 //if(position.margin > 0)

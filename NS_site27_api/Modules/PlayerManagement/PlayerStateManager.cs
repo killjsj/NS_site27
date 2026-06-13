@@ -112,6 +112,8 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static void HandleBadgeSync(Player player, ReferenceHub hub)
         {
+                    if (hub == null) return ;
+                    if (player == null) return;
             (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes) badgeData = ("","",new List<string>(new[]{ "white" }),DateTime.UtcNow,true,"");
             if (!badges.TryGetValue(player.UserId, out badgeData) && !player.RemoteAdminAccess) return;
             if (DuelManager.PlayerBadges.ContainsKey(player.UserId)) return;
@@ -141,6 +143,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static IEnumerator<float> RainbowTimeCoroutine(Player player, List<string> colorsList)
         {
             if (player == null) yield break;
+            if (colorsList == null) yield break;
             while (player != null)
             {
                 foreach (var color in colorsList)
@@ -152,13 +155,6 @@ namespace NS_site27_api.Modules.PlayerManagement
                 if (player == null) break;
                 yield return Timing.WaitForSeconds(1.5f);
             }
-        }
-
-        public static IEnumerator<float> RainbowTimeCoroutine(Player player, string singleColor)
-        {
-            if (player == null) yield break;
-            player.RankColor = singleColor;
-            yield break;
         }
         public static void HandleSpectatorTracking(Player player, SpectatorRole spectatorRole)
         {

@@ -233,7 +233,7 @@ namespace AT4
             Exiled.API.Features.Map.ExplodeEffect(explosionPos + new Vector3(0, 0, 3), ProjectileType.FragGrenade);
             Exiled.API.Features.Map.ExplodeEffect(explosionPos + new Vector3(0, 0, -3), ProjectileType.FragGrenade);
 
-            foreach ( Player player in Player.List)
+            foreach ( Player player in Player.Enumerable)
             {
 
                 if (Physics.Raycast(explosionPos, (player.Position - explosionPos).normalized, out RaycastHit hit, ~((1 << 2) | (1 << 13))))

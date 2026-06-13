@@ -44,8 +44,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             double mul = ignoreMul ? 1 : Math.Max(1, GlobalMultiplier);
             int total = (int)(current + exp * mul);
             SetExp(player, total);
-            player.AddMessage("ExpUpdated", $"<color=green><size=23>获得经验:{(exp * mul):F0}</size></color>", 3f, UIPosition.FromEnum(ScreenPosition.CenterBottom));
-            player.SendConsoleMessage($"获得经验:{(exp * mul):F0} 原因:{reason}", "green");
+            //player.SendConsoleMessage($"获得经验:{(exp * mul):F0} 原因:{reason}", "green");
         }
 
         public static TimeSpan GetTodayTime(Player player)
@@ -61,6 +60,12 @@ namespace NS_site27_api.Modules.PlayerManagement
             var existing = SQL?.QueryUser(player.UserId).today_duration;
             if (existing.HasValue) TodayTimeCache[player] = existing.Value;
             return t.Elapsed + (existing ?? TimeSpan.Zero);
+        }
+        public static TimeSpan GetAllTime(Player player)
+        {
+            if (player == null) return TimeSpan.Zero;
+            var existing = SQL?.QueryUser(player.UserId).total_duration;
+            return (existing ?? TimeSpan.Zero) + GetServerTime(player);
         }
         public static TimeSpan GetServerTime(Player player)
         {
@@ -93,10 +98,13 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static void AddPoint(Player player, int points)
         {
             if (player == null) return;
-            int cur = GetPoint(player) + points;
+            var atkStats = PlayerManagementModule.GetOrCreateStats(player);
+            int cur = atkStats.Points + points;
             if (cur < 0) cur = 0;
             PointCache[player] = cur;
+            atkStats.Points += points;
             SQL?.Update(player.UserId, point: cur);
+            player.AddMessage("AddPoint", $"<color=green><size=23>获得积分:{(points):F0}</size></color>", 3f,0,100);
         }
     }
 }

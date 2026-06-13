@@ -1,19 +1,26 @@
-﻿using AudioManagerAPI.Defaults;
+﻿using AdminToys;
+using AudioManagerAPI.Defaults;
 using AudioManagerAPI.Features.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Core.UserSettings;
 using Exiled.Events.EventArgs.Player;
 using LabApi.Events.Arguments.PlayerEvents;
+using Mirror;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using Org.BouncyCastle.Bcpg;
+using Org.BouncyCastle.Bcpg.Sig;
 using PlayerRoles;
+using PlayerRoles.FirstPersonControl;
 using PlayerRoles.Voice;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using VoiceChat.Codec;
+using VoiceChat.Networking;
 using YamlDotNet.Serialization;
 
 namespace NS_site27_api.Modules.PlayerManagement
@@ -22,25 +29,20 @@ namespace NS_site27_api.Modules.PlayerManagement
     {
         public static ScpToPlayerChat Instance { get; private set; }
         public static Dictionary<Player, bool> isEnabledForwading = new Dictionary<Player, bool>();
-        public static Dictionary<Player, int> sessionIds = new();
-        public static Dictionary<Player, OpusDecoder> Decoders = new();
-        private static float[] _receiveBuffer;
-        private static bool _receiveBufferSet;
         public override string ModuleName => "ScpToPlayerChat";
 
         public override void OnDisable()
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
-            Exiled.Events.Handlers.Player.Left -= Left;
-            LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage -= SendingVoiceMessage;
             VoiceSetting = null;
+            Exiled.Events.Handlers.Player.VoiceChatting -= VoiceChatting;
         }
 
         public override void OnEnable()
         {
             VoiceSetting = new KeybindSetting(this.Config.SettingId,"SCP对人类语音",UnityEngine.KeyCode.V,false,false, "按下此键可以让SCP的语音对人类可听",255, null, (p, sb) =>
             {
-                if(p != null && p.IsScp && sb != null && sb.Id == Config.SettingId)
+                if(p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
                 {
                     if (!isEnabledForwading.TryGetValue(p, out var isEnabled))
                     {
@@ -54,31 +56,12 @@ namespace NS_site27_api.Modules.PlayerManagement
                     if (p.HasMessage("ScpTalkToPlayerHint")){
                         p.RemoveMessage("ScpTalkToPlayerHint");
                     }
-                    p.AddMessage("ScpTalkToPlayerHint", str,3,0,325);
+                    p.AddMessage("ScpTalkToPlayerHint", str,3,0,305);
 
                 }
             });
             Exiled.Events.Handlers.Player.ChangingRole += OnChangingRole;
-            Exiled.Events.Handlers.Player.Left += Left;
-            LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage += SendingVoiceMessage;
-        }
-        public static void Left(LeftEventArgs ev)
-        {
-            if (isEnabledForwading.ContainsKey(ev.Player))
-            {
-                isEnabledForwading.Remove(ev.Player);
-            }
-            int sessionId = -1;
-            if (sessionIds.TryGetValue(ev.Player, out sessionId))
-            {
-                DefaultAudioManager.Instance.DestroySession(sessionId);
-                sessionIds.Remove(ev.Player);
-            }
-            if (Decoders.TryGetValue(ev.Player, out var decoder))
-            {
-                decoder.Dispose();
-                Decoders.Remove(ev.Player);
-            }
+            Exiled.Events.Handlers.Player.VoiceChatting += VoiceChatting;
         }
         public static void OnChangingRole(ChangingRoleEventArgs ev)
         {
@@ -86,80 +69,89 @@ namespace NS_site27_api.Modules.PlayerManagement
             {
                 Plugin.Unregister(ev.Player, VoiceSetting);
                 isEnabledForwading[ev.Player] = false;
-                int sessionId = -1;
-                if (sessionIds.TryGetValue(ev.Player, out sessionId))
-                {
-                    DefaultAudioManager.Instance.DestroySession(sessionId);
-                }
-                if (Decoders.TryGetValue(ev.Player, out var decoder))
-                {
-                    decoder.Dispose();
-                }
+                ScpToSpeaker[ev.Player] = null;
             }
             if (ev.IsAllowed && ev.NewRole.GetTeam() == Team.SCPs && ev.Player.Role.Team != Team.SCPs)
             {
                 Plugin.Register(ev.Player, VoiceSetting);
                 isEnabledForwading[ev.Player] = false;
-                int sessionId = -1;
-                if (sessionIds.TryGetValue(ev.Player, out sessionId))
+            }
+        }
+        public static Dictionary<Player, SpeakerToy> ScpToSpeaker = new Dictionary<Player, SpeakerToy>();
+        private static SpeakerToy _speakerPrefab;
+        public static SettingBase VoiceSetting { get; private set; }
+
+        private static SpeakerToy GetSpeakerPrefab()
+        {
+            if (_speakerPrefab != null) return _speakerPrefab;
+            foreach (var prefab in NetworkClient.prefabs.Values)
+            {
+                if (prefab.TryGetComponent(out SpeakerToy toy))
                 {
-                    DefaultAudioManager.Instance.SetSessionPosition(sessionId, ev.Player.Position);
+                    _speakerPrefab = toy;
+                    break;
                 }
-                else
+            }
+            return _speakerPrefab;
+        }
+
+        public void VoiceChatting(VoiceChattingEventArgs ev)
+        {
+            if (ev.Player.IsScp && isEnabledForwading.ContainsKey(ev.Player) && isEnabledForwading[ev.Player])
+            {
+                var id = (byte)(120 + ev.Player.Id);
+                for (byte b = 0; ; b++)
                 {
-                    sessionId = DefaultAudioManager.Instance.CreateStreamSession(
-    position: ev.Player.Position,
-    isSpatial: true,
-    minDistance: 0.05f,
-    maxDistance: 20f,
-    volume: 1f,
-    priority: AudioPriority.High,
-    validPlayersFilter: p => p.PlayerId != ev.Player.Id
-);
+                    if (LabApi.Features.Wrappers.SpeakerToy.List.Any(x => x.ControllerId == b))
+                    {
+                        continue;
+                    }
+                    id = b;
+                    break;
                 }
-                if (!Decoders.TryGetValue(ev.Player, out var decoder))
+                if (!ScpToSpeaker.TryGetValue(ev.Player, out var sp))
                 {
-                    decoder = new OpusDecoder();
-                    Decoders[ev.Player] = decoder;
+                    var prefab = GetSpeakerPrefab();
+                    if (prefab == null) return;
+
+                    var newInstance = GameObject.Instantiate(prefab, ev.Player.Position, Quaternion.identity);
+                    newInstance.NetworkControllerId = id;
+                    newInstance.NetworkVolume = 1f;
+                    newInstance.IsSpatial = false;
+                    newInstance.MinDistance = 0f;
+                    newInstance.MaxDistance = 20f;
+                    newInstance.transform.parent = ev.Player.Transform;
+                    sp.transform.position = ev.Player.Position;
+                    sp.MaxDistance = 20f;
+                    sp.MinDistance = 0f;
+                    NetworkServer.Spawn(newInstance.gameObject);
+
+                    ScpToSpeaker.Add(ev.Player, newInstance);
+                    sp = newInstance;
+                }
+
+
+
+                var vm = new AudioMessage()
+                {
+                    ControllerId = id,
+                    Data = ev.VoiceMessage.Data,
+                    DataLength = ev.VoiceMessage.DataLength,
+                };
+
+                foreach (var hub in ReferenceHub.AllHubs.Where(x =>
+                    x.roleManager.CurrentRole is FpcStandardRoleBase i &&
+                    Vector3.Distance(i.CameraPosition, ev.Player.Position) <= 20 && x != ev.Player.ReferenceHub && x.roleManager.CurrentRole.Team != Team.SCPs))
+                {
+                    hub.connectionToClient.Send(vm, 0);
                 }
             }
         }
-        public static SettingBase VoiceSetting { get; private set; }
-        public static void SendingVoiceMessage(PlayerSendingVoiceMessageEventArgs ev)
-        {
-            if (isEnabledForwading.TryGetValue(ev.Player, out var isEnabled) && isEnabled && ev.Player.Team == Team.SCPs)
-            {
-                int sessionId = -1;
-                if (sessionIds.TryGetValue(ev.Player, out sessionId))
-                {
-                    DefaultAudioManager.Instance.SetSessionPosition(sessionId, ev.Player.Position);
-                }
-                else
-                {
-                    sessionId = DefaultAudioManager.Instance.CreateStreamSession(
-    position: ev.Player.Position,
-    isSpatial: true,
-    minDistance: 0.05f,
-    maxDistance: 20f,
-    volume: 1f,
-    priority: AudioPriority.High,
-    validPlayersFilter: p => p.PlayerId != ev.Player.PlayerId
-);
 
-                }
-                if (!Decoders.TryGetValue(ev.Player, out var decoder))
-                {
-                    decoder = new OpusDecoder();
-                    Decoders[ev.Player] = decoder;
-                }
-                if (!_receiveBufferSet)
-                {
-                    _receiveBufferSet = true;
-                    _receiveBuffer = new float[24000];
-                }
-                decoder.Decode(ev.Message.Data, ev.Message.DataLength, _receiveBuffer);
-                DefaultAudioManager.Instance.AppendPcmData(sessionId, _receiveBuffer);
-            }
+
+        public static void CleanupPlayer(Player player)
+        {
+            ScpToSpeaker.Remove(player);
         }
     }
 

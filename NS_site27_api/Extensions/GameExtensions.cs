@@ -44,7 +44,7 @@ namespace NS_site27_api.Extensions
 
         public static List<Player> GetServerPlayers()
         {
-            return Player.List.ToList();
+            return Player.Enumerable.ToList();
         }
     }
 }

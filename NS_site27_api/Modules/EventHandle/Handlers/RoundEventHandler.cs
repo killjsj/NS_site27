@@ -107,7 +107,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
 
             ServerConsole.FriendlyFire = true;
             ServerConfigSynchronizer.RefreshAllConfigs();
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 player.AddMessage("RoundEndFF", cfg.RoundEndFFText, 2, ScreenPosition.CenterTop);
             }

@@ -43,7 +43,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
                     counter = 0;
                     if (cfg.BroadcastContext.Count > index)
                     {
-                        foreach (var player in Player.List)
+                        foreach (var player in Player.Enumerable)
                         {
                             player.Broadcast(new Exiled.API.Features.Broadcast(
                                 $"<size={cfg.BroadcastSize}><color={cfg.BroadcastColor}>{cfg.BroadcastContext[index]}</color></size>",

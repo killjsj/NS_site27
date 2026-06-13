@@ -362,14 +362,14 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (player == null || stats == null) return "";
 
-            var dur = ExperienceManager.GetTodayTime(player);
+            var dur = ExperienceManager.GetAllTime(player);
             int waves = GetWaveCount(player);
 
             return $"" +
                    $"<color=#FFD700>总得分:{stats.Points}</color> | " +
                    $"<color=#00FF00>击杀:{stats.Kills}</color> | " +
                    $"<color=#FF0000>死亡:{stats.Deaths}</color> | " +
-                   (isSpec ? "" : $"<color=#FF00FF>时长:{dur.Hours:D2}:{dur.Minutes:D2}:{dur.Seconds:D2}</color> | ") +
+                   (isSpec ? "" : $"<color=#FF00FF>总时长:{dur.TotalDays:F0}天{dur.Hours:D2}时{dur.Minutes:D2}分</color> | ") +
                    $"<color=#87CEEB>观众:{specCount}</color>" +
                    $"";
         }

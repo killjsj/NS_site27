@@ -55,7 +55,7 @@ namespace NS_site27_api.Modules.Commands
                 return false;
             }
 
-            var scpList = Player.List.Where(p => p.IsScp).ToList();
+            var scpList = Player.Enumerable.Where(p => p.IsScp).ToList();
             CommandsModule.ScpsChangeRequests.Add(new ScpChangeRequest
             {
                 From = player,

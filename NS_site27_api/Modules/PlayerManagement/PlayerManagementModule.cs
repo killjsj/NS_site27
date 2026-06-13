@@ -96,12 +96,12 @@ namespace NS_site27_api.Modules.PlayerManagement
         private void OnDied(DiedEventArgs ev)
         {
             var diedStats = GetOrCreateStats(ev.Player);
-            if (diedStats != null) { diedStats.Deaths++; diedStats.Points--; }
+            if (diedStats != null) { diedStats.Deaths++; ExperienceManager.AddPoint(ev.Player, -1); }
 
             if (ev.Attacker == null) return;
 
             var atkStats = GetOrCreateStats(ev.Attacker);
-            if (atkStats != null) { atkStats.Kills++; atkStats.Points++; }
+            if (atkStats != null && ev.Player != ev.Attacker) { atkStats.Kills++; ExperienceManager.AddPoint(ev.Attacker, 1); }
 
             bool isScpKill = ev.Player.Role.Type.IsScp();
             bool isAttackerScp = ev.Attacker.IsScp;
@@ -186,14 +186,14 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.Generator.LastActivator != null)
             {
-                foreach (var p in Player.List.Where(x => x.Role.Team == ev.Generator.LastActivator.Role.Team))
+                foreach (var p in Player.Enumerable.Where(x => x.Role.Team == ev.Generator.LastActivator.Role.Team))
                     ExperienceManager.AddExp(p, 15, true);
             }
         }
 
         private void OnRoundEnded(RoundEndedEventArgs ev)
         {
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 ExperienceManager.AddExp(player, 5);
                 if (ev.LeadingTeam == Exiled.API.Enums.LeadingTeam.Anomalies && player.Role.Type.IsScp())
@@ -215,7 +215,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     PlayerHUDManager.gruad = 0;
                     PlayerHUDManager.chaos = 0;
 
-                    foreach (var player in Player.List)
+                    foreach (var player in Player.Enumerable)
                     {
                         if (player == null) continue;
                         switch (player.Role.Type)
@@ -230,6 +230,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                                 PlayerHUDManager.chaos++; break;
                             case RoleTypeId.ClassD: PlayerHUDManager.dd++; break;
                         }
+                    if (player == null) continue;
                         PlayerStateManager.HandleBadgeSync(player, player.ReferenceHub);
 
                         if (player.Role is SpectatorRole spectatorRole)

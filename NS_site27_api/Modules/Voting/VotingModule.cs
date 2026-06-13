@@ -45,7 +45,7 @@ namespace NS_site27_api.Modules.Voting
             VoteControl = new List<List<Player>> { new List<Player>(), new List<Player>() };
             IsVoting = true;
             CurrentVoteName = voteName;
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 player.AddMessage("VoteHint",VoteHint,voteTime,ScreenPosition.Top);
             }
@@ -54,7 +54,7 @@ namespace NS_site27_api.Modules.Voting
             {
                 yield return Timing.WaitForSeconds(1);
             }
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 player.RemoveMessage("VoteHint");
             }
@@ -63,13 +63,13 @@ namespace NS_site27_api.Modules.Voting
 
             double percentage = (yes / (double)Mathf.Max(1, yes + no)) * 100;
             //Map.Broadcast((ushort)8f, );
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 player.AddMessage("VoteResultHint", $"投票:{voteName} 结果: 同意率:{percentage:F2}% 同意:{yes} 不同意:{no}", 7f, ScreenPosition.Top);
             }
             yield return Timing.WaitForSeconds(7);
 
-            foreach (var player in Player.List)
+            foreach (var player in Player.Enumerable)
             {
                 player.RemoveMessage("VoteResultHint");
             }

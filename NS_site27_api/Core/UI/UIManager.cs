@@ -66,7 +66,7 @@ namespace NS_site27_api.Core.UI
             switch (location)
             {
                 case ScreenPosition.Top:
-                    return (-100, 800);
+                    return (0, 950);
                 case ScreenPosition.CenterTop:
                     return (0, 900);
                 case ScreenPosition.Center:

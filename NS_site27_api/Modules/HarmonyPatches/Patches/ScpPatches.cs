@@ -97,7 +97,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         [HarmonyPrefix]
         public static bool Prefix()
         {
-            LobbyMusic.LobbyMusicManager.Instance.RoundStarted();
+            //LobbyMusic.LobbyMusicManager.Instance.RoundStarted();
             return true;
         }
     }

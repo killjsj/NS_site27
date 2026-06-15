@@ -102,7 +102,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             int cur = atkStats.Points + points;
             if (cur < 0) cur = 0;
             PointCache[player] = cur;
-            atkStats.Points += points;
+            atkStats.Points = cur;
             SQL?.Update(player.UserId, point: cur);
             player.AddMessage("AddPoint", $"<color=green><size=23>获得积分:{(points):F0}</size></color>", 3f,0,100);
         }

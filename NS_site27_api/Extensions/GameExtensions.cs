@@ -46,5 +46,39 @@ namespace NS_site27_api.Extensions
         {
             return Player.Enumerable.ToList();
         }
+        public static Dictionary<RoleTypeId, string> RoleTrans = new Dictionary<RoleTypeId, string>() {
+                {RoleTypeId.Scp049, "Scp049" },
+                {RoleTypeId.Scp096, "Scp096" },
+                {RoleTypeId.Scp3114, "Scp3114" },
+                {RoleTypeId.Scp173, "Scp173" },
+                {RoleTypeId.Scp939, "Scp939" },
+                {RoleTypeId.Scp0492, "小僵尸" },
+                {RoleTypeId.Scp079, "Scp079" },
+                {RoleTypeId.Scp106, "Scp106" },
+
+                {RoleTypeId.NtfCaptain, "九尾狐队长" },
+                {RoleTypeId.NtfPrivate, "九尾狐列兵" },
+                {RoleTypeId.NtfSergeant, "九尾狐中士" },
+                {RoleTypeId.NtfSpecialist, "九尾狐收容专家" },
+                {RoleTypeId.FacilityGuard, "保安" },
+                {RoleTypeId.Scientist, "科学家" },
+
+                {RoleTypeId.ChaosRifleman, "混沌步兵" },
+                {RoleTypeId.ChaosMarauder, "混沌掠夺" },
+                {RoleTypeId.ChaosRepressor, "混沌机枪" },
+                {RoleTypeId.ChaosConscript, "混沌招募" },
+                {RoleTypeId.ClassD, "ClassD " },
+
+                {RoleTypeId.None, "None" },
+                {RoleTypeId.Overwatch, "Overwatch" },
+                {RoleTypeId.Spectator, "观察者" },
+                {RoleTypeId.Tutorial, "教程角色" },
+            };
+        public static string RoleToString(this RoleTypeId role)
+        {
+            if (RoleTrans.TryGetValue(role, out var name))
+                return name;
+            return role.ToString();
+        }
     }
 }

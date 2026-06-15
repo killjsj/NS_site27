@@ -99,7 +99,7 @@ namespace NS_site27_api.Modules.LobbyMusic
     }
 
     // 管理员切换点歌开关
-    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]2
     public class DisOrderSongCommand : ICommand
     {
         public string Command => "DisOrderSong";
@@ -109,8 +109,10 @@ namespace NS_site27_api.Modules.LobbyMusic
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             if (LobbyMusicManager.Instance == null) { response = "点歌系统未初始化"; return false; }
+            while (LobbyMusicManager.Instance.WaitForProcess.TryDequeue(out _)) ;
             LobbyMusicManager.Instance.AdminOverride = !LobbyMusicManager.Instance.AdminOverride;
             response = $"点歌功能已{(LobbyMusicManager.Instance.AdminOverride ? "禁止" : "允许")}";
+            LobbyMusicManager.Instance.DestroySpeaker();
             return true;
         }
     }
@@ -149,6 +151,9 @@ namespace NS_site27_api.Modules.LobbyMusic
 
         private List<LrcLine> _lrcLines;
         private float _songStartTime;
+        private float current;
+        private CoroutineHandle monitor;
+
         public string CurrentSongName { get; private set; }
         public double TotalTime { get; private set; }
 
@@ -184,21 +189,6 @@ namespace NS_site27_api.Modules.LobbyMusic
             _cts?.Cancel();
             _cts?.Dispose();
             DestroySpeaker();
-            foreach (var file in _tempFiles)
-            {
-                if (File.Exists(file)) File.Delete(file);
-            }
-            _tempFiles.Clear();
-        }
-
-        private void OnQueueEmpty(int obj)
-        {
-            if (obj == sessionId)
-            {
-                DefaultAudioManager.Instance.OnQueueEmpty -= OnQueueEmpty;
-
-                DestroySpeaker();
-            }
         }
 
         // 回合开始
@@ -211,6 +201,11 @@ namespace NS_site27_api.Modules.LobbyMusic
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
             DestroySpeaker();
+            foreach (var file in _tempFiles)
+            {
+                if (File.Exists(file)) File.Delete(file);
+            }
+            _tempFiles.Clear();
         }
 
         // 等待玩家时启动处理器
@@ -231,10 +226,47 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
 
         // 创建SpeakerToy并获取VoicePlayerBase
+        private IEnumerator<float> MonitorPlaybackEnd()
+        {
+            int currentSid = sessionId;
+            while (sessionId == currentSid && TotalTime > 0)
+            {
+                yield return Timing.WaitForSeconds(0.5f);
+                var state = DefaultAudioManager.Instance.GetSessionState(currentSid);
+                if (state?.PhysicalSpeaker is DefaultSpeakerToyAdapter adapter)
+                {
+                    float pos = adapter.GetPlaybackPosition();
+                    this.current = pos;
+                    if (Time.time - _songStartTime >= (float)TotalTime + 0.5f)
+                    {
+                        Log.Info("destroy!");
+                        DestroySpeaker();
+                        yield break;
+                    }
+                }
+                else
+                {
+                    DestroySpeaker();
+                    yield break;
+                }
+                foreach (var player in Player.Enumerable)
+                {
+                    if (player.Role.Type == PlayerRoles.RoleTypeId.None)
+                    {
+                        player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Tutorial, PlayerRoles.RoleChangeReason.None, PlayerRoles.RoleSpawnFlags.UseSpawnpoint);
+                        Timing.CallDelayed(0.2f, () =>
+                        {
+                            player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Spectator, PlayerRoles.RoleChangeReason.None);
 
+                        });
+                    }
+                }
+
+            }
+        }
 
         // 销毁SpeakerToy
-        private void DestroySpeaker()
+        public void DestroySpeaker()
         {
             StopLyrics();
             if (sessionId != 0)
@@ -243,7 +275,9 @@ namespace NS_site27_api.Modules.LobbyMusic
                 sessionId = 0;
 
             }
-           TotalTime = 0;
+            if (monitor.IsRunning) Timing.KillCoroutines(monitor);
+
+            TotalTime = 0;
             _readyToNext = true;
         }
 
@@ -453,21 +487,23 @@ namespace NS_site27_api.Modules.LobbyMusic
                     return;
                 }
                 DefaultAudioManager.Instance.RegisterAudio(guid.ToString(), () => File.OpenRead(tempOggFile));
+                    sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, volume:0.8f);
+                CurrentSongName = name;
+                _songStartTime = Time.time;
+                StartLyrics(lrc);
                 Timing.CallDelayed(0.4f, () =>
                 {
                     if (ct.IsCancellationRequested || !SongPlayable)
                     {
+                        DestroySpeaker();
                         _readyToNext = true;
                         return;
                     }
-                    DefaultAudioManager.Instance.OnQueueEmpty += OnQueueEmpty;
-                    sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, validPlayersFilter: p => true);
-
+                    if (sessionId != 0)
+                        monitor = Timing.RunCoroutine(MonitorPlaybackEnd(), Segment.LateUpdate);
                     Log.Info($"歌曲播放开始: {name}");
                     _processing.player?.SendConsoleMessage("歌曲播放成功!", "green");
-                    CurrentSongName = name;
-                    _songStartTime = Time.time;
-                    StartLyrics(lrc);
+
                 });
             }
             catch (OperationCanceledException)
@@ -543,12 +579,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         {
             if (string.IsNullOrEmpty(CurrentSongName) || sessionId == 0)
                 return new[] { "" };
-            var state = DefaultAudioManager.Instance.GetSessionState(sessionId);
-            float current = 0;
-            if (state?.PhysicalSpeaker is DefaultSpeakerToyAdapter adapter)
-            {
-                current = adapter.GetPlaybackPosition();
-            }
+
             string lrcText = "";
             if (_lrcLines != null)
             {

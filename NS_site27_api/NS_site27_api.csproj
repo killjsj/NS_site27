@@ -67,8 +67,8 @@
       <HintPath>..\packages\ExMod.Exiled.9.14.2\lib\net48\Assembly-CSharp-Publicized.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="AudioManagerAPI-DEBUG">
-      <HintPath>C:\Users\kill\AppData\Roaming\SCP Secret Laboratory\LabAPI\plugins\global\AudioManagerAPI-DEBUG.dll</HintPath>
+    <Reference Include="AudioManagerAPI">
+      <HintPath>C:\Users\kill\AppData\Roaming\SCP Secret Laboratory\LabAPI\plugins\global\AudioManagerAPI.dll</HintPath>
     </Reference>
     <Reference Include="AutoEvent">
       <HintPath>deps\AutoEvent.dll</HintPath>
@@ -241,7 +241,6 @@
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVerifer.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
-    <Compile Include="Modules\LobbyMusic\AudioPlayerSpk.cs" />
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4GroundModel.cs" />
@@ -268,7 +267,7 @@
     <Compile Include="Modules\Duel\DuelModule.cs" />
     <Compile Include="Modules\LobbyMusic\Ave_Mujica.cs" />
     <Compile Include="Modules\Keycard\KeycardModule.cs" />
-    <Compile Include="Modules\EventHandle\EventHandleModule.cs" />
+    <Compile Include="Modules\EventHandle\BroadcastAndRoundFFModule.cs" />
     <Compile Include="Modules\EventHandle\Handlers\BroadcastHandler.cs" />
     <Compile Include="Modules\EventHandle\Handlers\RoundEventHandler.cs" />
     <Compile Include="Modules\EventHandle\Handlers\PlayerEventHandler.cs" />
@@ -290,7 +289,6 @@
     <Compile Include="Modules\Weapons\BombGun\BombGunModule.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4Module.cs" />
     <Compile Include="Modules\Weapons\Gun_JS_L1\GunJsL1Module.cs" />
-    <Compile Include="Modules\Weapons\Whip\WhipModule.cs" />
     <Compile Include="Modules\Weapons\Turret\TurretModule.cs" />
     <Compile Include="Modules\Weapons\SpeedBuild\SpeedBuildModule.cs" />
     <Compile Include="Extensions\GameExtensions.cs" />

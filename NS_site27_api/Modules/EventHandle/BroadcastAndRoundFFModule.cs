@@ -19,14 +19,13 @@ namespace NS_site27_api.Modules.EventHandle
         public int BroadcastSize { get; set; } = 27;
         public string BroadcastColor { get; set; } = "yellow";
         public List<string> BroadcastContext { get; set; } = new List<string> { "示范用1", "示范用2" };
-        public string WelcomeContext { get; set; } = "Welcome {player}";
         public bool RoundEndFF { get; set; } = true;
         public string RoundEndFFText { get; set; } = "<size=22><color=#F5FFFA>FF enabled</color></size>";
     }
 
-    public class EventHandleModule : ModuleBase<EventHandleConfig>
+    public class BroadcastAndRoundFFModule : ModuleBase<EventHandleConfig>
     {
-        public override string ModuleName => "EventHandle";
+        public override string ModuleName => "BroadcastAndRoundFF";
 
         public Dictionary<string, List<(bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll)>> CachedCards
             = new Dictionary<string, List<(bool, string, string, string, string, string, string, int?, bool)>>();
@@ -34,7 +33,7 @@ namespace NS_site27_api.Modules.EventHandle
         public Dictionary<ushort, ItemType> CachedCardTypes = new Dictionary<ushort, ItemType>();
         public List<string> NotTodayScp = new List<string>();
         public IFFManager CurrentFFManager;
-        public static EventHandleModule Ins { get; private set; }
+        public static BroadcastAndRoundFFModule Ins { get; private set; }
         public override void OnEnable()
         {
 

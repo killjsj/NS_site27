@@ -51,7 +51,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
 
         public static void OnPlayerLeave(LeftEventArgs ev)
         {
-            var module = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
+            var module = CorePlugin.Modules.OfType<BroadcastAndRoundFFModule>().FirstOrDefault();
             module?.NotTodayScp.Remove(ev.Player.UserId);
         }
     }

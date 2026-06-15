@@ -31,6 +31,9 @@ namespace NS_site27_api.Modules.Chat
         public int MaxAdminChatLines { get; set; } = 5;
         public float AdminChatDuration { get; set; } = 5f;
 
+        public int MaxServerBroadcastLines { get; set; } = 2;
+        public float ServerBroadcastDuration { get; set; } = 5f;
+
         // 冷却
         public int MaxMessagesPerCooldown { get; set; } = 3;
         public float CooldownWindow { get; set; } = 10f;
@@ -58,6 +61,7 @@ namespace NS_site27_api.Modules.Chat
         // 显示列表
         public static List<ChatMessage> ChatList = new List<ChatMessage>();
         public static List<ChatMessage> AdminList = new List<ChatMessage>();
+        public static List<ChatMessage> ServerList = new List<ChatMessage>();
         public static Dictionary<Team, List<ChatMessage>> TeamList = new Dictionary<Team, List<ChatMessage>>()
         {
             { Team.Dead, new List<ChatMessage>() },
@@ -169,6 +173,8 @@ namespace NS_site27_api.Modules.Chat
             }
             if (!TeamList.ContainsKey(team))
                 team = Team.OtherAlive;
+            string ServerContent = GetChannelDisplay(ServerList, _cfg.MaxServerBroadcastLines);
+
             string teamContent = GetChannelDisplay(TeamList[team], _cfg.MaxTeamChatLines);
 
             // 2. 公共部分
@@ -181,6 +187,7 @@ namespace NS_site27_api.Modules.Chat
 
             // 拼接所有非空部分
             List<string> parts = new List<string>();
+            if (!string.IsNullOrEmpty(ServerContent)) parts.Add("<color=red>" + ServerContent + "</color>");
             if (!string.IsNullOrEmpty(publicContent)) parts.Add("<color=white>公告聊天消息:\n" + publicContent + "</color>");
             if (!string.IsNullOrEmpty(teamContent)) parts.Add($"<color={GetTeamColor(team)}>团队聊天消息:\n"+teamContent + "</color>");
             if (!string.IsNullOrEmpty(adminContent)) parts.Add("<color=red>反馈:\n" + adminContent + "</color>");
@@ -263,7 +270,10 @@ namespace NS_site27_api.Modules.Chat
 
             ChatManager.ChatList.Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.PublicChatDuration ?? 3f));
             ChatManager.RecordMessageSend(player);
-
+            foreach (var item in Player.Enumerable)
+            {
+                item.SendConsoleMessage($"[公共聊天]{displayText}","white");
+            }
             response = "消息已发送";
             return true;
         }
@@ -289,8 +299,37 @@ namespace NS_site27_api.Modules.Chat
             string displayText = $"<color=red>{player.Nickname}: {message}</color>";
 
             ChatManager.AdminList.Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.AdminChatDuration ?? 5f));
-
+            player.SendConsoleMessage($"[反馈]{displayText}", "red");
+            foreach (var item in Player.Enumerable.Where(x => x.RemoteAdminAccess))
+            {
+                item.SendConsoleMessage($"[反馈]{displayText}", "red");
+            }
             response = "管理员消息已发送";
+            return true;
+        }
+    }
+    [CommandHandler(typeof(GameConsoleCommandHandler))]
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    public class ServerBroadcastCommand : ICommand
+    {
+        public string Command => "sbc";
+        public string[] Aliases => Array.Empty<string>();
+        public string Description => "服务器广播";
+
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (arguments.Count == 0) { response = "请输入内容"; return false; }
+
+            // 管理员不受冷却限制
+            string message = string.Join(" ", arguments);
+            string displayText = $"<color=red>服务器广播: {message}</color>";
+
+            ChatManager.ServerList.Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.ServerBroadcastDuration ?? 5f));
+            foreach (var item in Player.Enumerable)
+            {
+                item.SendConsoleMessage($"[服务器广播]{displayText}", "red");
+            }
+            response = "服务器广播已发送";
             return true;
         }
     }
@@ -324,14 +363,17 @@ namespace NS_site27_api.Modules.Chat
             {
                 case Team.SCPs:
                     ChatManager.TeamList[Team.SCPs].Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.TeamChatDuration ?? 3f));
+                    team = Team.SCPs;
                     break;
                 case Team.Scientists:
                 case Team.FoundationForces:
                     ChatManager.TeamList[Team.FoundationForces].Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.TeamChatDuration ?? 3f));
+                    team = Team.FoundationForces;
                     break;
                 case Team.ChaosInsurgency:
                 case Team.ClassD:
                     ChatManager.TeamList[Team.ChaosInsurgency].Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.TeamChatDuration ?? 3f));
+                    team = Team.ChaosInsurgency;
                     break;
                 default:
                     ChatManager.TeamList[team].Add(new ChatMessage(displayText, ChatModule.Ins.GetConfig()?.TeamChatDuration ?? 3f));
@@ -339,6 +381,10 @@ namespace NS_site27_api.Modules.Chat
             }
 
             ChatManager.RecordMessageSend(player);
+            foreach (var item in Player.Enumerable.Where(x => x.Role.Team == team))
+            {
+                item.SendConsoleMessage($"[队伍聊天]{displayText}", "yellow");
+            }
             response = "队伍消息已发送";
             return true;
         }

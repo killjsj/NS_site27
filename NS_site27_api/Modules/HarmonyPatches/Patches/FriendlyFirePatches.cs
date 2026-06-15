@@ -57,7 +57,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
 
         private static IFFManager GetFFManager()
         {
-            var ehModule = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
+            var ehModule = CorePlugin.Modules.OfType<BroadcastAndRoundFFModule>().FirstOrDefault();
             return ehModule?.CurrentFFManager;
         }
 
@@ -93,7 +93,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
 
         private static IFFManager GetFFManager()
         {
-            var ehModule = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
+            var ehModule = CorePlugin.Modules.OfType<BroadcastAndRoundFFModule>().FirstOrDefault();
             return ehModule?.CurrentFFManager;
         }
     }

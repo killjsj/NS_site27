@@ -99,7 +99,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
 
         public static void OnRoundEnded(Exiled.Events.EventArgs.Server.RoundEndedEventArgs ev)
         {
-            var module = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
+            var module = CorePlugin.Modules.OfType<BroadcastAndRoundFFModule>().FirstOrDefault();
             if (module == null) return;
 
             var cfg = module.GetConfig();
@@ -117,7 +117,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         {
             BroadcastHandler.Stop();
 
-            var module = CorePlugin.Modules.OfType<EventHandleModule>().FirstOrDefault();
+            var module = CorePlugin.Modules.OfType<BroadcastAndRoundFFModule>().FirstOrDefault();
             if (module != null)
             {
                 module.NotTodayScp.Clear();

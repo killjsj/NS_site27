@@ -19,17 +19,19 @@ namespace NS_site27_api.Modules.SpawnProtection
     {
         public int ProtectTime { get; set; } = 30;
         public bool NoProtectWhenShoot { get; set; } = true;
-        public string InProtectColor { get; set; } = "4DFFB8";
-        public string OutProtectColor { get; set; } = "00FFFF";
+        public string OutProtect { get; set; } = "<size=27><color=#00FFFF>保护已取消 - 因开枪</color></size>";
+        public string InProtect { get; set; } = "<size=24><color=#4DFFB8>保护剩余 {remainingTime} 秒\n开枪将取消保护</color></size>";
     }
 
     public class SpawnProtectionModule : ModuleBase<SpawnProtectionConfig>
     {
+        public static Dictionary<Player, (bool lost,float time)> LoseProtectAt = new();
         public override string ModuleName => "SpawnProtection";
         public override void OnEnable()
         {
             ServerHandlers.EndingRound += OnRoundEnd;
             PlayerHandlers.Left += OnPlayerLeave;
+            PlayerHandlers.Verified += OnVerified;
             PlayerHandlers.ChangingRole += ChangingRole;
             PlayerHandlers.Shot += Shot;
             ServerHandlers.RespawnedTeam += RespawnedTeam;
@@ -39,6 +41,7 @@ namespace NS_site27_api.Modules.SpawnProtection
         {
             ServerHandlers.EndingRound -= OnRoundEnd;
             PlayerHandlers.Left -= OnPlayerLeave;
+            PlayerHandlers.Verified -= OnVerified;
             PlayerHandlers.ChangingRole -= ChangingRole;
             PlayerHandlers.Shot -= Shot;
             ServerHandlers.RespawnedTeam -= RespawnedTeam;
@@ -58,12 +61,8 @@ namespace NS_site27_api.Modules.SpawnProtection
         {
             try
             {
-
                 player.EnableEffect(EffectType.SpawnProtected, Config.ProtectTime);
-                if(player.HasMessage("lossingProtection")) player.RemoveMessage("lossingProtection");
-                if(player.HasMessage("ProtectionMessaging")) player.RemoveMessage("ProtectionMessaging");
-
-                player.AddMessage("ProtectionMessaging", FrontEnd, 7, ScreenPosition.Top);
+                LoseProtectAt[player] = (false, Time.time);
 
             }
             catch (Exception ex)
@@ -77,7 +76,18 @@ namespace NS_site27_api.Modules.SpawnProtection
             if (spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled)
                 return null;
             var remainingTime = spawnProtectedEffect.TimeLeft;
-            var text = $"<size=24><color=#{Config.InProtectColor}>保护剩余 {remainingTime:F0} 秒\n开枪将取消保护</color></size>";
+            var text = "";
+            if (remainingTime > 0 && spawnProtectedEffect.IsEnabled)
+            {
+                text = Config.InProtect.Replace("{remainingTime}", $"{remainingTime:F0}");
+            } else
+            if (LoseProtectAt.TryGetValue(player,out var t) && t.lost)
+            {
+                if (Time.time - t.time >= 5f)
+                {
+                    text = Config.OutProtect;
+                }
+            }
             return new[ ]{ text };
         }
 
@@ -91,17 +101,7 @@ namespace NS_site27_api.Modules.SpawnProtection
                 {
                     try
                     {
-                        effect.TimeLeft = 0;
-                        ev.Player.DisableEffect(EffectType.SpawnProtected);
-                        effect.ServerDisable();
-                            ev.Player.RemoveMessage("ProtectionMessaging");
-
-                        var text = $"<size=27><color=#{Config.OutProtectColor}>保护已取消 - 因开枪</color></size>";
-                        ev.Player.AddMessage("lossingProtection",text,7,ScreenPosition.Top);
-                        Timing.CallDelayed(7f, ()=>
-                        {
-                            ev.Player.RemoveMessage("lossingProtection");
-                        });
+                        LoseProtectAt[ev.Player] = (true, Time.time);
                     }
                     catch (Exception ex)
                     {
@@ -122,14 +122,16 @@ namespace NS_site27_api.Modules.SpawnProtection
 
         private void OnRoundEnd(EndingRoundEventArgs ev)
         {
+
         }
 
         private void ChangingRole(ChangingRoleEventArgs ev)
         {
             ev.Player.DisableEffect(EffectType.SpawnProtected);
-            ev.Player.RemoveMessage("lossingProtection");
-            ev.Player.RemoveMessage("ProtectionMessaging");
-
+        }
+        private void OnVerified(VerifiedEventArgs ev)
+        {
+            if (ev.Player != null) ev.Player.AddMessage("ProtectionMessage", FrontEnd, -1, ScreenPosition.Top);
         }
     }
 }

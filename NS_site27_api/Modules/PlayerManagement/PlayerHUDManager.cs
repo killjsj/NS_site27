@@ -5,6 +5,8 @@ using Exiled.Events.Commands.PluginManager;
 using Exiled.Events.EventArgs.Map;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Scp914;
+using Exiled.Events.EventArgs.Warhead;
+using Exiled.Events.Handlers;
 using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
@@ -40,7 +42,9 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public struct ScoreChange { public Player Player; public int Amount; public string Reason; public float Time; }
         public struct ElevatorInteractInfo { public Vector3 InteractAt; public Player Interactor; public float InteractTime; }
+        public struct NukeInteractInfo {public Player Interactor; public float InteractTime; public bool acted; }
         public static List<ElevatorInteractInfo> ElevatorInteractions = new List<ElevatorInteractInfo>();
+        public static List<NukeInteractInfo> NukeInteractions = new List<NukeInteractInfo>();
 
 
 
@@ -49,6 +53,8 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.InteractingElevator += InteractingElevator;
             Scp914Handlers.ChangingKnobSetting += ChangingKnobSetting;
             Scp914Handlers.Activating += Activating;
+            Exiled.Events.Handlers.Warhead.Starting += Starting;
+            Exiled.Events.Handlers.Warhead.Stopping += Stopping;
             MapHandlers.AnnouncingNtfEntrance += AnnouncingNtfEntrance;
             MapHandlers.AnnouncingChaosEntrance += AnnouncingChaosEntrance;
             PlayerHandlers.ChangingRole += ChangingRole;
@@ -60,6 +66,8 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static void Deinit()
         {
             PlayerHandlers.InteractingElevator -= InteractingElevator;
+            Exiled.Events.Handlers.Warhead.Starting -= Starting;
+            Exiled.Events.Handlers.Warhead.Stopping -= Stopping;
             Scp914Handlers.ChangingKnobSetting -= ChangingKnobSetting;
             Scp914Handlers.Activating -= Activating;
             MapHandlers.AnnouncingNtfEntrance -= AnnouncingNtfEntrance;
@@ -68,6 +76,14 @@ namespace NS_site27_api.Modules.PlayerManagement
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
             Exiled.Events.Handlers.Player.Died -= Died;
             Exiled.Events.Handlers.Player.Left -= Left;
+        }
+         public static void Starting(StartingEventArgs ev)
+        {
+            NukeInteractions.Add(new NukeInteractInfo { Interactor = ev.Player, InteractTime = Time.time, acted = true });
+        }
+        public static void Stopping(StoppingEventArgs ev)
+        {
+            NukeInteractions.Add(new NukeInteractInfo { Interactor = ev.Player, InteractTime = Time.time, acted = false });
         }
         public static void ChangingRole(ChangingRoleEventArgs ev)
         {
@@ -88,9 +104,16 @@ namespace NS_site27_api.Modules.PlayerManagement
             }
             Timing.CallDelayed(0.2f, () =>
             {
-                if (IsScpRole(ev.NewRole))
+                if (IsScpRole(ev.Player.Role))
                 {
                     AddScp(ev.Player, ev.NewRole);
+                }
+                else
+                {
+                    if (Scp.Contains(ev.Player))
+                    {
+                        RemoveScp(ev.Player);
+                    }
                 }
             });
         }
@@ -105,13 +128,16 @@ namespace NS_site27_api.Modules.PlayerManagement
                 UIPosition.FromXY(0, 350));
 
             player.AddMessage("ElevatorHint", ElevatorHintGetter, -1,
-                UIPosition.FromXY(0, 700));
+                UIPosition.FromXY(0, 750));
+
+            player.AddMessage("Nuke", NukeHintGetter, -1,
+    UIPosition.FromXY(0, 800));
 
             player.AddMessage("ScoreHint", ScoreGetter, -1,
                 UIPosition.FromEnum(ScreenPosition.Center));
 
             player.AddMessage("914Hint", Scp914Getter, -1,
-                UIPosition.FromXY(0, 800));
+                UIPosition.FromXY(0, 850));
             ChatManager.SetupPlayer(player);
         }
 
@@ -145,7 +171,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
 
 
-        public static string ScpText = "<align=right><color=red>SCP{scp}:<color=green>血量 {hp} <color=purple>护盾 {sh} <color=yellow>位于 {pos}</color>";
+        public static string ScpText = "<align=right><color=red>SCP{scp}:<color=green>♥ {hp} <color=purple>🔰 {sh} <color=yellow>位于 {pos}</color>";
         public static string Scp079Text = "<align=right><color=red>SCP079:<color=green>LV {lv} <color=yellow>Exp {exp}</color>";
         public static string ZombieText = "<align=right><color=red>SCP049-2:<color=green>{count}个</color>";
 
@@ -179,11 +205,13 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         private static void AddScp(Player player, RoleTypeId role)
         {
+            if (Scp.Contains(player)) return;
             Scp.Add(player);
         }
 
         private static void RemoveScp(Player player)
         {
+            if (!Scp.Contains(player)) return;
             Scp.Remove(player);
         }
         public static IEnumerator<float> Refresher()
@@ -192,7 +220,31 @@ namespace NS_site27_api.Modules.PlayerManagement
             {
                 try
                 {
+                    if (Scp914q.Count != 0)
+                    {
+                        int max = 6;
+                        if (Scp914q.Count > max) { while (Scp914q.Count > max) Scp914q.Dequeue(); }
 
+                        string t = "";
+                        while (Scp914q.TryDequeue(out var k))
+                        {
+                            string trans = k.knob switch
+                            {
+                                Scp914KnobSetting.Rough => "超粗",
+                                Scp914KnobSetting.Coarse => "粗加",
+                                Scp914KnobSetting.OneToOne => "1:1",
+                                Scp914KnobSetting.Fine => "精加",
+                                Scp914KnobSetting.VeryFine => "超精",
+                                _ => ""
+                            };
+                            t += $"<size=22><color=green>{k.p.Nickname}</color> {(k.act ? "激活了914 模式:" : "修改914模式到 ")}<color=yellow>{trans}</color></size>\n";
+                        }
+                        Scp914Str = (t, Time.time);
+                    }
+                    if(Time.time - Scp914Str.startTime > 5f)
+                    {
+                        Scp914Str = ("", 0f);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -234,7 +286,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                 else if (player.Role.Team == Team.ChaosInsurgency || player.Role.Team == Team.ClassD)
                     v += $"<color=yellow>{dd}:dd数量</color>\n<color=#009900>{chaos}:混沌数量</color>";
             }
-            else if (player != null)
+            else if (player != null && player.IsScp)
             {
                 v += "<size=17>";
                 var ZombieCount = 0;
@@ -248,7 +300,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     }
                     else if (item.Role is Scp079Role scp079)
                     {
-                        v += $"<color=red>SCP079:<color=green>LV {scp079.Level.ToString()} <color=yellow>Power {scp079.Energy:F2}/{scp079.MaxEnergy}</color>\n";
+                        v += $"<color=red>SCP079:<color=green>LV {scp079.Level.ToString()} <color=yellow>🔋 {scp079.Energy:F0}/{scp079.MaxEnergy}</color>\n";
                     }
                     else if (item.Role is Scp096Role scp096)
                     {
@@ -268,16 +320,45 @@ namespace NS_site27_api.Modules.PlayerManagement
                                 RageStatuts = "<color=red>!!! 无法愤怒 !!!</color>";
                                 break;
                         }
-                        v += $"<color=red>SCP096:<color=green>血量 {hp:F2} <color=purple>护盾 {sh:F2} {RageStatuts} \n";
+                        v += $"<color=red>SCP096:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} {RageStatuts}\n";
+                    }
+                    else if (item.Role is Scp3114Role scp3114)
+                    {
+                        var r = scp3114.StolenRole;
+                        if (r == RoleTypeId.None || scp3114.DisguiseStatus != PlayerRoles.PlayableScps.Scp3114.Scp3114Identity.DisguiseStatus.Active) r = RoleTypeId.Scp3114;
+                        v += $"<color=red>SCP3114:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} <color=yellow>目前角色:{r.RoleToString()}\n";
+                    }
+                    else if (item.Role is Scp106Role scp106)
+                    {
+                        v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} <color=yellow>目前体力:{scp106.Vigor * 100:F0}%\n";
+
+                    }
+                    else if (item.Role is Scp173Role scp173)
+                    {
+                        v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} <color=yellow>{(scp173.BreakneckActive ? "超速移动中" : "")}{(scp173.IsObserved ? " <color=red>!! 被观察 !!" : "")}\n";
+
+                    }
+                    else if (item.Role is Scp049Role scp049)
+                    {
+                        v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} <color=yellow>{(scp049.IsCallActive ? "散发护盾中" : "")}{(scp049.IsRecalling ? " <color=red>!! 复活他人中 !!" : "")}\n";
+
                     }
                     else
                     {
-                        v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>血量 {hp:F2} <color=purple>护盾 {sh:F2} \n";
+                        v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0}";
+                        if (item.Role == RoleTypeId.Scp939)
+                        {
+                            v += $" <color=yellow>目前体力:{player.Stamina*100:F0}%";
+                        }
+                        v += "\n";
                     }
                 }
-                v += $"<color=red>SCP049-2:<color=green>{ZombieCount}个</color>\n";
+                if (ZombieCount > 0)
+                {
+                    v += $"<color=red>SCP049-2:<color=green>{ZombieCount}个\n";
+                }
             }
-            v += "</b></size></align>";
+            v += "</color></b></size></align>";
             return new[] { v };
         }
         private static string[] PlayerHudLVShow(Player player)
@@ -391,9 +472,35 @@ namespace NS_site27_api.Modules.PlayerManagement
                 if (Time.time - item.InteractTime <= 2f)
                 {
                     if (!hasContent) { r = "<size=22><color=#FFFF00>"; hasContent = true; }
-                    r += $"{item.Interactor.Nickname}启用电梯\n";
+                    r += $"{item.Interactor.Nickname}激活电梯\n";
                 }
                 else { ElevatorInteractions.Remove(item); }
+            }
+            if (hasContent) r += "</color></size>";
+            return new[] { r };
+        }
+
+
+        private static string[] NukeHintGetter(Player player)
+        {
+            if (player == null) return new[] { "" };
+            string r = "";
+            bool hasContent = false;
+            List<NukeInteractInfo> toRemove = new List<NukeInteractInfo>();
+            foreach (var item in NukeInteractions)
+            {
+                if (Time.time - item.InteractTime <= 2f)
+                {
+                    if (!hasContent) { r = $"<size=22><color={(item.acted ? "red" : "green")}>"; hasContent = true; }
+                    r += $"{item.Interactor.Nickname}{(item.acted ? " 已启动核弹" : "已关闭核弹")}\n";
+                }
+                else {
+                    toRemove.Add(item); 
+                }
+            }
+            foreach (var item in toRemove)
+            {
+                NukeInteractions.Remove(item);
             }
             if (hasContent) r += "</color></size>";
             return new[] { r };
@@ -411,31 +518,11 @@ namespace NS_site27_api.Modules.PlayerManagement
             ScoreQueue.RemoveAll(x => x.Player == player);
             return new[] { $"<size=24><color={color}>{sign}{latest.Amount} 积分 ({latest.Reason})</color></size>" };
         }
-
+        public static (string str,float startTime) Scp914Str = ("", 0f);
         private static string[] Scp914Getter(Player player)
         {
             if (player == null || player.CurrentRoom?.Type != RoomType.Lcz914) return new[] { "" };
-
-            if (Scp914q.Count == 0) return new[] { "" };
-
-            int max = 6;
-            if (Scp914q.Count > max) { while (Scp914q.Count > max) Scp914q.Dequeue(); }
-
-            string t = "";
-            while (Scp914q.TryDequeue(out var k))
-            {
-                string trans = k.knob switch
-                {
-                    Scp914KnobSetting.Rough => "超粗",
-                    Scp914KnobSetting.Coarse => "粗加",
-                    Scp914KnobSetting.OneToOne => "1:1",
-                    Scp914KnobSetting.Fine => "精加",
-                    Scp914KnobSetting.VeryFine => "超精",
-                    _ => ""
-                };
-                t += $"<size=22><color=green>{k.p.Nickname}</color> {(k.act ? "激活了914 模式:" : "修改914模式到 ")}<color=yellow>{trans}</color></size>\n";
-            }
-            return new[] { t };
+            return new[] { Scp914Str.str };
         }
 
         private static string[] NtfSpawnGetter(Player player)

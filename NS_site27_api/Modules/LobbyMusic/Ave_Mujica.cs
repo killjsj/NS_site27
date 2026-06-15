@@ -99,7 +99,7 @@ namespace NS_site27_api.Modules.LobbyMusic
     }
 
     // 管理员切换点歌开关
-    [CommandHandler(typeof(RemoteAdminCommandHandler))]2
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class DisOrderSongCommand : ICommand
     {
         public string Command => "DisOrderSong";

@@ -2,11 +2,16 @@ using Discord;
 using Exiled.API.Enums;
 using Exiled.API.Extensions;
 using Exiled.API.Features;
+using Exiled.API.Features.DamageHandlers;
 using Exiled.API.Features.Roles;
 using Exiled.Events.EventArgs.Map;
 using Exiled.Events.EventArgs.Player;
+using Exiled.Events.EventArgs.Scp049;
+using Exiled.Events.EventArgs.Scp079;
+using Exiled.Events.EventArgs.Scp127;
 using Exiled.Events.EventArgs.Server;
 using Interactables.Interobjects;
+using InventorySystem.Items.Firearms.Modules.Scp127;
 using InventorySystem.Items.Usables.Scp330;
 using MEC;
 using MySqlX.XDevAPI;
@@ -40,7 +45,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             ServerHandlers.WaitingForPlayers += OnWaiting;
             ServerHandlers.RoundEnded += OnRoundEnded;
             MapHandlers.GeneratorActivating += OnGeneratorActivating;
-
+            Exiled.Events.Handlers.Scp079.GainingExperience += GainingExperience;
+            Exiled.Events.Handlers.Scp049.FinishingRecall += FinishingRecall;
+            Exiled.Events.Handlers.Player.UsedItem += UsedItem;
+            Scp127TierManagerModule.ServerOnLevelledUp += Scp127TierManagerModule_ServerOnLevelledUp;
             PlayerHUDManager.Init();
             CorePlugin.RunCoroutine(PlayerRefreshLoop(), false);
         }
@@ -51,20 +59,70 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.Verified -= OnVerified;
             PlayerHandlers.Died -= OnDied;
             PlayerHandlers.Escaped -= OnEscaped;
+            Exiled.Events.Handlers.Player.UsedItem -= UsedItem;
             PlayerHandlers.Left -= OnLeft;
             ServerHandlers.RestartingRound -= OnRestarting;
             ServerHandlers.WaitingForPlayers -= OnWaiting;
             ServerHandlers.RoundEnded -= OnRoundEnded;
+            Exiled.Events.Handlers.Scp079.GainingExperience -= GainingExperience;
+            Exiled.Events.Handlers.Scp049.FinishingRecall -= FinishingRecall;
+            Scp127TierManagerModule.ServerOnLevelledUp -= Scp127TierManagerModule_ServerOnLevelledUp;
+
             MapHandlers.GeneratorActivating -= OnGeneratorActivating;
 
             PlayerHUDManager.Deinit();
         }
-
-
+        private void Scp127TierManagerModule_ServerOnLevelledUp(InventorySystem.Items.Firearms.Firearm obj)
+        {
+            Player player = Player.Get(obj.Owner);
+            if (player != null)
+            {
+                PlayerDataManager.AddPoint(player, 1);
+            }
+        }
+        private void UsedItem(UsedItemEventArgs ev)
+        {
+            if (ev.Player == null) return;
+            switch (ev.Item.Type)
+            {
+                case ItemType.SCP207:
+                case ItemType.SCP268:
+                case ItemType.SCP2176:
+                case ItemType.SCP1853:
+                case ItemType.SCP1576:
+                case ItemType.AntiSCP207:
+                case ItemType.SCP1344:
+                case ItemType.SCP1509:
+                case ItemType.Scp021J:
+                    PlayerDataManager.AddPoint(ev.Player, 1);
+                    break;
+            }
+        }
+        private void FinishingRecall(FinishingRecallEventArgs ev)
+        {
+            if (ev.IsAllowed)
+            {
+                PlayerDataManager.AddPoint(ev.Player, 1);
+            }
+        }
+        private void GainingExperience(Exiled.Events.EventArgs.Scp079.GainingExperienceEventArgs ev)
+        {
+            if (ev.Player == null) return;
+            switch (ev.GainType)
+            {
+                case PlayerRoles.PlayableScps.Scp079.Scp079HudTranslation.ExpGainHidStopped:
+                case PlayerRoles.PlayableScps.Scp079.Scp079HudTranslation.ExpGainBlockingHuman:
+                case PlayerRoles.PlayableScps.Scp079.Scp079HudTranslation.ExpGainTeammateProtection:
+                case PlayerRoles.PlayableScps.Scp079.Scp079HudTranslation.ExpGainTerminationAssist:
+                    PlayerDataManager.AddPoint(ev.Player, 1);
+                    break;
+            }
+        }
         private MySQLConnect SQL => Plugin.Instance?.connect;
 
         private void OnVerified(VerifiedEventArgs ev)
         {
+            if (ev.Player == null) return;
             var sql = SQL;
             if (sql != null)
             {
@@ -100,19 +158,22 @@ namespace NS_site27_api.Modules.PlayerManagement
 
             if (ev.Attacker == null) return;
 
-            if (ev.Player != ev.Attacker) {PlayerDataManager.AddPoint(ev.Attacker, 1 ); }
+            if (ev.Player != ev.Attacker) {PlayerDataManager.AddPoint(ev.Attacker, 2 ); }
 
             PlayerDataManager.AddDeath(ev.Player);
             PlayerDataManager.AddKills(ev.Attacker);
 
             bool isScpKill = ev.TargetOldRole.IsScp() && ev.TargetOldRole != RoleTypeId.Scp0492;
-            bool isAttackerScp = ev.Attacker.IsScp;
+            bool isAttackerScp0492 = ev.Attacker.Role.Type == RoleTypeId.Scp0492;
             if (isScpKill) PlayerDataManager.AddPoint(ev.Attacker, 2);
+            if (isAttackerScp0492 && ev.DamageHandler.Type != DamageType.Firearm) PlayerDataManager.AddPoint(ev.Attacker, 1);
+            if (ev.Attacker.Role.Type == RoleTypeId.Scp106 || ev.DamageHandler.Type == DamageType.PocketDimension) PlayerDataManager.AddPoint(ev.Attacker, 1);
+            if (ev.Attacker.Role.Type == RoleTypeId.Scp939) PlayerDataManager.AddPoint(ev.Attacker, 1);
         }
 
         private void OnEscaped(EscapedEventArgs ev)
         {
-            PlayerDataManager.AddPoint(ev.Player, 1);
+            PlayerDataManager.AddPoint(ev.Player, 2);
             PlayerDataManager.AddEscape(ev.Player);
         }
 
@@ -185,6 +246,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     PlayerHUDManager.dd = 0;
                     PlayerHUDManager.gruad = 0;
                     PlayerHUDManager.chaos = 0;
+  
 
                     foreach (var player in Player.Enumerable)
                     {

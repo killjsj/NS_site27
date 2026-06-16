@@ -65,7 +65,6 @@ namespace NS_site27_api
         }
 
         private IUIService _uiService;
-
         public override void OnEnabled()
         {
             Instance = this;

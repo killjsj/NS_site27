@@ -38,7 +38,7 @@ namespace NS_site27_api.Core.UI
                 return rf;
             })
             {
-                UpdateInterval = TimeSpan.FromSeconds(0.2),
+                UpdateInterval = TimeSpan.FromSeconds(0.15),
                 ResolutionBasedAlign = true
             };
             r.Show(new RueI.API.Elements.Tag(id), e);

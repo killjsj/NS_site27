@@ -1,5 +1,6 @@
 using Exiled.API.Enums;
 using Exiled.API.Features;
+using Exiled.API.Features.Items;
 using Exiled.API.Features.Roles;
 using Exiled.Events.Commands.PluginManager;
 using Exiled.Events.EventArgs.Map;
@@ -127,17 +128,21 @@ namespace NS_site27_api.Modules.PlayerManagement
             player.AddMessage("RoleHUD", RoleShowGetter, -1,
                 UIPosition.FromXY(0, 350));
 
+            player.AddMessage("ReloadHUD", ReloadGetter, -1,
+    UIPosition.FromXY(0, 470));
+
             player.AddMessage("ElevatorHint", ElevatorHintGetter, -1,
                 UIPosition.FromXY(0, 750));
 
             player.AddMessage("Nuke", NukeHintGetter, -1,
-    UIPosition.FromXY(0, 800));
+                UIPosition.FromXY(0, 800));
 
             player.AddMessage("ScoreHint", ScoreGetter, -1,
                 UIPosition.FromEnum(ScreenPosition.Center));
 
             player.AddMessage("914Hint", Scp914Getter, -1,
                 UIPosition.FromXY(0, 850));
+
             ChatManager.SetupPlayer(player);
         }
 
@@ -149,6 +154,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             player.RemoveMessage("ElevatorHint");
             player.RemoveMessage("ScoreHint");
             player.RemoveMessage("914Hint");
+            player.RemoveMessage("ReloadHUD");
             player.RemoveMessage("SpawnHUD");
             player.RemoveMessage("NtfSpawnHUD");
             player.RemoveMessage("ChaosSpawnHUD");
@@ -160,12 +166,27 @@ namespace NS_site27_api.Modules.PlayerManagement
             player.AddMessage("SpawnHUD", SpawnHintGetter, -1, UIPosition.FromXY(0, 790));
             player.AddMessage("NtfSpawnHUD", NtfSpawnGetter, -1, UIPosition.FromXY(300, 900));
             player.AddMessage("ChaosSpawnHUD", ChaosSpawnGetter, -1, UIPosition.FromXY(300, 900));
+            player.AddMessage("HintSpawnHUD", HintSpawnGetter, -1, UIPosition.FromXY(300, 175));
+        }
+
+        private static string[] HintSpawnGetter(Player player)
+        {
+            if (player == null) return null;
+            if (player.IsDead)
+            {                                          
+                string str = "<align=right>";
+                str += PlayerManagementModule.Get().Config.SpecUI;
+                str += "</size></align></line-height></color>";
+                return new[] { str };
+            }
+            return null;
         }
 
         public static void UnregisterSpectatorHints(Player player)
         {
             if (player == null) return;
             player.RemoveMessage("SpawnHUD");
+            player.RemoveMessage("HintSpawnHUD");
             player.RemoveMessage("NtfSpawnHUD");
             player.RemoveMessage("ChaosSpawnHUD");
         }
@@ -237,11 +258,11 @@ namespace NS_site27_api.Modules.PlayerManagement
                                 Scp914KnobSetting.VeryFine => "超精",
                                 _ => ""
                             };
-                            t += $"<size=22><color=green>{k.p.Nickname}</color> {(k.act ? "激活了914 模式:" : "修改914模式到 ")}<color=yellow>{trans}</color></size>\n";
+                            t += $"<size=22><color=green>{k.p.Nickname}</color> {(k.act ? "激活了914 模式:" : "")}<color=yellow>{trans}</color></size>\n";
                         }
                         Scp914Str = (t, Time.time);
                     }
-                    if(Time.time - Scp914Str.startTime > 5f)
+                    if(Time.time - Scp914Str.startTime > 7f)
                     {
                         Scp914Str = ("", 0f);
                     }
@@ -275,20 +296,57 @@ namespace NS_site27_api.Modules.PlayerManagement
                 _ => "???"
             };
         }
+
+        public static string[] ReloadGetter(Player player)
+        {
+            if (player == null) return null;
+            var i = player.CurrentItem;
+            if (i == null) return null;
+            if (i.IsFirearm && i is Firearm f)
+            {
+                float RemainPercent = (float)f.TotalAmmo / f.TotalMaxAmmo;
+                string str = "<size=15><b>";
+                if (f.IsReloading)
+                {
+                    str += "<color=#00FFFF>换弹中</color>";
+                }
+                else if (RemainPercent < 0.22 && RemainPercent > 0)
+                {
+                    str += "<color=yellow>低弹药</color>";
+                }else if(f.TotalAmmo <= 0)
+                {
+                    str += "<color=red>请换弹</color>";
+                }
+                str += "</b></size>";
+                return new[] { str};
+            }
+            return null;
+        }
         private static string[] RoleShowGetter(Player player)
         {
-            string v = "<align=right><b>";
+            string v = "<b>";
             if (player != null && !player.IsScp)
             {
                 v += "<size=19>";
-                if (player.Role.Team == Team.FoundationForces || player.Role.Team == Team.Scientists)
-                    v += $"<color=#00FFFF>{doc}:博士数量</color>\n<color=#808080>{gruad}:保安数量</color>\n<color=#0000FF>{ntf}:九尾数量</color>";
-                else if (player.Role.Team == Team.ChaosInsurgency || player.Role.Team == Team.ClassD)
-                    v += $"<color=yellow>{dd}:dd数量</color>\n<color=#009900>{chaos}:混沌数量</color>";
+                if (player.Role == RoleTypeId.Overwatch || player.Role == RoleTypeId.Spectator)
+                {
+                    v += "<align=center>";
+                    v += $"<color=#00FFFF>博士/九尾数量:{doc+ gruad+ntf}</color>\n";
+                    v += $"<color=yellow>dd/混沌数量:{dd+ chaos}</color>\n";
+                    v += $"<color=red>scp数量:{Scp.Count}</color></indent>";
+                }
+                else
+                {
+                    v += "<align=right>";
+                    if (player.Role.Team == Team.FoundationForces || player.Role.Team == Team.Scientists)
+                        v += $"<color=#00FFFF>{doc}:博士数量</color>\n<color=#808080>{gruad}:保安数量</color>\n<color=#0000FF>{ntf}:九尾数量</color>";
+                    else if (player.Role.Team == Team.ChaosInsurgency || player.Role.Team == Team.ClassD)
+                        v += $"<color=yellow>{dd}:dd数量</color>\n<color=#009900>{chaos}:混沌数量</color>";
+                }
             }
             else if (player != null && player.IsScp)
             {
-                v += "<size=17>";
+                v += "<size=17><align=right>";
                 var ZombieCount = 0;
                 foreach (var item in Scp)
                 {

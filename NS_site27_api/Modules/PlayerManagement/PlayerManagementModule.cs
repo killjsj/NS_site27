@@ -96,17 +96,16 @@ namespace NS_site27_api.Modules.PlayerManagement
         private void OnDied(DiedEventArgs ev)
         {
             var diedStats = GetOrCreateStats(ev.Player);
-            if (diedStats != null) { diedStats.Deaths++; PlayerDataManager.AddPoint(ev.Player, -2); }
+            //if (diedStats != null) { PlayerDataManager.AddPoint(ev.Player, -2); }
 
             if (ev.Attacker == null) return;
 
-            var atkStats = GetOrCreateStats(ev.Attacker);
-            if (atkStats != null && ev.Player != ev.Attacker) { atkStats.Kills++; PlayerDataManager.AddPoint(ev.Attacker, 2); }
+            if (ev.Player != ev.Attacker) {PlayerDataManager.AddPoint(ev.Attacker, 1 ); }
 
             PlayerDataManager.AddDeath(ev.Player);
             PlayerDataManager.AddKills(ev.Attacker);
 
-            bool isScpKill = ev.TargetOldRole.IsScp();
+            bool isScpKill = ev.TargetOldRole.IsScp() && ev.TargetOldRole != RoleTypeId.Scp0492;
             bool isAttackerScp = ev.Attacker.IsScp;
             if (isScpKill) PlayerDataManager.AddPoint(ev.Attacker, 2);
         }

@@ -443,7 +443,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (player == null || stats == null) return "";
 
-            var dur = ExperienceManager.GetAllTime(player);
+            var dur = PlayerDataManager.GetAllTime(player);
             int waves = GetWaveCount(player);
 
             return $"" +

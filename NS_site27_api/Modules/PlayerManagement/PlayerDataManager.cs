@@ -8,45 +8,14 @@ using System.Linq;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
-    public static class ExperienceManager
+    public static class PlayerDataManager
     {
         public static MySQLConnect SQL => Plugin.Instance?.connect;
         public static double GlobalMultiplier = 1;
-        public static Dictionary<Player, int> ExpCache = new Dictionary<Player, int>();
         public static Dictionary<Player, int> PointCache = new Dictionary<Player, int>();
         public static Dictionary<Player, Stopwatch> TodayTimers = new Dictionary<Player, Stopwatch>();
         public static Dictionary<Player, Stopwatch> ServerTimers = new Dictionary<Player, Stopwatch>();
         public static Dictionary<Player, TimeSpan> TodayTimeCache = new Dictionary<Player, TimeSpan>();
-
-        public static int GetExp(Player player)
-        {
-            if (player == null || player.IsNPC) return 0;
-            if (ExpCache.TryGetValue(player, out var exp)) return exp;
-            var result = SQL?.QueryUser(player.UserId).experience ?? 0;
-            ExpCache[player] = result;
-            return result;
-        }
-
-        public static void SetExp(Player player, int exp)
-        {
-            if (player == null || player.IsNPC) return;
-            if (exp < 0) exp = 0;
-            ExpCache[player] = exp;
-            SQL?.Update(player.UserId, experience: exp);
-        }
-
-        public static void AddExp(Player player, int exp, bool ignoreMul = false, string reason = "")
-        {
-            if (player == null || !player.IsConnected || player.IsNPC) return;
-            if (GlobalMultiplier <= 0 && !ignoreMul) return;
-
-            int current = GetExp(player);
-            double mul = ignoreMul ? 1 : Math.Max(1, GlobalMultiplier);
-            int total = (int)(current + exp * mul);
-            SetExp(player, total);
-            //player.SendConsoleMessage($"获得经验:{(exp * mul):F0} 原因:{reason}", "green");
-        }
-
         public static TimeSpan GetTodayTime(Player player)
         {
             if (player == null) return TimeSpan.Zero;
@@ -105,6 +74,42 @@ namespace NS_site27_api.Modules.PlayerManagement
             atkStats.Points = cur;
             SQL?.Update(player.UserId, point: cur);
             player.AddMessage("AddPoint", $"<color=green><size=23>获得积分:{(points):F0}</size></color>", 3f,0,100);
+        }
+        public static void AddDeath(Player player, int count = 1)
+        {
+            var cr = SQL?.QueryPlayerStats(player.UserId);
+            if (cr.HasValue)
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalDeaths: cr.Value.TotalDeaths + count);
+            }
+            else
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalDeaths: count);
+            }
+        }
+        public static void AddKills(Player player, int count = 1)
+        {
+            var cr = SQL?.QueryPlayerStats(player.UserId);
+            if (cr.HasValue)
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalKills: cr.Value.TotalKills + count);
+            }
+            else
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalKills: count);
+            }
+        }
+        public static void AddEscape(Player player, int count = 1)
+        {
+            var cr = SQL?.QueryPlayerStats(player.UserId);
+            if (cr.HasValue)
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalEscapes: cr.Value.TotalEscapes + count);
+            }
+            else
+            {
+                SQL?.UpdatePlayerStat(player.UserId, TotalEscapes: count);
+            }
         }
     }
 }

@@ -62,7 +62,7 @@ namespace NS_site27_api.Modules.Voting
             int no = VoteControl[1].Count;
 
             double percentage = (yes / (double)Mathf.Max(1, yes + no)) * 100;
-            //Map.Broadcast((ushort)8f, );
+            //Map.ServerBroadcast((ushort)8f, );
             foreach (var player in Player.Enumerable)
             {
                 player.AddMessage("VoteResultHint", $"投票:{voteName} 结果: 同意率:{percentage:F2}% 同意:{yes} 不同意:{no}", 7f, ScreenPosition.Top);

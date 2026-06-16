@@ -68,7 +68,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             var sql = SQL;
             if (sql != null)
             {
-                ExperienceManager.GetServerTime(ev.Player);
+                PlayerDataManager.GetServerTime(ev.Player);
                 sql.Update(ev.Player.UserId, ev.Player.Nickname, last_time: DateTime.Now, ip: ev.Player.IPAddress);
             }
 
@@ -96,60 +96,41 @@ namespace NS_site27_api.Modules.PlayerManagement
         private void OnDied(DiedEventArgs ev)
         {
             var diedStats = GetOrCreateStats(ev.Player);
-            if (diedStats != null) { diedStats.Deaths++; ExperienceManager.AddPoint(ev.Player, -1); }
+            if (diedStats != null) { diedStats.Deaths++; PlayerDataManager.AddPoint(ev.Player, -2); }
 
             if (ev.Attacker == null) return;
 
             var atkStats = GetOrCreateStats(ev.Attacker);
-            if (atkStats != null && ev.Player != ev.Attacker) { atkStats.Kills++; ExperienceManager.AddPoint(ev.Attacker, 1); }
+            if (atkStats != null && ev.Player != ev.Attacker) { atkStats.Kills++; PlayerDataManager.AddPoint(ev.Attacker, 2); }
 
-            bool isScpKill = ev.Player.Role.Type.IsScp();
+            PlayerDataManager.AddDeath(ev.Player);
+            PlayerDataManager.AddKills(ev.Attacker);
+
+            bool isScpKill = ev.TargetOldRole.IsScp();
             bool isAttackerScp = ev.Attacker.IsScp;
-
-            //BUG: Check may not account for all damage types
-            if (!isAttackerScp)
-            {
-                int exp = isScpKill ? 50 : 10;
-                if (ev.Player.Role.Type == RoleTypeId.Scp0492) exp = 20;
-
-                int bonus = 0;
-                bonus += 10 * ev.Player.GetEffect(EffectType.Scp207).Intensity;
-                bonus += 20 * ev.Player.GetEffect(EffectType.Scp1344).Intensity;
-                bonus += 10 * ev.Player.GetEffect(EffectType.Scp1853).Intensity;
-
-                ExperienceManager.AddExp(ev.Attacker, exp + bonus, !isScpKill);
-            }
-            else
-            {
-                int exp = 10;
-                exp += 10 * ev.Player.GetEffect(EffectType.Scp207).Intensity;
-                exp += 20 * ev.Player.GetEffect(EffectType.Scp1344).Intensity;
-                exp += 10 * ev.Player.GetEffect(EffectType.Scp1853).Intensity;
-                ExperienceManager.AddExp(ev.Attacker, exp, true);
-            }
+            if (isScpKill) PlayerDataManager.AddPoint(ev.Attacker, 2);
         }
 
         private void OnEscaped(EscapedEventArgs ev)
         {
-            ExperienceManager.AddExp(ev.Player, 25);
-            if (ev.Player.IsCuffed)
-                ExperienceManager.AddExp(ev.Player.Cuffer, 15, false);
+            PlayerDataManager.AddPoint(ev.Player, 1);
+            PlayerDataManager.AddEscape(ev.Player);
         }
 
         private void OnLeft(LeftEventArgs ev)
         {
             var sql = SQL;
             if (sql == null) return;
-            var session = ExperienceManager.GetServerTime(ev.Player);
+            var session = PlayerDataManager.GetServerTime(ev.Player);
             var user = sql.QueryUser(ev.Player.UserId);
             var total = (user.total_duration ?? TimeSpan.Zero) + session;
-            sql.Update(ev.Player.UserId, name: ev.Player.Nickname, today_duration: ExperienceManager.GetTodayTime(ev.Player), total_duration: total);
+            sql.Update(ev.Player.UserId, name: ev.Player.Nickname, today_duration: PlayerDataManager.GetTodayTime(ev.Player), total_duration: total);
             sql.Update(ev.Player.UserId, point: GetOrCreateStats(ev.Player).Points);
 
-            ExperienceManager.StopServerTime(ev.Player);
+            PlayerDataManager.StopServerTime(ev.Player);
             // 移除玩家的今日计时器，防止在OnRestarting中重复添加时间
-            ExperienceManager.TodayTimers.Remove(ev.Player);
-            ExperienceManager.TodayTimeCache.Remove(ev.Player);
+            PlayerDataManager.TodayTimers.Remove(ev.Player);
+            PlayerDataManager.TodayTimeCache.Remove(ev.Player);
 
             PlayerHUDManager.UnregisterPlayer(ev.Player);
         }
@@ -158,22 +139,21 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             var sql = SQL;
             if (sql == null) return;
-            foreach (var kv in ExperienceManager.TodayTimers.ToArray())
+            foreach (var kv in PlayerDataManager.TodayTimers.ToArray())
             {
                 kv.Value.Stop();
-                var session = ExperienceManager.GetServerTime(kv.Key);
-                ExperienceManager.StopServerTime(kv.Key);
+                var session = PlayerDataManager.GetServerTime(kv.Key);
+                PlayerDataManager.StopServerTime(kv.Key);
                 var user = sql.QueryUser(kv.Key.UserId);
-                sql.Update(kv.Key.UserId, name: kv.Key.Nickname, today_duration: ExperienceManager.GetTodayTime(kv.Key), total_duration: (user.total_duration ?? TimeSpan.Zero) + session);
+                sql.Update(kv.Key.UserId, name: kv.Key.Nickname, today_duration: PlayerDataManager.GetTodayTime(kv.Key), total_duration: (user.total_duration ?? TimeSpan.Zero) + session);
             }
             foreach (var item in RoundStats)
             {
                 sql.Update(item.Key.UserId, point:item.Value.Points);
 
             }
-            ExperienceManager.TodayTimeCache.Clear();
-            ExperienceManager.TodayTimers.Clear();
-            ExperienceManager.ExpCache.Clear();
+            PlayerDataManager.TodayTimeCache.Clear();
+            PlayerDataManager.TodayTimers.Clear();
         }
 
         private void OnWaiting()
@@ -187,20 +167,12 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (ev.Generator.LastActivator != null)
             {
                 foreach (var p in Player.Enumerable.Where(x => x.Role.Team == ev.Generator.LastActivator.Role.Team))
-                    ExperienceManager.AddExp(p, 15, true);
+                    PlayerDataManager.AddPoint(p, 1);
             }
         }
 
         private void OnRoundEnded(RoundEndedEventArgs ev)
         {
-            foreach (var player in Player.Enumerable)
-            {
-                ExperienceManager.AddExp(player, 5);
-                if (ev.LeadingTeam == Exiled.API.Enums.LeadingTeam.Anomalies && player.Role.Type.IsScp())
-                    ExperienceManager.AddExp(player, 10);
-                if ((ev.LeadingTeam == Exiled.API.Enums.LeadingTeam.FacilityForces || ev.LeadingTeam == Exiled.API.Enums.LeadingTeam.ChaosInsurgency) && player.Role.Type.IsHuman())
-                    ExperienceManager.AddExp(player, 10);
-            }
         }
 
         private IEnumerator<float> PlayerRefreshLoop()
@@ -266,7 +238,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (!RoundStats.ContainsKey(player))
             {
                 RoundStats[player] = new RoundStatistics();
-                RoundStats[player].Points = ExperienceManager.GetPoint(player);
+                RoundStats[player].Points = PlayerDataManager.GetPoint(player);
             }
             return RoundStats[player];
         }

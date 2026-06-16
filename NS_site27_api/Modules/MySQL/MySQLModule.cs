@@ -77,6 +77,70 @@ namespace NS_site27_api.Modules.MySQL
             return (0, null, 0, 0, 1, null, null, null, null);
         }
 
+        public (int TotalKills,int TotalDeaths,int TotalEscapes) QueryPlayerStats(string userid)
+        {
+            if (!Connected) return (0,0,0);
+
+            string query = "SELECT total_kills,total_deaths,total_escapes FROM player_stats WHERE userid = @userid";
+
+            try
+            {
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(query, _Connection))
+                {
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int total_kills = reader.IsDBNull(reader.GetOrdinal("total_kills")) ? 0 : reader.GetInt32("total_kills");
+                            int total_deaths = reader.IsDBNull(reader.GetOrdinal("total_deaths")) ? 0 : reader.GetInt32("total_deaths");
+                            int total_escapes = reader.IsDBNull(reader.GetOrdinal("total_escapes")) ? 0 : reader.GetInt32("total_escapes");
+                            return (total_kills,total_deaths,total_escapes);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Error($"QueryUser error: {ex.Message}"); }
+            finally
+            {
+                if (_Connection.State == ConnectionState.Open) _Connection.Close();
+            }
+            return (0, 0,0);
+        }
+        public void UpdatePlayerStat(string userid,int TotalKills = -1,int TotalDeaths = -1, int TotalEscapes = -1)
+        {
+            if (!Connected || string.IsNullOrEmpty(userid)) return;
+
+            try
+            {
+                var c = QueryPlayerStats(userid);
+                TotalKills = TotalKills == -1 ? c.TotalKills : TotalKills;
+                TotalDeaths = TotalDeaths == -1 ? c.TotalDeaths : TotalDeaths;
+                TotalEscapes = TotalEscapes == -1 ? c.TotalEscapes : TotalEscapes;
+                string sql = @"INSERT INTO player_stats (userid, total_kills, total_deaths, total_escapes)
+VALUES (@userid, @kills, @deaths, @escs)
+ON DUPLICATE KEY UPDATE
+    total_kills = VALUES(total_kills),
+    total_deaths = VALUES(total_deaths),
+    total_escapes = VALUES(total_escapes);";
+
+                _Connection.Open();
+                using (var cmd = new MySqlCommand(sql, _Connection))
+                {
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    cmd.Parameters.AddWithValue("@kills", TotalKills);
+                    cmd.Parameters.AddWithValue("@deaths", TotalDeaths);
+                    cmd.Parameters.AddWithValue("@escs", TotalEscapes);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex) { Log.Error($"Update error: {ex.Message}"); }
+            finally
+            {
+                if (_Connection.State == ConnectionState.Open) _Connection.Close();
+            }
+        }
         public void Update(string userid, string name = null, int experience = -1, double? expMultiplier = null,
             string ip = null, int point = -1, DateTime? last_time = null, TimeSpan? today_duration = null, TimeSpan? total_duration = null)
         {

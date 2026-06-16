@@ -102,6 +102,11 @@ namespace NS_site27_api.Modules.SpawnProtection
                     try
                     {
                         LoseProtectAt[ev.Player] = (true, Time.time);
+                        if (effect.Intensity != 0)
+                        {
+                            effect.ServerDisable();
+                            effect.TimeLeft = 0;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -110,8 +115,7 @@ namespace NS_site27_api.Modules.SpawnProtection
                 }
                 else
                 {
-                    if (effect.Intensity != 0)
-                        effect.ServerDisable();
+                    
                 }
             }
         }

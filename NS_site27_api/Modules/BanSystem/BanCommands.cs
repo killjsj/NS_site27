@@ -86,8 +86,17 @@ namespace NS_site27_api.Modules.BanSystem
                     response = "Database not connected.";
                     return false;
                 }
-
-                string userId = arguments.At(0);
+                string[] newargs;
+                var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
+                string userId = "";
+                if (targets == null || targets.Count == 0)
+                {
+                    userId = arguments.At(0);
+                }
+                else
+                {
+                    userId = targets[0].authManager.UserId;
+                }
                 var bans = SqlQueryAllBan(sql, userId);
 
                 if (bans.Count == 0)

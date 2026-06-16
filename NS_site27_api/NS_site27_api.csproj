@@ -239,7 +239,7 @@
     <Compile Include="Modules\Admin\AdminLoggerModule.cs" />
     <Compile Include="Modules\Admin\AdminAssignModule.cs" />
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
-    <Compile Include="Modules\BanSystem\BanVerifer.cs" />
+    <Compile Include="Modules\BanSystem\BanVeriferAndRAQuery.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />

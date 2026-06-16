@@ -40,6 +40,7 @@ namespace NS_site27_api.Modules.BanSystem
                 {
                     if (command.Execute(new ArraySegment<string>(new[] {ev.Player.UserId } ),s,out var re))
                     {
+                        ev.InfoBuilder.AppendLine("\n");
                         ev.InfoBuilder.AppendLine(re);
                     }
                 }

@@ -8,6 +8,51 @@ using System.Linq;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
+    public enum AddPointReason
+    {
+        Kill,
+        KillScp,
+        KillScp0492,
+        KillScp106,
+        KillScp939,
+        PocketDimensionKill,
+        Escape,
+        UseScpItem,
+        Scp127Upgrade,
+        Scp049Revive,
+        Scp079StopHid,
+        Scp079BlockHuman,
+        Scp079ProtectTeammate,
+        Scp079KillAssist,
+        GeneratorActivation,
+    }
+
+    public static class AddPointReasonExtensions
+    {
+        public static string GetDisplayText(this AddPointReason reason)
+        {
+            return reason switch
+            {
+                AddPointReason.Kill => "击杀",
+                AddPointReason.KillScp => "击杀SCP",
+                AddPointReason.KillScp0492 => "SCP-049-2击杀",
+                AddPointReason.KillScp106 => "SCP-106击杀",
+                AddPointReason.KillScp939 => "SCP-939击杀",
+                AddPointReason.PocketDimensionKill => "口袋维度击杀",
+                AddPointReason.Escape => "逃离",
+                AddPointReason.UseScpItem => "使用物品",
+                AddPointReason.Scp127Upgrade => "SCP-127升级",
+                AddPointReason.Scp049Revive => "复活他人",
+                AddPointReason.Scp079StopHid => "SCP-079阻止HID",
+                AddPointReason.Scp079BlockHuman => "SCP-079阻止人类",
+                AddPointReason.Scp079ProtectTeammate => "SCP-079保护队友",
+                AddPointReason.Scp079KillAssist => "SCP-079击杀助攻",
+                AddPointReason.GeneratorActivation => "发电机激活",
+                _ => "积分变动"
+            };
+        }
+    }
+
     public static class PlayerDataManager
     {
         public static MySQLConnect SQL => Plugin.Instance?.connect;
@@ -64,7 +109,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             return result;
         }
 
-        public static void AddPoint(Player player, int points)
+        public static void AddPoint(Player player, int points, AddPointReason reason)
         {
             if (player == null) return;
             var atkStats = PlayerManagementModule.GetOrCreateStats(player);
@@ -73,7 +118,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             PointCache[player] = cur;
             atkStats.Points = cur;
             SQL?.Update(player.UserId, point: cur);
-            player.AddMessage("AddPoint", $"<color=green><size=23>获得积分:{(points):F0}</size></color>", 3f,0,100);
+            PlayerHUDManager.AddScoreChange(player, points, reason.GetDisplayText());
         }
         public static void AddDeath(Player player, int count = 1)
         {

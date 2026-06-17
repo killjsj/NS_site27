@@ -241,6 +241,7 @@
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVeriferAndRAQuery.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
+    <Compile Include="Modules\ItemCleaner\ItemCleanerModule.cs" />
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />
     <Compile Include="Modules\Weapons\AT4\AT4GroundModel.cs" />

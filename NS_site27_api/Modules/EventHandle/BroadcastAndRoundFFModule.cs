@@ -23,7 +23,7 @@ namespace NS_site27_api.Modules.EventHandle
         public string RoundEndFFText { get; set; } = "<size=22><color=#F5FFFA>FF enabled</color></size>";
     }
 
-    public class BroadcastAndRoundFFModule : ModuleBase<EventHandleConfig>
+    public class ItemCleanerModule : ModuleBase<EventHandleConfig>
     {
         public override string ModuleName => "BroadcastAndRoundFF";
 
@@ -33,7 +33,7 @@ namespace NS_site27_api.Modules.EventHandle
         public Dictionary<ushort, ItemType> CachedCardTypes = new Dictionary<ushort, ItemType>();
         public List<string> NotTodayScp = new List<string>();
         public IFFManager CurrentFFManager;
-        public static BroadcastAndRoundFFModule Ins { get; private set; }
+        public static ItemCleanerModule Ins { get; private set; }
         public override void OnEnable()
         {
 

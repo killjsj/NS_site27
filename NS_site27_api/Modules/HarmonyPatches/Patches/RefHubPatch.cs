@@ -28,6 +28,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             ClientInstanceMode allowedState3,
             ref int __result)
         {
+            return true;
             int num = 0;
             foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
             {
@@ -38,7 +39,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
                     num++;
                 }
             }
-            __result = num - RoundEventHandler.DoNotCountDummyHubs.Count;
+            //__result = num - RoundEventHandler.DoNotCountDummyHubs.Count;
             //Log.Info($"__result={__result}");
             return false;
         }

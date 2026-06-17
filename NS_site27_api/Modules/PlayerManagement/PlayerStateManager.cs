@@ -77,7 +77,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.Player != null && _scp106Catchers.TryGetValue(ev.Player, out var scp))
             {
-                scp.ShowHint("<color=red>你抓到了一个目标!</color>", 5);
+                //scp.ShowHint("<color=red>你抓到了一个目标!</color>", 5);
                 _scp106Catchers.Remove(ev.Player);
             }
         }
@@ -209,6 +209,17 @@ namespace NS_site27_api.Modules.PlayerManagement
                 SpecList[key].Remove(player);
                 if (SpecList[key].Count == 0)
                     SpecList.Remove(key);
+            }
+        }
+        public static List<Player> HasRenamedPlayers = new List<Player>();
+        public static void HandlePlayerRenamer(Player player)
+        {
+            if(player == null) return;
+            var pstr = PhaseManager.GetPhaseProgressString(player);
+            if(!HasRenamedPlayers.Contains(player))
+            {
+                player.DisplayNickname = $"{pstr}{player.Nickname}";
+                HasRenamedPlayers.Add(player);
             }
         }
     }

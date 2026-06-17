@@ -24,7 +24,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
 
         private static IEnumerator<float> Broadcaster()
         {
-            var module = BroadcastAndRoundFFModule.Ins;
+            var module = ItemCleanerModule.Ins;
             if (module == null) yield break;
 
             int counter = 0;

@@ -21,6 +21,7 @@ using Scp914;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -138,7 +139,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                 UIPosition.FromXY(0, 800));
 
             player.AddMessage("ScoreHint", ScoreGetter, -1,
-                UIPosition.FromEnum(ScreenPosition.Center));
+                0,225);
 
             player.AddMessage("914Hint", Scp914Getter, -1,
                 UIPosition.FromXY(0, 850));
@@ -258,11 +259,11 @@ namespace NS_site27_api.Modules.PlayerManagement
                                 Scp914KnobSetting.VeryFine => "超精",
                                 _ => ""
                             };
-                            t += $"<size=22><color=green>{k.p.Nickname}</color> {(k.act ? "激活了914 模式:" : "")}<color=yellow>{trans}</color></size>\n";
+                            t += $"<size=22>{(k.act ? $"<color=green>{k.p.Nickname} 激活了914 模式:<color=yellow>{trans}" : "")}</color></size>\n";
                         }
                         Scp914Str = (t, Time.time);
                     }
-                    if(Time.time - Scp914Str.startTime > 7f)
+                    if(Time.time - Scp914Str.startTime > 15f)
                     {
                         Scp914Str = ("", 0f);
                     }
@@ -302,26 +303,53 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (player == null) return null;
             var i = player.CurrentItem;
             if (i == null) return null;
-            if (i.IsFirearm && i is Firearm f)
+            if (i.IsFirearm &&i.Type != ItemType.MicroHID && i is Firearm f)
             {
                 float RemainPercent = (float)f.TotalAmmo / f.TotalMaxAmmo;
                 string str = "<size=15><b>";
+
                 if (f.IsReloading)
                 {
                     str += "<color=#00FFFF>换弹中</color>";
                 }
-                else if (RemainPercent < 0.22 && RemainPercent > 0)
+                else if (i.Type != ItemType.ParticleDisruptor && RemainPercent < 0.22 && RemainPercent > 0)
                 {
                     str += "<color=yellow>低弹药</color>";
-                }else if(f.TotalAmmo <= 0)
+                }else if (i.Type == ItemType.ParticleDisruptor && f.TotalAmmo <= 2)
                 {
-                    str += "<color=red>请换弹</color>";
+                    str += "<color=yellow>低弹药</color>";
+
+                }
+                else if (f.TotalAmmo <= 0)
+                {
+                    str += "<color=red>无弹药</color>";
                 }
                 str += "</b></size>";
                 return new[] { str};
             }
+            if (i.Type == ItemType.MicroHID && i is MicroHid hid)
+            {
+                float RemainPercent = hid.Energy;
+                string str = "<size=15><b>";
+                if (RemainPercent < 0.20 && RemainPercent > 0)
+                {
+                    str += "<color=yellow>低电量</color>";
+                }
+                else if (RemainPercent <= 0)
+                {
+                    str += "<color=red>请充电</color>";
+                }
+                else if (hid.IsBroken)
+                {
+                    str += "<color=red>已损坏</color>";
+
+                }
+                str += "</b></size>";
+                return new[] { str };
+            }
             return null;
         }
+        public static string CurrentTip = "";
         private static string[] RoleShowGetter(Player player)
         {
             string v = "<b>";
@@ -330,9 +358,9 @@ namespace NS_site27_api.Modules.PlayerManagement
                 v += "<size=19>";
                 if (player.Role == RoleTypeId.Overwatch || player.Role == RoleTypeId.Spectator)
                 {
-                    v += "<align=center>";
+                    v += $"<align=center><color=yellow>{(string.IsNullOrEmpty(CurrentTip) ? "" : $"Tip:{CurrentTip}")}";
                     v += $"<color=#00FFFF>博士/九尾数量:{doc+ gruad+ntf}</color>\n";
-                    v += $"<color=yellow>dd/混沌数量:{dd+ chaos}</color>\n";
+                    v += $"<color=#009900>dd/混沌数量:{dd+ chaos}</color>\n";
                     v += $"<color=red>scp数量:{Scp.Count}</color></indent>";
                 }
                 else
@@ -496,18 +524,19 @@ namespace NS_site27_api.Modules.PlayerManagement
                    $"<color={teamColor}>阵营:{teamName}</color>" +
                    $"";
         }
-
+        public static int ntfReinforceCount = 0;
+        public static int ChaosReinforceCount = 0;
         private static string BuildSecondLine(Player player, PlayerManagementModule.RoundStatistics stats, int specCount, bool isSpec)
         {
             if (player == null || stats == null) return "";
 
             var dur = PlayerDataManager.GetAllTime(player);
-            int waves = GetWaveCount(player);
 
             return $"" +
                    $"<color=#FFD700>总得分:{stats.Points}</color> | " +
                    $"<color=#00FF00>击杀:{stats.Kills}</color> | " +
                    $"<color=#FF0000>死亡:{stats.Deaths}</color> | " +
+                   (player.LeadingTeam == LeadingTeam.ChaosInsurgency || player.LeadingTeam == LeadingTeam.FacilityForces ? $"<color=yellow>增援:{GetWaveCount(player)}</color> | " : "")+
                    (isSpec ? "" : $"<color=#FF00FF>总时长:{dur.TotalDays:F0}天{dur.Hours:D2}时{dur.Minutes:D2}分</color> | ") +
                    $"<color=#87CEEB>观众:{specCount}</color>" +
                    $"";
@@ -568,13 +597,11 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (player == null) return new[] { "" };
             ScoreQueue.RemoveAll(x => Time.time - x.Time > 1f || x.Player == null);
-            var mine = ScoreQueue.Where(x => x.Player == player).ToList();
-            if (mine.Count == 0) return new[] { "" };
-            var latest = mine.Last();
-            string color = latest.Amount > 0 ? "#00FF00" : "#FF4444";
-            string sign = latest.Amount > 0 ? "+" : "";
-            ScoreQueue.RemoveAll(x => x.Player == player);
-            return new[] { $"<size=24><color={color}>{sign}{latest.Amount} 积分 ({latest.Reason})</color></size>" };
+            var mine = ScoreQueue.FindLast(x => x.Player == player);
+            if (mine.Player == null) return new[] { "" };
+            string color = mine.Amount > 0 ? "#00FF00" : "#FF4444";
+            string sign = mine.Amount > 0 ? "加" : "";
+            return new[] { $"<size=20><color={color}>{sign} {mine.Amount} 积分 ({mine.Reason})</color></size>" };
         }
         public static (string str,float startTime) Scp914Str = ("", 0f);
         private static string[] Scp914Getter(Player player)
@@ -674,9 +701,18 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             Scp914q.Enqueue((ev.Player, ev.KnobSetting, true));
         }
-
-        public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev) => ntfWave++;
-        public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev) => ChaosCount++;
+        public static void UpdateTip()
+        {
+            CurrentTip = PlayerManagementModule.Get().Config.tips.RandomItem();
+        }
+        public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev) {
+            UpdateTip();
+            ntfWave++; 
+        }
+        public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev) { 
+            ChaosCount++;
+            UpdateTip();
+        }
         static List<IUIPart> UIParts = new List<IUIPart>();
 
         public static IUIPart GetUIPart(int index)

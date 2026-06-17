@@ -200,7 +200,17 @@ namespace NS_site27_api.Modules.Chat
                         displayText = $"<color={color}>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
                         break;
                     case ChatMode.Admin:
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
+                        string teamName = item.player.Role.Team switch
+                        {
+                            Team.FoundationForces => "基金会",
+                            Team.ChaosInsurgency => "混沌",
+                            Team.Scientists => "基金会",
+                            Team.ClassD => "混沌",
+                            Team.OtherAlive => "教程",
+                            Team.SCPs => "SCP",
+                            _ => "死人"
+                        };
+                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
                         break;
                     case ChatMode.ServerBroadcast:
                         displayText = $"<color=red>服务器广播: {(item.player == null ? "" : $"[{item.player.Nickname}]:")} {item.InputText}</color>";
@@ -275,8 +285,18 @@ namespace NS_site27_api.Modules.Chat
                         }
                         break;
                     case ChatMode.Admin:
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
-                        foreach (var item1 in Player.Enumerable.Where(x => x.RemoteAdminAccess))
+                        string teamName = item.player.Role.Team switch
+                        {
+                            Team.FoundationForces => "基金会",
+                            Team.ChaosInsurgency => "混沌",
+                            Team.Scientists => "基金会",
+                            Team.ClassD => "混沌",
+                            Team.OtherAlive => "教程",
+                            Team.SCPs => "SCP",
+                            _ => "死人"
+                        };
+                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
+                        foreach (var item1 in Player.Enumerable.Where(x => x.RemoteAdminAccess && x != item.player))
                         {
                             item1.SendConsoleMessage($"[反馈]{displayText}", "red");
                         }

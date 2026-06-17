@@ -107,7 +107,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                 GamePhase.HundredBattles => 35, GamePhase.RegionalForce => 45,
                 GamePhase.RenownedFar => 55, _ => 0
             };
-            return $"[{PhaseToName(phase)} 还剩{stageMax - hours:F1}小时晋级]";
+            return $"[{PhaseToName(phase)}]";
         }
     }
 }

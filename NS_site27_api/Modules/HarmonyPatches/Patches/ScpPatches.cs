@@ -1,3 +1,4 @@
+using Exiled.API.Features;
 using HarmonyLib;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
@@ -111,7 +112,13 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         [HarmonyPrefix]
         public static bool Prefix()
         {
-            //LobbyMusic.LobbyMusicManager.Instance.RoundStarted();
+            foreach (var item in Player.Enumerable)
+            {
+                if (item.Role.Type != RoleTypeId.Overwatch)
+                {
+                    item.RoleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.RoundStart);
+                }
+            }
             return true;
         }
     }

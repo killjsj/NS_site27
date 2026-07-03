@@ -2,6 +2,7 @@ using Exiled.API.Features;
 using Exiled.API.Features.Pickups;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
+using GameCore;
 using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
@@ -13,17 +14,22 @@ using PlayerRoles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
+using YamlDotNet.Serialization;
 
 namespace NS_site27_api.Modules.ItemCleaner
 {
     public class ItemCleanerConfig : ModuleConfigBase
     {
-        public string StartingClean { get; set; } = "<color=yellow><size=22>Site27扫地机将在{second}s后开始清理</size></color>";
-        public string DoneClean { get; set; } = "<color=green><size=22>Site27扫地机清理完成~</size></color>";
+        public string StartingClean { get; set; } = "<color=yellow><size=23.5>Site27扫地机将在{second}s后开始清理</size></color>";
+        public string DoneClean { get; set; } = "<color=green><size=23.5>Site27扫地机清理完成 共{body}个尸体和{item}个物品</size></color>";
         public int startCountDownTime { get; set; } = 10;
         public int CleanTime { get; set; } = 300;
+        [YamlMember(Description ="决定扫地机提示y轴 范围: 0-1000 值越高 位置越高")]
+        public int yPos { get; set; } = 865;
         public float DoneCleanShowTime { get; set; } = 5;
+        public ItemType[] WhiteList = (ItemType[])Enum.GetValues(typeof(ItemType));
     }
 
     public class ItemCleanerModule : ModuleBase<ItemCleanerConfig>
@@ -36,6 +42,7 @@ namespace NS_site27_api.Modules.ItemCleaner
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
             Exiled.Events.Handlers.Player.Verified += OnVerified;
             Exiled.Events.Handlers.Server.RoundEnded += OnRoundEnded;
+            Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Ins = this;
         }
 
@@ -44,17 +51,23 @@ namespace NS_site27_api.Modules.ItemCleaner
             Exiled.Events.Handlers.Player.Verified -= OnVerified;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
             Exiled.Events.Handlers.Server.RoundEnded -= OnRoundEnded;
+            Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
         }
         private static CoroutineHandle _handle;
         private static bool _stop;
-        private static void OnVerified(VerifiedEventArgs ev)
+        private void OnVerified(VerifiedEventArgs ev)
         {
             if (!_stop) { 
                 if(ev.Player != null)
                 {
-                    ev.Player.AddMessage("ItemCleaner", GetDisplayText, -1, 0,930);
+                    ev.Player.AddMessage("ItemCleaner", GetDisplayText, -1, 0,this.Config.yPos);
                 }
             }
+        }
+        public static void RoundStarted()
+        {
+            _stop = false;
+            _handle = Timing.RunCoroutine(Cleaner());
         }
         public static string[] GetDisplayText(Player p)
         {
@@ -62,8 +75,7 @@ namespace NS_site27_api.Modules.ItemCleaner
         }
         public static void OnWaitingForPlayers()
         {
-            _stop = false;
-            _handle = Timing.RunCoroutine(Cleaner());
+
         }
 
         public static void OnRoundEnded(RoundEndedEventArgs ev)
@@ -79,8 +91,8 @@ namespace NS_site27_api.Modules.ItemCleaner
             var module = ItemCleanerModule.Ins;
             if (module == null) yield break;
 
-            float counter = 0;
             var cfg = module.Config;
+            float counter = -cfg.DoneCleanShowTime;
 
             while (!_stop)
             {
@@ -88,28 +100,30 @@ namespace NS_site27_api.Modules.ItemCleaner
                 counter +=0.4f;
                 if (counter <= cfg.CleanTime - cfg.startCountDownTime)
                 {
-                    ShowingStr[0] = "";  // 清理期静默
+                    //ShowingStr[0] = "";
                 }
                 else if (counter <= cfg.CleanTime)
                 {
                     ShowingStr[0] = cfg.StartingClean.Replace("{second}", (cfg.CleanTime - counter).ToString("F0"));
                 }
-                else if (counter <= cfg.CleanTime + cfg.DoneCleanShowTime)
-                {
-                    ShowingStr[0] = cfg.DoneClean;
-                }
                 else
                 {
                     ShowingStr[0] = "";
-                    counter = 0;
+                    counter = -cfg.DoneCleanShowTime;
+                    CleanItem();
                 }
             }
         }
-        public static void CleanItem()
+        public static async Awaitable CleanItem()
         {
+            await Awaitable.MainThreadAsync();
             try
             {
-                foreach (var item in Ragdoll.List)
+                var module = ItemCleanerModule.Ins;
+                var cfg = module.Config;
+                int cleanedItemCount = 0;
+                int cleanedBodyCount = 0;
+                foreach (var item in Ragdoll.List.ToArray())
                 {
                     var clean = true;
                     foreach (var s049 in PlayerHUDManager.Scp.Where(x=>x.Role.Type == RoleTypeId.Scp049))
@@ -123,12 +137,17 @@ namespace NS_site27_api.Modules.ItemCleaner
                     if (clean)
                     {
                         item.Destroy();
+                        cleanedBodyCount++;
+                    }
+                    if(cleanedBodyCount % 10 == 9)
+                    {
+                        await Awaitable.NextFrameAsync();
                     }
                 }
-                foreach (var item in Pickup.List)
+                foreach (var item in Pickup.List.ToArray())
                 {
                     var clean = true;
-                    foreach (var player in Player.Enumerable)
+                    foreach (var player in Player.Enumerable.Where(x=>x.IsAlive))
                     {
                         if (Vector3.Distance(player.Position, item.Position) < 20)
                         {
@@ -136,7 +155,24 @@ namespace NS_site27_api.Modules.ItemCleaner
                             break;
                         }
                     }
+                    if (cfg.WhiteList.Contains(item.Type))
+                    {
+                        clean = false;
+                        continue;
+                    }
+                    if (clean)
+                    {
+                        item.Destroy();
+                        cleanedItemCount++;
+                    }
+                    if (cleanedItemCount % 20 == 19)
+                    {
+                        await Awaitable.NextFrameAsync();
+                    }
                 }
+                ShowingStr[0] = cfg.DoneClean.Replace("{body}", cleanedBodyCount.ToString()).Replace("{item}", cleanedItemCount.ToString());
+                await Awaitable.WaitForSecondsAsync(cfg.DoneCleanShowTime);
+                ShowingStr[0] = "";
             }
             catch (Exception e)
             {

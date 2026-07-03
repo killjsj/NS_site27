@@ -9,6 +9,16 @@ using UnityEngine;
 using PlayerRoles.Subroutines;
 namespace NS_site27_api.Modules.Abilities
 {
+    public interface IRegisiterNeeded<T> where T : AbilityBase
+    {
+        public T Register(Player player);
+        public void Unregister(Player player);
+    }
+    public interface IitemRegisiterNeeded<T>
+    {
+        public T Register(ushort serial);
+        public void Unregister(ushort serial);
+    }
     public interface ICounted
     {
         int TotalCount { get; set; }

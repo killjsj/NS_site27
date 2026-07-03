@@ -45,6 +45,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.Escaped += OnEscaped;
             PlayerHandlers.Shot += Shot;
             PlayerHandlers.Left += OnLeft;
+            PlayerHandlers.Hurting += Hurting;
             ServerHandlers.RestartingRound += OnRestarting;
             ServerHandlers.WaitingForPlayers += OnWaiting;
             ServerHandlers.RoundEnded += OnRoundEnded;
@@ -54,7 +55,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             Exiled.Events.Handlers.Player.UsedItem += UsedItem;
             Scp127TierManagerModule.ServerOnLevelledUp += Scp127TierManagerModule_ServerOnLevelledUp;
             PlayerHUDManager.Init();
-            CorePlugin.RunCoroutine(PlayerRefreshLoop(), false);
+            Timing.RunCoroutine(PlayerRefreshLoop());
         }
 
         public override void OnDisable()
@@ -63,6 +64,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.Verified -= OnVerified;
             PlayerHandlers.Died -= OnDied;
             PlayerHandlers.Shot -= Shot;
+            PlayerHandlers.Hurting -= Hurting;
             PlayerHandlers.Escaped -= OnEscaped;
             Exiled.Events.Handlers.Player.UsedItem -= UsedItem;
             PlayerHandlers.Left -= OnLeft;
@@ -76,6 +78,13 @@ namespace NS_site27_api.Modules.PlayerManagement
             MapHandlers.GeneratorActivating -= OnGeneratorActivating;
 
             PlayerHUDManager.Deinit();
+        }
+        public void Hurting(HurtingEventArgs ev)
+        {
+            if(ev.Player != null && ev.DamageHandler.Type == DamageType.Scp207)
+            {
+                ev.IsAllowed = false;
+            }
         }
         public void Shot(ShotEventArgs ev)
         {

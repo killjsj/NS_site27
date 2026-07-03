@@ -19,6 +19,7 @@ using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using MEC;
+using MonoMod.Utils;
 using NS_site27_api.Core.UI;
 using NS_site27_api.Modules.Abilities;
 using System;
@@ -26,29 +27,46 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-namespace NS_site27_api.Modules.Weapons
+
+namespace NS_site27_api.Modules.CustomRolePlus
 {
-    public interface IRegisiterNeeded<T> where T : AbilityBase
-    {
-        public T Register(Player player);
-        public void Unregister(Player player);
-    }
-    public interface IitemRegisiterNeeded<T>
-    {
-        public T Register(ushort serial);
-        public void Unregister(ushort serial);
-    }
     public abstract class CustomRolePlus : CustomRole
     {
         // 所有玩家共享的能力模板
         public List<AbilityBase> abilities = new List<AbilityBase>();
-
+        override protected void ShowMessage(Player player)
+        {
+        }
         // 每个玩家自己的技能实例
         public static string[] abilitiesShower(Player p)
         {
-            string showing = "<size=24>";
+            string showing = "<align=right><size=24><color=white>\n";
             if (p != null)
             {
+                if (!string.IsNullOrEmpty(p.UniqueRole))
+                {
+                    var r = CustomRole.Get(p.UniqueRole);
+                    showing += $"你是: {p.UniqueRole}\n{r.Description}\n";
+                }
+                if (CustomItemPlus.PlayerItems.ContainsKey(p))
+                {
+                    showing += "物品:\n";
+                    foreach (var item in CustomItemPlus.PlayerItems[p])
+                    {
+                        var c = item.Item2;
+                        if (c != null)
+                        {
+                            if (p.CurrentItem != null && item.Item1 == p.CurrentItem.Serial)
+                            {
+                                showing += $">{c.Name}:{c.Description}\n";
+                            }
+                            else
+                            {
+                                showing += $"{c.Name}\n";
+                            }
+                        }
+                    }
+                }
                 if (AbilityBase.PlayerAbilities.TryGetValue(p, out var list))
                 {
                     foreach (var item in list)
@@ -83,62 +101,29 @@ namespace NS_site27_api.Modules.Weapons
                         }
                     }
                 }
-            }
-            showing += "</size>";
-            return new[] { showing };
-        }
-
-        public static string[] RoleShower(Player p)
-        {
-            string showing = "<size=24>";
-            if (p != null)
-            {
-                if (!string.IsNullOrEmpty(p.UniqueRole))
-                {
-                    var r = CustomRole.Get(p.UniqueRole);
-                    showing += $"你是: {p.UniqueRole}\n{r.Description}\n";
-                }
-                if (CustomItemPlus.PlayerItems.ContainsKey(p))
-                {
-                    showing += "物品:\n";
-                    foreach (var item in CustomItemPlus.PlayerItems[p])
-                    {
-                        var c = item.Item2;
-                        if (c != null)
-                        {
-                            if (p.CurrentItem != null && item.Item1 == p.CurrentItem.Serial)
-                            {
-                                showing += $">{c.Name}:{c.Description}\n";
-                            }
-                            else
-                            {
-                                showing += $"{c.Name}\n";
-                            }
-                        }
-                    }
-                }
 
             }
-            showing += "</size>";
-            return new[] { showing };
+            showing += "</color></size></align>";
+            return new[]{showing};
         }
-
-        protected override void ShowMessage(Player player)
+        public static void AddAbilityMessage(Player player)
         {
-            player.AddMessage("CustomRolePlus_Role", RoleShower, -1, UIPosition.FromXY(700, 700));
+            player.AddMessage("abilitiesShower", abilitiesShower, -1, 325, 300);
         }
-
+        public static void RemoveAbilityMessage(Player player)
+        {
+            player.RemoveMessage("abilitiesShower");
+        }
         protected override void RoleAdded(Player player)
         {
             base.RoleAdded(player);
+            AddAbilityMessage(player);
 
             if (abilities == null || abilities.Count == 0)
                 return;
-
-            player.AddMessage("CustomRolePlus_Abilities", abilitiesShower, -1, UIPosition.FromXY(400, 400));
-
             foreach (var template in abilities)
             {
+                // 复制或注册单独实例
                 AbilityBase instance = template;
 
                 if (template is IRegisiterNeeded<AbilityBase> reg)
@@ -146,13 +131,13 @@ namespace NS_site27_api.Modules.Weapons
                     instance = reg.Register(player);
                 }
 
-                if (!AbilityBase.PlayerAbilities.TryGetValue(player, out var list1))
+                if (!AbilityBase.PlayerAbilities.TryGetValue(player, out var list))
                 {
-                    list1 = new List<AbilityBase>();
-                    AbilityBase.PlayerAbilities[player] = list1;
+                    list = new List<AbilityBase>();
+                    AbilityBase.PlayerAbilities[player] = list;
                 }
 
-                list1.Add(instance);
+                list.Add(instance);
             }
         }
 
@@ -175,7 +160,7 @@ namespace NS_site27_api.Modules.Weapons
             list.RemoveAll(x => ab.Any(y => y.id == x.id));
             if (list.Count <= 0)
             {
-                player.RemoveMessage("CustomRolePlus_Abilities");
+                RemoveAbilityMessage(player);
             }
         }
     }
@@ -594,7 +579,8 @@ namespace NS_site27_api.Modules.Weapons
         }
         protected override void ShowSelectedMessage(Player player)
         {
-            player.AddMessage("CustomRolePlus_Role", CustomRolePlus.RoleShower, -1, UIPosition.FromEnum(ScreenPosition.Center));
+            CustomRolePlus.AddAbilityMessage(player);
+
         }
         private void ItemPickupBase_OnPickupDestroyed(ItemPickupBase obj)
         {
@@ -677,9 +663,7 @@ namespace NS_site27_api.Modules.Weapons
             if (abilities == null || abilities.Count == 0)
                 return;
 
-            //item.Destroy
-            player.AddMessage("CustomRolePlus_Abilities", CustomRolePlus.abilitiesShower, -1, UIPosition.FromXY(400, 400));
-            player.AddMessage("CustomRolePlus_Role", CustomRolePlus.RoleShower, -1, UIPosition.FromXY(700, 700));
+            CustomRolePlus.AddAbilityMessage(player);
 
             if (!ItemAbilities.TryGetValue(item.Serial, out var list))
             {
@@ -745,7 +729,8 @@ namespace NS_site27_api.Modules.Weapons
                 list.RemoveAll(x => ab.Any(y => y.id == x.id));
                 if (list.Count <= 0)
                 {
-                    ev.Player.RemoveMessage("CustomRolePlus_Abilities");
+                    CustomRolePlus.RemoveAbilityMessage(ev.Player);
+
                 }
             }
         }

@@ -17,6 +17,13 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             __result = 150;
             return false;
         }
+        [HarmonyPatch(nameof(InventoryLimits.GetCategoryLimit), typeof(BodyArmor), typeof(ItemCategory))]
+        [HarmonyPrefix]
+        public static bool FireArmnPrefix(BodyArmor armor, ItemCategory category, ref sbyte __result)
+        {
+            __result = 8;
+            return false;
+        }
     }
 
     [HarmonyPatch(typeof(Scp207))]

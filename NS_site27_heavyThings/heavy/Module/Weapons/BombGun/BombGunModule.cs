@@ -2,7 +2,7 @@ using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using Exiled.API.Features.Items;
 using MEC;
-using NS_site27_api.Core;
+using NS_site27_heavy.Core;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -13,7 +13,7 @@ using Item = Exiled.API.Features.Items.Item;
 using Exiled.API.Features.Pickups;
 using Exiled.Events.EventArgs.Scp914;
 
-namespace NS_site27_api.Modules.Weapons.BombGun
+namespace NS_site27_heavy.Modules.Weapons.BombGun
 {
     public class BombGunConfig : ModuleConfigBase
     {

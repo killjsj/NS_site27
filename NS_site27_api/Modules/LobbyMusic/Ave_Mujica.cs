@@ -189,6 +189,11 @@ namespace NS_site27_api.Modules.LobbyMusic
             _cts?.Cancel();
             _cts?.Dispose();
             DestroySpeaker();
+            foreach (var file in _tempFiles)
+            {
+                if (File.Exists(file)) File.Delete(file);
+            }
+            _tempFiles.Clear();
         }
 
         // 回合开始
@@ -239,7 +244,11 @@ namespace NS_site27_api.Modules.LobbyMusic
                     this.current = pos;
                     if (Time.time - _songStartTime >= (float)TotalTime + 0.5f)
                     {
-                        Log.Info("destroy!");
+                        foreach (var file in _tempFiles)
+                        {
+                            if (File.Exists(file)) File.Delete(file);
+                        }
+                        _tempFiles.Clear();
                         DestroySpeaker();
                         yield break;
                     }

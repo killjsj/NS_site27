@@ -14,12 +14,13 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         public static void Start()
         {
             _stop = false;
-            _handle = CorePlugin.RunCoroutine(Broadcaster());
+            _handle = Timing.RunCoroutine(Broadcaster());
         }
 
         public static void Stop()
         {
             _stop = true;
+            Timing.KillCoroutines(_handle);
         }
 
         private static IEnumerator<float> Broadcaster()

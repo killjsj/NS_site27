@@ -1,18 +1,12 @@
-using AutoEvent.API;
-using AutoEvent.API.Enums;
+using NS_site27_api.Core.UI;
 using CommandSystem;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Core.UserSettings;
 using Exiled.CustomItems.API.Features;
-using Exiled.CustomRoles.API.Features;
 using HarmonyLib;
-using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
-using NS_site27_api.Modules._Keycard;
-using NS_site27_api.Modules.EventHandle;
-using NS_site27_api.Modules.MySQL;
-using NS_site27_api.Modules.PlayerManagement;
+using NS_site27_heavy.Core;
+using NS_site27_heavy.heavy.SpecialWaveManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,82 +14,38 @@ using System.Reflection;
 using Player = Exiled.API.Features.Player;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
 using ServerHandlers = Exiled.Events.Handlers.Server;
+using Exiled.CustomRoles.API.Features;
 
 
-namespace NS_site27_api
+namespace NS_site27_heavy
 {
     public class Plugin : Exiled.API.Features.Plugin<PluginConfig>
     {
-        public override string Name => "NS_site27";
+        public override string Name => "NS_site27_heavy";
         public override string Author => "killjsj";
         public override PluginPriority Priority => PluginPriority.Low;
 
         public static Plugin Instance { get; private set; }
-        public MySQLConnect connect = new MySQLConnect();
 
-        public static List<SettingBase> MenuCache = new List<SettingBase>();
-        public static Dictionary<Player, List<SettingBase>> PlayerMenuCache = new Dictionary<Player, List<SettingBase>>();
-
-        public static IEnumerable<SettingBase> Register(Player player, SettingBase setting, bool bypassCheck = false)
-            => Register(player, new SettingBase[] { setting }, bypassCheck);
-
-        public static IEnumerable<SettingBase> Register(Player player, IEnumerable<SettingBase> settings, bool bypassCheck = false)
-        {
-            if (!PlayerMenuCache.TryGetValue(player, out var playerMenu))
-            {
-                playerMenu = new List<SettingBase>();
-                PlayerMenuCache[player] = playerMenu;
-            }
-
-            var result = SettingBase.Register(player, settings.Where(x => bypassCheck || !playerMenu.Any(y => y.Id == x.Id))).ToList();
-            playerMenu.AddRange(result);
-            return result;
-        }
-
-        public static IEnumerable<SettingBase> Unregister(Player player, SettingBase setting = null, bool bypassCheck = false)
-            => Unregister(player, new SettingBase[] { setting }, bypassCheck);
-
-        public static IEnumerable<SettingBase> Unregister(Player player, IEnumerable<SettingBase> settings = null, bool bypassCheck = false)
-        {
-            if (!PlayerMenuCache.TryGetValue(player, out var playerMenu) || playerMenu.Count == 0)
-                return Enumerable.Empty<SettingBase>();
-
-            var result = SettingBase.Unregister(player, settings.Where(x => bypassCheck || playerMenu.Any(y => y.Id == x.Id))).ToList();
-            playerMenu.RemoveAll(x => result.Contains(x));
-            return result;
-        }
-
-        private IUIService _uiService;
         public override void OnEnabled()
         {
             Instance = this;
             CorePlugin.Instance = this;
-            Log.Info("NS_site27 plugin starting...");
+            Log.Info("NS_site27 <color=red>heavy</color> plugin starting...");
 
             ModuleConfigManager.Initialize(this);
-
-            _uiService = new RueIHintService();
-            UIManager.Initialize(_uiService);
-
-            if (Config.IsEnableDatabase)
-            {
-                var connStr = $"Server={Config.IpAddress};Port={Config.Port};Database={Config.Database};Uid={Config.Username};Pwd={Config.Password};allowPublicKeyRetrieval=true;Connection Timeout=30;";
-                connect.Connect(Config.IpAddress, Config.Port, Config.Username, Config.Password, Config.Database);
-            }
-
-            CorePlugin.Harmony = new Harmony("NS_site27.plugin");
+            CorePlugin.Harmony = new Harmony("NS_site27.plugin.heavy");
             CorePlugin.Harmony.PatchAll();
 
             DiscoverAndLoadModules();
             CustomRole.RegisterRoles(false);
-
 
             ServerHandlers.WaitingForPlayers += OnWaitingForPlayers;
             ServerHandlers.RestartingRound += OnRestartingRound;
             PlayerHandlers.Left += OnPlayerLeft;
             CustomItem.RegisterItems();
 
-            Log.Info($"NS_site27 plugin enabled with {CorePlugin.Modules.Count} modules.");
+            Log.Info($"NS_site27 heavy plugin enabled with {CorePlugin.Modules.Count} modules.");
             base.OnEnabled();
         }
 
@@ -112,15 +62,11 @@ namespace NS_site27_api
             }
 
             CorePlugin.Modules.Clear();
-            MenuCache.Clear();
-            PlayerMenuCache.Clear();
             CorePlugin.Harmony.UnpatchAll();
             CorePlugin.Harmony = null;
             CorePlugin.Instance = null;
-            UIManager.Finish();
-            connect.Close();
 
-            Log.Info("NS_site27 plugin disabled.");
+            Log.Info("NS_site27 plugin heavy disabled.");
             base.OnDisabled();
         }
 
@@ -181,16 +127,15 @@ namespace NS_site27_api
         private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
         {
             ev.Player.CleanupPlayer();
-            PlayerMenuCache.Remove(ev.Player);
         }
     }
 
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class ReloadConfigCommand : ICommand
     {
-        public string Command => "site27_reload";
-        public string[] Aliases => new[] { "s27rl" };
-        public string Description => "Reload all module configs from disk";
+        public string Command => "site27_reload_heavy";
+        public string[] Aliases => new[] { "s27rlh" };
+        public string Description => "Reload all module configs in heavy from disk";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
@@ -208,6 +153,49 @@ namespace NS_site27_api
 
             response = $"Config cache cleared, {CorePlugin.Modules.Count} modules reloaded.";
             return true;
+        }
+    }
+
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    public class ForceWaveCommand : ICommand
+    {
+        public string Command => "s27_forcewave";
+        public string[] Aliases => new[] { "s27fw" };
+        public string Description => "Force start a special wave by name";
+
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (!sender.CheckPermission(PlayerPermissions.ServerConfigs, out response))
+            {
+                return false;
+            }
+
+            if (arguments.Count == 0)
+            {
+                response = "Usage: s27_forcewave <WaveName>,available waves:";
+                foreach (var module in SpecWaveManager.RegWaves)
+                {
+                    response += $"\n- {module.WaveName}";
+                }
+                return false;
+            }
+
+            var waveName = arguments.First();
+            var manager = CorePlugin.GetModule<SpecWaveManager>();
+            if (manager == null)
+            {
+                response = "SpecWaveManager module is not loaded.";
+                return false;
+            }
+
+            if (SpecWaveManager.StartWave(SpecWaveManager.GetWave(waveName)))
+            {
+                response = $"Started wave '{waveName}'.";
+                return true;
+            }
+
+            response = $"Failed to start wave '{waveName}'. Check the wave name or whether another wave animation is running.";
+            return false;
         }
     }
 }

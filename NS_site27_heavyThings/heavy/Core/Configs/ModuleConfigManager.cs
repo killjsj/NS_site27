@@ -5,7 +5,7 @@ using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NS_site27_api.Core
+namespace NS_site27_heavy.Core
 {
     public abstract class ModuleConfigBase
     {

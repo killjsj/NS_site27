@@ -124,7 +124,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (player == null) return;
 
             player.AddMessage("Always_InfoShow", PlayerHudLVShow, -1,
-                UIPosition.FromXY(-100, 40));
+                UIPosition.FromXY(0, 35));
 
             player.AddMessage("RoleHUD", RoleShowGetter, -1,
                 UIPosition.FromXY(0, 350));
@@ -202,6 +202,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         static CoroutineHandle refresher;
         static void WaitingForPlayers()
         {
+            UpdateTip();
             Scp.Clear();
             if (refresher.IsRunning)
             {
@@ -356,9 +357,9 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (player != null && !player.IsScp)
             {
                 v += "<size=19>";
-                if (player.Role == RoleTypeId.Overwatch || player.Role == RoleTypeId.Spectator)
+                if (player.Role.Type != RoleTypeId.Overwatch && player.Role.Type == RoleTypeId.Spectator)
                 {
-                    v += $"<align=center><color=yellow>{(string.IsNullOrEmpty(CurrentTip) ? "" : $"Tip:{CurrentTip}")}";
+                    v += $"<align=center><color=yellow>{(string.IsNullOrEmpty(CurrentTip) ? "" : $"Tip:{CurrentTip}\n")}";
                     v += $"<color=#00FFFF>博士/九尾数量:{doc+ gruad+ntf}</color>\n";
                     v += $"<color=#009900>dd/混沌数量:{dd+ chaos}</color>\n";
                     v += $"<color=red>scp数量:{Scp.Count}</color></indent>";
@@ -462,7 +463,7 @@ namespace NS_site27_api.Modules.PlayerManagement
 
             var stats = PlayerManagementModule.GetOrCreateStats(target);
             bool isSpec = player.Role is SpectatorRole;
-            string re = "<align=center><size=22>";
+            string re = "<align=center><size=20>";
             string upLine = BuildFirstLine(target, isSpec);
             string downLine = BuildSecondLine(target, stats, specCount, isSpec);
             re += upLine + "\n" + downLine;
@@ -518,9 +519,9 @@ namespace NS_site27_api.Modules.PlayerManagement
             var phase = PhaseManager.GetPhase(player);
 
             return $"" +
-                   $"<color=#FFFF00>{(isSpec ? "玩家:" : "欢迎回来:")} {player.Nickname}</color> | " +
-                   $"<color={ConductManager.ConductToColor(conduct)}>品行:{ConductManager.ConductToName(conduct)}</color> | " +
-                   $"<color={PhaseManager.PhaseToColor(phase)}>阶段:{PhaseManager.GetPhaseProgressString(player, phase)}</color> | " +
+                   $"<color=#FFFF00>{(isSpec ? "玩家:" : "欢迎回来:")} {player.Nickname}</color> " +
+                   $"<color={ConductManager.ConductToColor(conduct)}>品行:{ConductManager.ConductToName(conduct)}</color> " +
+                   $"<color={PhaseManager.PhaseToColor(phase)}>阶段:{PhaseManager.GetPhaseProgressString(player, phase)}</color> " +
                    $"<color={teamColor}>阵营:{teamName}</color>" +
                    $"";
         }
@@ -528,16 +529,16 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static int ChaosReinforceCount = 0;
         private static string BuildSecondLine(Player player, PlayerManagementModule.RoundStatistics stats, int specCount, bool isSpec)
         {
-            if (player == null || stats == null) return "";
+            if (player == null |stats == null) return "";
 
             var dur = PlayerDataManager.GetAllTime(player);
 
             return $"" +
-                   $"<color=#FFD700>总得分:{stats.Points}</color> | " +
-                   $"<color=#00FF00>击杀:{stats.Kills}</color> | " +
-                   $"<color=#FF0000>死亡:{stats.Deaths}</color> | " +
-                   (player.LeadingTeam == LeadingTeam.ChaosInsurgency || player.LeadingTeam == LeadingTeam.FacilityForces ? $"<color=yellow>增援:{GetWaveCount(player)}</color> | " : "")+
-                   (isSpec ? "" : $"<color=#FF00FF>总时长:{dur.TotalDays:F0}天{dur.Hours:D2}时{dur.Minutes:D2}分</color> | ") +
+                   $"<color=#FFD700>总得分:{stats.Points}</color> " +
+                   $"<color=#00FF00>击杀:{stats.Kills}</color> " +
+                   $"<color=#FF0000>死亡:{stats.Deaths}</color> " +
+                   (player.LeadingTeam == LeadingTeam.ChaosInsurgency |player.LeadingTeam == LeadingTeam.FacilityForces ? $"<color=yellow>增援:{GetWaveCount(player)}</color> " : "")+
+                   (isSpec ? "" : $"<color=#FF00FF>总时长:{dur.TotalDays:F0}天{dur.Hours:D2}时{dur.Minutes:D2}分</color> ") +
                    $"<color=#87CEEB>观众:{specCount}</color>" +
                    $"";
         }
@@ -681,6 +682,8 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static void AddScoreChange(Player player, int amount, string reason)
         {
             ScoreQueue.Add(new ScoreChange { Player = player, Amount = amount, Reason = reason, Time = Time.time });
+            string sign = amount > 0 ? "加" : "";
+            player.SendConsoleMessage($"{sign} {amount} 积分 ({reason})", "green");
         }
 
         public static void InteractingElevator(InteractingElevatorEventArgs ev)
@@ -707,37 +710,11 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev) {
             UpdateTip();
-            ntfWave++; 
+            ntfWave++;
         }
         public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev) { 
-            ChaosCount++;
             UpdateTip();
-        }
-        static List<IUIPart> UIParts = new List<IUIPart>();
-
-        public static IUIPart GetUIPart(int index)
-        {
-            return UIParts[index];
-        }
-
-        public static IUIPart[] GetUIParts()
-        {
-            return UIParts.ToArray();
-        }
-
-        public static void AddUIPart(IUIPart part)
-        {
-            UIParts.Add(part);
-        }
-
-        public static void AddUIPart(IUIPart part, int index)
-        {
-            UIParts.Insert(index, part);
-        }
-
-        public static void RemoveUIPart(int index)
-        {
-            UIParts.RemoveAt(index);
+            ChaosCount++;
         }
     }
 }

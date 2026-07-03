@@ -20,7 +20,7 @@ namespace NS_site27_api.Modules.EventHandle
         public string BroadcastColor { get; set; } = "yellow";
         public List<string> BroadcastContext { get; set; } = new List<string> { "示范用1", "示范用2" };
         public bool RoundEndFF { get; set; } = true;
-        public string RoundEndFFText { get; set; } = "<size=22><color=#F5FFFA>FF enabled</color></size>";
+        public string RoundEndFFText { get; set; } = "<size=22><color=red>友伤已开启 快去被刺你的队友吧!</color></size>";
     }
 
     public class ItemCleanerModule : ModuleBase<EventHandleConfig>

@@ -1,8 +1,10 @@
 using Exiled.API.Features;
 using MySql.Data.MySqlClient;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
 
 namespace NS_site27_api.Modules.MySQL
 {
@@ -20,6 +22,38 @@ namespace NS_site27_api.Modules.MySQL
         private MySqlConnection _Connection;
         private string _ConnectionString;
         public bool Connected { get; private set; }
+
+        // 缓存相关 -------------------------------------------------
+        // 玩家信息缓存
+        private readonly ConcurrentDictionary<string, UserCacheEntry> _userCache = new(StringComparer.OrdinalIgnoreCase);
+        // 玩家统计缓存
+        private readonly ConcurrentDictionary<string, PlayerStatsCacheEntry> _playerStatsCache = new(StringComparer.OrdinalIgnoreCase);
+        // 缓存滑动过期时间（可根据需要调整）
+        private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(10);
+
+        // 缓存条目结构
+        private class UserCacheEntry
+        {
+            public int Uid;
+            public string Name;
+            public int Experience;
+            public double? ExpMultiplier;
+            public int Point;
+            public string Ip;
+            public DateTime? LastTime;
+            public TimeSpan? TotalDuration;
+            public TimeSpan? TodayDuration;
+            public DateTime LastAccess;
+        }
+
+        private class PlayerStatsCacheEntry
+        {
+            public int TotalKills;
+            public int TotalDeaths;
+            public int TotalEscapes;
+            public DateTime LastAccess;
+        }
+        // 缓存结束 -------------------------------------------------
 
         public void Connect(string ip, uint port, string username, string password, string database)
         {
@@ -39,10 +73,26 @@ namespace NS_site27_api.Modules.MySQL
             }
         }
 
+        // ---------- QueryUser (带缓存) ----------
         public (int uid, string name, int experience, double? expMultiplier, int point, string ip, DateTime? last_time, TimeSpan? total_duration, TimeSpan? today_duration) QueryUser(string userid)
         {
             if (!Connected) return (0, null, 0, 0, 1, null, null, null, null);
 
+            // 尝试从缓存获取
+            if (_userCache.TryGetValue(userid, out var cacheEntry))
+            {
+                // 检查是否过期（滑动过期）
+                if (DateTime.UtcNow - cacheEntry.LastAccess < CacheSlidingExpiration)
+                {
+                    // 刷新访问时间并返回缓存值
+                    cacheEntry.LastAccess = DateTime.UtcNow;
+                    return (cacheEntry.Uid, cacheEntry.Name, cacheEntry.Experience, cacheEntry.ExpMultiplier, cacheEntry.Point, cacheEntry.Ip, cacheEntry.LastTime, cacheEntry.TotalDuration, cacheEntry.TodayDuration);
+                }
+                // 过期则移除，继续查询数据库
+                _userCache.TryRemove(userid, out _);
+            }
+
+            // 查询数据库
             string query = "SELECT uid, name, experience, experience_multiplier, point, ip, today_duration, total_duration, last_time FROM user WHERE userid = @userid";
 
             try
@@ -64,6 +114,23 @@ namespace NS_site27_api.Modules.MySQL
                             DateTime? lastTime = reader.IsDBNull(reader.GetOrdinal("last_time")) ? (DateTime?)null : reader.GetDateTime("last_time");
                             TimeSpan? totalDur = reader.IsDBNull(reader.GetOrdinal("total_duration")) ? (TimeSpan?)null : reader.GetTimeSpan("total_duration");
                             TimeSpan? todayDur = reader.IsDBNull(reader.GetOrdinal("today_duration")) ? (TimeSpan?)null : reader.GetTimeSpan("today_duration");
+
+                            // 存入缓存
+                            var newEntry = new UserCacheEntry
+                            {
+                                Uid = uid,
+                                Name = name,
+                                Experience = exp,
+                                ExpMultiplier = expMul,
+                                Point = point,
+                                Ip = ipStr,
+                                LastTime = lastTime,
+                                TotalDuration = totalDur,
+                                TodayDuration = todayDur,
+                                LastAccess = DateTime.UtcNow
+                            };
+                            _userCache[userid] = newEntry;
+
                             return (uid, name, exp, expMul, point, ipStr, lastTime, totalDur, todayDur);
                         }
                     }
@@ -77,11 +144,23 @@ namespace NS_site27_api.Modules.MySQL
             return (0, null, 0, 0, 1, null, null, null, null);
         }
 
-        public (int TotalKills,int TotalDeaths,int TotalEscapes) QueryPlayerStats(string userid)
+        // ---------- QueryPlayerStats (带缓存) ----------
+        public (int TotalKills, int TotalDeaths, int TotalEscapes) QueryPlayerStats(string userid)
         {
-            if (!Connected) return (0,0,0);
+            if (!Connected) return (0, 0, 0);
 
-            string query = "SELECT total_kills,total_deaths,total_escapes FROM player_stats WHERE userid = @userid";
+            // 尝试从缓存获取
+            if (_playerStatsCache.TryGetValue(userid, out var cacheEntry))
+            {
+                if (DateTime.UtcNow - cacheEntry.LastAccess < CacheSlidingExpiration)
+                {
+                    cacheEntry.LastAccess = DateTime.UtcNow;
+                    return (cacheEntry.TotalKills, cacheEntry.TotalDeaths, cacheEntry.TotalEscapes);
+                }
+                _playerStatsCache.TryRemove(userid, out _);
+            }
+
+            string query = "SELECT total_kills, total_deaths, total_escapes FROM player_stats WHERE userid = @userid";
 
             try
             {
@@ -96,28 +175,42 @@ namespace NS_site27_api.Modules.MySQL
                             int total_kills = reader.IsDBNull(reader.GetOrdinal("total_kills")) ? 0 : reader.GetInt32("total_kills");
                             int total_deaths = reader.IsDBNull(reader.GetOrdinal("total_deaths")) ? 0 : reader.GetInt32("total_deaths");
                             int total_escapes = reader.IsDBNull(reader.GetOrdinal("total_escapes")) ? 0 : reader.GetInt32("total_escapes");
-                            return (total_kills,total_deaths,total_escapes);
+
+                            var newEntry = new PlayerStatsCacheEntry
+                            {
+                                TotalKills = total_kills,
+                                TotalDeaths = total_deaths,
+                                TotalEscapes = total_escapes,
+                                LastAccess = DateTime.UtcNow
+                            };
+                            _playerStatsCache[userid] = newEntry;
+
+                            return (total_kills, total_deaths, total_escapes);
                         }
                     }
                 }
             }
-            catch (Exception ex) { Log.Error($"QueryUser error: {ex.Message}"); }
+            catch (Exception ex) { Log.Error($"QueryPlayerStats error: {ex.Message}"); }
             finally
             {
                 if (_Connection.State == ConnectionState.Open) _Connection.Close();
             }
-            return (0, 0,0);
+            return (0, 0, 0);
         }
-        public void UpdatePlayerStat(string userid,int TotalKills = -1,int TotalDeaths = -1, int TotalEscapes = -1)
+
+        // ---------- UpdatePlayerStat (写入同时更新缓存) ----------
+        public void UpdatePlayerStat(string userid, int TotalKills = -1, int TotalDeaths = -1, int TotalEscapes = -1)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return;
 
             try
             {
+                // 从缓存或数据库获取当前值
                 var c = QueryPlayerStats(userid);
                 TotalKills = TotalKills == -1 ? c.TotalKills : TotalKills;
                 TotalDeaths = TotalDeaths == -1 ? c.TotalDeaths : TotalDeaths;
                 TotalEscapes = TotalEscapes == -1 ? c.TotalEscapes : TotalEscapes;
+
                 string sql = @"INSERT INTO player_stats (userid, total_kills, total_deaths, total_escapes)
 VALUES (@userid, @kills, @deaths, @escs)
 ON DUPLICATE KEY UPDATE
@@ -134,13 +227,24 @@ ON DUPLICATE KEY UPDATE
                     cmd.Parameters.AddWithValue("@escs", TotalEscapes);
                     cmd.ExecuteNonQuery();
                 }
+
+                // 写入成功后直接更新缓存（无需等待过期）
+                _playerStatsCache[userid] = new PlayerStatsCacheEntry
+                {
+                    TotalKills = TotalKills,
+                    TotalDeaths = TotalDeaths,
+                    TotalEscapes = TotalEscapes,
+                    LastAccess = DateTime.UtcNow
+                };
             }
-            catch (Exception ex) { Log.Error($"Update error: {ex.Message}"); }
+            catch (Exception ex) { Log.Error($"UpdatePlayerStat error: {ex.Message}"); }
             finally
             {
                 if (_Connection.State == ConnectionState.Open) _Connection.Close();
             }
         }
+
+        // ---------- Update (写入同时更新缓存) ----------
         public void Update(string userid, string name = null, int experience = -1, double? expMultiplier = null,
             string ip = null, int point = -1, DateTime? last_time = null, TimeSpan? today_duration = null, TimeSpan? total_duration = null)
         {
@@ -148,6 +252,7 @@ ON DUPLICATE KEY UPDATE
 
             try
             {
+                // 从缓存或数据库获取当前值
                 var p = QueryUser(userid);
                 name = name ?? p.name;
                 point = point == -1 ? p.point : point;
@@ -177,6 +282,21 @@ ON DUPLICATE KEY UPDATE
                     cmd.Parameters.AddWithValue("@last_time", last_time ?? DateTime.Now);
                     cmd.ExecuteNonQuery();
                 }
+
+                // 更新缓存
+                _userCache[userid] = new UserCacheEntry
+                {
+                    Uid = p.uid,
+                    Name = name,
+                    Experience = experience,
+                    ExpMultiplier = expMultiplier,
+                    Point = point,
+                    Ip = ip,
+                    LastTime = last_time,
+                    TotalDuration = total_duration,
+                    TodayDuration = today_duration,
+                    LastAccess = DateTime.UtcNow
+                };
             }
             catch (Exception ex) { Log.Error($"Update error: {ex.Message}"); }
             finally
@@ -184,6 +304,8 @@ ON DUPLICATE KEY UPDATE
                 if (_Connection.State == ConnectionState.Open) _Connection.Close();
             }
         }
+
+        // ---- 以下为无需缓存的写入/低频查询方法，保持原样 ----
 
         public void InsertChatLog(string userid, string name, string message, string channel, string port)
         {
@@ -223,34 +345,21 @@ ON DUPLICATE KEY UPDATE
             catch (Exception ex) { Log.Error($"CountUserViolations: {ex.Message}"); return 0; }
             finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
         }
+
         public List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)> QueryAllBan(string INuserid)
         {
             var bans = new List<(string, string, string, string, string, DateTime, DateTime, string)>();
 
-            if (!Connected)
-                return bans;
+            if (!Connected) return bans;
 
-            string query = @"
-SELECT 
-            issuer_name,
-            issuer_userid,
-            name,
-            userid,
-            reason,
-            start_time,
-            end_time,
-            port
-FROM ban
-WHERE userid = @userid";
+            string query = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port FROM ban WHERE userid = @userid";
 
             try
             {
                 _Connection.Open();
                 using (var cmd = new MySqlCommand(query, _Connection))
                 {
-                    // ✅ 先添加参数，再执行
                     cmd.Parameters.AddWithValue("@userid", INuserid);
-
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -263,24 +372,16 @@ WHERE userid = @userid";
                             DateTime start_time = reader.GetDateTime("start_time");
                             DateTime end_time = reader.GetDateTime("end_time");
                             string port = reader["port"] as string ?? "Unknown";
-
                             bans.Add((issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port));
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Error($"❌ 查询所有封禁记录失败: {ex.Message}");
-            }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open)
-                    _Connection.Close();
-            }
-
+            catch (Exception ex) { Log.Error($"❌ 查询所有封禁记录失败: {ex.Message}"); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
             return bans;
         }
+
         public bool InsertBanRecord(string userid, string name, string issuer_userid, string issuer_name, string reason, DateTime start, DateTime end, string port)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return false;
@@ -357,33 +458,13 @@ WHERE userid = @userid";
             finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
             return result;
         }
-        //public void UpdateOrNewAdminPermissionTable(List<string> groupName)
-        //{
 
-        //}
-        //public string QueryAdminGroupName(int index)
-        //{
-
-        //}
         public List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)> QueryBadge(string userid)
         {
             var badges = new List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)>();
+            if (!Connected || string.IsNullOrEmpty(userid)) return badges;
 
-            if (!Connected || string.IsNullOrEmpty(userid))
-                return badges;
-
-            string query = @"
-        SELECT 
-            player_name,
-            badge,
-            color,
-            expiration_date,
-            is_permanent,
-            notes
-        FROM badge 
-        WHERE userid = @userid 
-          AND (is_permanent = 1 OR expiration_date > NOW())
-        ORDER BY is_permanent DESC, expiration_date ASC";
+            string query = @"SELECT player_name, badge, color, expiration_date, is_permanent, notes FROM badge WHERE userid = @userid AND (is_permanent = 1 OR expiration_date > NOW()) ORDER BY is_permanent DESC, expiration_date ASC";
 
             try
             {
@@ -401,24 +482,16 @@ WHERE userid = @userid";
                             DateTime expiration_date = reader.GetDateTime("expiration_date");
                             bool is_permanent = reader.GetInt32("is_permanent") == 1;
                             string notes = reader["notes"] as string ?? string.Empty;
-
                             badges.Add((player_name, badgeName, color, expiration_date, is_permanent, notes));
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Error($"❌ 查询用户 {userid} 的徽章失败: {ex.Message}");
-            }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open)
-                    _Connection.Close();
-            }
-
+            catch (Exception ex) { Log.Error($"❌ 查询用户 {userid} 的徽章失败: {ex.Message}"); }
+            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
             return badges;
         }
+
         public void LogAdminPermission(string userid, string name, int port, string command, string result, string additionalInfo = "", string group = "")
         {
             if (!Connected) return;

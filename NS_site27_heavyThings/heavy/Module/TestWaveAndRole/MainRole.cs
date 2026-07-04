@@ -19,7 +19,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Name { get; set; } = "testing";
         public override string Description { get; set; } = "1";
         public override string CustomInfo { get; set; } = "";
-        public override RoleTypeId Role { get; set; } = RoleTypeId.ClassD;
+        public override RoleTypeId Role { get; set; } = RoleTypeId.Tutorial;
         public static MainRole r;
         public override void Init()
         {
@@ -34,7 +34,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         protected override void RoleAdded(Player player)
         {
             base.RoleAdded(player);
-            player.Position = new UnityEngine.Vector3(0, 301, -40);
+            player.Position = new UnityEngine.Vector3(123, 289, 21);
         }
     }
 }

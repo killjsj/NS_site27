@@ -15,25 +15,36 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public abstract void OnRestartRound();
         public abstract string WaveName { get; }
         public virtual int MaxSpawnedOnce => 999;
+        public virtual string GetWaitingSpawningUIText() => "";
+        public virtual WaveUIPosition WaveUIPosition { get; set; } = WaveUIPosition.NeverDisplay;
     }
-    public interface ITimingWave
+    public enum WaveUIPosition
     {
-        float SpawnTotalTime { get; }
-        float LastSpawnTime { get; set; }
+        None,
+        Left,
+        Right,
+        NeverDisplay,
+    }
+    public interface ITiming
+    {
+        public float SpawnTotalTime { get; set; }
+        public float LastSpawnTime { get; set; }
     }
     public interface IAnimWave 
     {
-        bool TryStartAnimation(Player[] WaitingToSpawn,Action<SpecialWave, Player[]> OnPlayDone);
+        public float GetPlayedTime();
+        public string GetSpawingUIText();
+        public bool TryStartAnimation(Player[] WaitingToSpawn,Action<SpecialWave, Player[]> OnPlayDone);
     }
 
-    public interface INeedInit
+    public interface INeedInitWave
     {
-        void Init();
-        void Deinit();
+        public void Init();
+        public void Deinit();
     }
     public interface ICountedWave
     {
-        int TotalCount { get; }
-        int RemainCount { set; get; }
+        public int TotalCount { get; }
+        public int RemainCount { set; get; }
     }
 }

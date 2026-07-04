@@ -19,17 +19,23 @@ using Player = Exiled.API.Features.Player;
 
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 {
-    public class MainWave : SpecialWave, ICountedWave, IAnimWave, INeedInit
+    public class MainWave : SpecialWave, ICountedWave, IAnimWave, INeedInitWave, ITiming
     {
         public override string WaveName => "test";
 
-        int ICountedWave.TotalCount => 0;
+        public int TotalCount => 3;
+        
 
-        int ICountedWave.RemainCount { get; set; } = 0;
+        public int RemainCount { get; set; } = 3;
+
+        public float SpawnTotalTime { get; set; } = 30;
+
+        public float LastSpawnTime { get; set; } = 0;
+        public override WaveUIPosition WaveUIPosition { get; set; } = WaveUIPosition.Left;
 
         public override (bool success, string output) CheckWaveConditions(bool isDebug = false)
         {
-            return (false, "Only force");
+            return (true, "Only force");
         }
 
         public override void OnRestartRound()
@@ -61,11 +67,13 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                 {
                     i.FpcModule.Motor.GravityController.Gravity = FpcGravityController.DefaultGravity;
                 }
+                                item.DisableEffect(Exiled.API.Enums.EffectType.Invigorated);
             }
+            CurrentSpawning.RemoveWhere(x=>WaitingToSpawn.Contains(x));
             return (true, WaitingToSpawn);
         }
 
-        void INeedInit.Deinit()
+        void INeedInitWave.Deinit()
         {
             PlayerEvents.ValidatedVisibility -= PlayerEvents_ValidatedVisibility;
         }
@@ -85,7 +93,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             }
         }
 
-        void INeedInit.Init()
+        void INeedInitWave.Init()
         {
             PlayerEvents.ValidatedVisibility += PlayerEvents_ValidatedVisibility;
 
@@ -135,8 +143,14 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                 {
                                     i.FpcModule.Motor.GravityController.Gravity = Vector3.zero;
                                 }
+                                player.EnableEffect(Exiled.API.Enums.EffectType.Invigorated);
                                 player.CurrentItem = null;
-                                player.ReferenceHub.TryOverridePosition(PlayerCamera.transform.position);
+                                Vector3 pos = PlayerCamera.transform.position;
+
+                                if ((player.Position - pos).sqrMagnitude > 0.0004f) // 大约2cm
+                                {
+                                    player.ReferenceHub.TryOverridePosition(pos);
+                                }
                                 Vector3 playerEuler = player.Rotation.eulerAngles;
                                 Vector3 cameraEuler = PlayerCamera.transform.eulerAngles;
 
@@ -198,6 +212,13 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
                 yield return Timing.WaitForOneFrame;
             }
+            foreach (var item in CurrentSpawning)
+            {
+                if (item.Role.Base is IFpcRole i && i.FpcModule.Motor.GravityController.Gravity == Vector3.zero)
+                {
+                    i.FpcModule.Motor.GravityController.Gravity = FpcGravityController.DefaultGravity;
+                }
+            }
             CurrentSpawning?.Clear();
             CurrentSpawning = null;
             root?.GetComponent<SchematicObject>()?.Destroy();
@@ -227,7 +248,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                     switch (item.name)
                     {
                         case "Landsite":
-                            item.transform.position = new UnityEngine.Vector3(0, 301, -40);
+                            item.transform.position = new UnityEngine.Vector3(123, 289, 21);
                             break;
                         case "Heli":
                             HeliAnim = item.GetComponent<Animator>();
@@ -245,7 +266,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                 Timing.CallDelayed(0.01f, () =>
                 {
                     HeliAnim.Play("start");
-                    handle = Timing.RunCoroutine(AnimUpdater());
+                    handle = Timing.RunCoroutine(AnimUpdater(),Segment.LateUpdate);
 
                 });
                 return true;
@@ -254,6 +275,39 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 return false;
             }
+        }
+
+        public float GetPlayedTime()
+        {
+            if(HeliAnim == null)
+                return 0;
+            var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.IsName("start"))
+            {
+                return stateInfo.normalizedTime * stateInfo.length;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public string GetSpawingUIText()
+        {
+            if (HeliAnim == null)
+                return "";
+            var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.IsName("start"))
+            {
+                return $"<color=#0000FF>Spawning test wave in {Math.Max(0, 9.2 - GetPlayedTime()):F0}s</color>";
+            }
+            return "";
+        }
+
+        public override string GetWaitingSpawningUIText()
+        {
+            if (this.RemainCount <= 0) return "";
+            return $"<color=#F000FF>TestWave RemainTime:{Math.Max(this.SpawnTotalTime - (Time.time - this.LastSpawnTime), 0):F0}s</color>";
         }
     }
 }

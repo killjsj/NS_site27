@@ -1,6 +1,10 @@
 ﻿using Exiled.API.Features;
+using GameCore;
 using MEC;
+using Mirror;
+using NS_site27_api.Modules.PlayerManagement;
 using NS_site27_heavy.Core;
+using ProjectMER.Commands.Map;
 using Respawning;
 using Respawning.Waves;
 using System;
@@ -19,16 +23,18 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public static SpecWaveManager Ins;
         public static List<SpecialWave> RegWaves = new();
         public static bool IsInAnim = false;
-        public static bool CanStartSpawn => !IsInAnim;
+        public static bool CanStartSpawn => !IsInAnim && WaveSpawner.AnyPlayersAvailable;
         private CoroutineHandle loop;
         public override void OnDisable()
         {
+            PlayerHUDManager.BuildSpawnUIEvent -= PlayerHUDManager_BuildSpawnUIEvent;
             RestartingRound();
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
+            Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Exiled.Events.Handlers.Server.RestartingRound -= RestartingRound;
             foreach (var item in RegWaves)
             {
-                if (item is INeedInit i)
+                if (item is INeedInitWave i)
                 {
                     i.Deinit();
                 }
@@ -37,8 +43,10 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
 
         public override void OnEnable()
         {
+            PlayerHUDManager.BuildSpawnUIEvent += PlayerHUDManager_BuildSpawnUIEvent;
             Ins = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += WaitingForPlayers;
+            Exiled.Events.Handlers.Server.RoundStarted += RoundStarted;
             Exiled.Events.Handlers.Server.RestartingRound += RestartingRound;
             var assembly = Assembly.GetCallingAssembly();
             var moduleTypes = assembly.GetTypes()
@@ -51,7 +59,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 {
                     var obj = (SpecialWave)Activator.CreateInstance(type);
                     RegWaves.Add(obj);
-                    if(obj is INeedInit i)
+                    if(obj is INeedInitWave i)
                     {
                         i.Init();
                     }
@@ -62,6 +70,66 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 }
             }
         }
+        public void RoundStarted()
+        {
+            foreach (var item in RegWaves)
+            {
+                if (item is ITiming timing)
+                {
+                    timing.LastSpawnTime = Time.time;
+                }
+            }
+        }
+        private void PlayerHUDManager_BuildSpawnUIEvent(PlayerHUDManager.UILocate locate, ref StringBuilder AppendString)
+        {
+            if(!Round.IsStarted) return;
+            bool isSpawning = false;
+            WaveUIPosition waveUIPosition = WaveUIPosition.None;
+            switch (locate)
+            {
+                case PlayerHUDManager.UILocate.Left:
+                    waveUIPosition = WaveUIPosition.Left;
+                    AppendString.Append("<align=left><size=25>");
+                    break;
+                case PlayerHUDManager.UILocate.Right:
+                    AppendString.Append("<align=right><size=25>");
+                    waveUIPosition = WaveUIPosition.Right;
+                    break;
+                case PlayerHUDManager.UILocate.Middle:
+                    isSpawning = true;
+                    break;
+                default:
+                    break;
+            }
+            if(isSpawning)
+            {
+                if(CurrentWave !=null && CurrentWave is IAnimWave anim)
+                {
+                    var r = anim.GetSpawingUIText();
+                    if (!string.IsNullOrEmpty(r))
+                    {
+                        AppendString.AppendLine(r);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var item in RegWaves)
+                {
+                    if (item.WaveUIPosition == waveUIPosition)
+                    {
+                        var r = item.GetWaitingSpawningUIText();
+                        if(!string.IsNullOrEmpty(r))
+                        {
+                            AppendString.AppendLine(r);
+                        }
+                    }
+                }
+            }
+            AppendString.Append("</size></align>");
+
+        }
+
         public void WaitingForPlayers()
         {
             loop = Timing.RunCoroutine(MainLoop());
@@ -84,7 +152,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 var (spawnSuccess, spawnedPlayers) = item.SpawnPlayers(WaitingToSpawn);
                 if (spawnSuccess)
                 {
-                    if (item is ITimingWave timingWave2)
+                    if (item is ITiming timingWave2)
                     {
                         timingWave2.LastSpawnTime = Time.time;
                     }
@@ -105,7 +173,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             } finally
             {
                 IsInAnim = false;
-
+                CurrentWave = null;
             }
         }
         public IEnumerator<float> MainLoop()
@@ -119,7 +187,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                         try
                         {
                             bool isInNeedToCallCheck = true;
-                            if (item is ITimingWave timingWave)
+                            if (item is ITiming timingWave)
                             {
                                 if (Time.time - timingWave.LastSpawnTime < timingWave.SpawnTotalTime)
                                 {
@@ -161,12 +229,13 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 string.Equals(x.WaveName, name, StringComparison.OrdinalIgnoreCase)
                 );
         }
+        public static SpecialWave CurrentWave = null;
         public static bool StartWave(SpecialWave wave)
         {
             if (wave == null || !CanStartSpawn)
                 return false;
             Log.Info($"[SWM] spawning wave {wave.GetType().Name}");
-
+            CurrentWave = wave;
             IsInAnim = true;
             try
             {
@@ -190,9 +259,17 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 IsInAnim = false;
                 Log.Error($"[SWM] Failed to start wave {wave.GetType().Name} with Exception:{ex}");
                 return false;
+            }finally
+            {
+                foreach (var item in RegWaves)
+                {
+                    if(item is ITiming timing && item != wave)
+                    {
+                        timing.LastSpawnTime = Time.time;
+                    }
+                }
             }
         }
-
         public class SPWConfig : ModuleConfigBase
         {
         }

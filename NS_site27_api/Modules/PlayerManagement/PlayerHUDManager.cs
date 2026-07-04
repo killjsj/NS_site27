@@ -44,7 +44,7 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public struct ScoreChange { public Player Player; public int Amount; public string Reason; public float Time; }
         public struct ElevatorInteractInfo { public Vector3 InteractAt; public Player Interactor; public float InteractTime; }
-        public struct NukeInteractInfo {public Player Interactor; public float InteractTime; public bool acted; }
+        public struct NukeInteractInfo { public Player Interactor; public float InteractTime; public bool acted; }
         public static List<ElevatorInteractInfo> ElevatorInteractions = new List<ElevatorInteractInfo>();
         public static List<NukeInteractInfo> NukeInteractions = new List<NukeInteractInfo>();
 
@@ -79,7 +79,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             Exiled.Events.Handlers.Player.Died -= Died;
             Exiled.Events.Handlers.Player.Left -= Left;
         }
-         public static void Starting(StartingEventArgs ev)
+        public static void Starting(StartingEventArgs ev)
         {
             NukeInteractions.Add(new NukeInteractInfo { Interactor = ev.Player, InteractTime = Time.time, acted = true });
         }
@@ -139,7 +139,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                 UIPosition.FromXY(0, 800));
 
             player.AddMessage("ScoreHint", ScoreGetter, -1,
-                0,225);
+                0, 225);
 
             player.AddMessage("914Hint", Scp914Getter, -1,
                 UIPosition.FromXY(0, 850));
@@ -174,7 +174,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (player == null) return null;
             if (player.IsDead)
-            {                                          
+            {
                 string str = "<align=right>";
                 str += PlayerManagementModule.Get().Config.SpecUI;
                 str += "</size></align></line-height></color>";
@@ -264,7 +264,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                         }
                         Scp914Str = (t, Time.time);
                     }
-                    if(Time.time - Scp914Str.startTime > 15f)
+                    if (Time.time - Scp914Str.startTime > 15f)
                     {
                         Scp914Str = ("", 0f);
                     }
@@ -304,7 +304,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (player == null) return null;
             var i = player.CurrentItem;
             if (i == null) return null;
-            if (i.IsFirearm &&i.Type != ItemType.MicroHID && i is Firearm f)
+            if (i.IsFirearm && i.Type != ItemType.MicroHID && i is Firearm f)
             {
                 float RemainPercent = (float)f.TotalAmmo / f.TotalMaxAmmo;
                 string str = "<size=15><b>";
@@ -316,7 +316,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                 else if (i.Type != ItemType.ParticleDisruptor && RemainPercent < 0.22 && RemainPercent > 0)
                 {
                     str += "<color=yellow>低弹药</color>";
-                }else if (i.Type == ItemType.ParticleDisruptor && f.TotalAmmo <= 2)
+                }
+                else if (i.Type == ItemType.ParticleDisruptor && f.TotalAmmo <= 2)
                 {
                     str += "<color=yellow>低弹药</color>";
 
@@ -326,7 +327,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     str += "<color=red>无弹药</color>";
                 }
                 str += "</b></size>";
-                return new[] { str};
+                return new[] { str };
             }
             if (i.Type == ItemType.MicroHID && i is MicroHid hid)
             {
@@ -360,8 +361,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                 if (player.Role.Type != RoleTypeId.Overwatch && player.Role.Type == RoleTypeId.Spectator)
                 {
                     v += $"<align=center><color=yellow>{(string.IsNullOrEmpty(CurrentTip) ? "" : $"Tip:{CurrentTip}\n")}";
-                    v += $"<color=#00FFFF>博士/九尾数量:{doc+ gruad+ntf}</color>\n";
-                    v += $"<color=#009900>dd/混沌数量:{dd+ chaos}</color>\n";
+                    v += $"<color=#00FFFF>博士/九尾数量:{doc + gruad + ntf}</color>\n";
+                    v += $"<color=#009900>dd/混沌数量:{dd + chaos}</color>\n";
                     v += $"<color=red>scp数量:{Scp.Count}</color></indent>";
                 }
                 else
@@ -435,7 +436,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                         v += $"<color=red>SCP{GetScpNumber(item.Role)}:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0}";
                         if (item.Role == RoleTypeId.Scp939)
                         {
-                            v += $" <color=yellow>目前体力:{player.Stamina*100:F0}%";
+                            v += $" <color=yellow>目前体力:{player.Stamina * 100:F0}%";
                         }
                         v += "\n";
                     }
@@ -487,7 +488,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             //if(UIParted)
             //    re.Remove(re.Length - 3, 3);
             re += "</size></align>";
-            
+
 
             return new[] { re };
         }
@@ -529,7 +530,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static int ChaosReinforceCount = 0;
         private static string BuildSecondLine(Player player, PlayerManagementModule.RoundStatistics stats, int specCount, bool isSpec)
         {
-            if (player == null |stats == null) return "";
+            if (player == null | stats == null) return "";
 
             var dur = PlayerDataManager.GetAllTime(player);
 
@@ -537,7 +538,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                    $"<color=#FFD700>总得分:{stats.Points}</color> " +
                    $"<color=#00FF00>击杀:{stats.Kills}</color> " +
                    $"<color=#FF0000>死亡:{stats.Deaths}</color> " +
-                   (player.LeadingTeam == LeadingTeam.ChaosInsurgency |player.LeadingTeam == LeadingTeam.FacilityForces ? $"<color=yellow>增援:{GetWaveCount(player)}</color> " : "")+
+                   (player.LeadingTeam == LeadingTeam.ChaosInsurgency | player.LeadingTeam == LeadingTeam.FacilityForces ? $"<color=yellow>增援:{GetWaveCount(player)}</color> " : "") +
                    (isSpec ? "" : $"<color=#FF00FF>总时长:{dur.TotalDays:F0}天{dur.Hours:D2}时{dur.Minutes:D2}分</color> ") +
                    $"<color=#87CEEB>观众:{specCount}</color>" +
                    $"";
@@ -582,8 +583,9 @@ namespace NS_site27_api.Modules.PlayerManagement
                     if (!hasContent) { r = $"<size=22><color={(item.acted ? "red" : "green")}>"; hasContent = true; }
                     r += $"{item.Interactor.Nickname}{(item.acted ? " 已启动核弹" : "已关闭核弹")}\n";
                 }
-                else {
-                    toRemove.Add(item); 
+                else
+                {
+                    toRemove.Add(item);
                 }
             }
             foreach (var item in toRemove)
@@ -604,13 +606,20 @@ namespace NS_site27_api.Modules.PlayerManagement
             string sign = mine.Amount > 0 ? "加" : "";
             return new[] { $"<size=20><color={color}>{sign} {mine.Amount} 积分 ({mine.Reason})</color></size>" };
         }
-        public static (string str,float startTime) Scp914Str = ("", 0f);
+        public static (string str, float startTime) Scp914Str = ("", 0f);
         private static string[] Scp914Getter(Player player)
         {
             if (player == null || player.CurrentRoom?.Type != RoomType.Lcz914) return new[] { "" };
             return new[] { Scp914Str.str };
         }
-
+        public enum UILocate
+        {
+            Left,
+            Right,
+            Middle
+        }
+        public delegate void OnBuildWaitingSpawnUI(UILocate locate, ref StringBuilder AppendString);
+        public static event OnBuildWaitingSpawnUI BuildSpawnUIEvent;
         private static string[] NtfSpawnGetter(Player player)
         {
             if (player == null || player.IsAlive || !(player.Role is SpectatorRole)) return new[] { "" };
@@ -618,20 +627,20 @@ namespace NS_site27_api.Modules.PlayerManagement
             var big = WaveManager.Waves.FirstOrDefault(x => x is NtfSpawnWave) as NtfSpawnWave;
             var small = WaveManager.Waves.FirstOrDefault(x => x is NtfMiniWave) as NtfMiniWave;
 
-            string result = "";
+            StringBuilder result = new StringBuilder("");
             if (big != null)
             {
                 double left = Math.Max(0, big.Timer.TimeLeft);
-                result = $"<align=left><size=25><color=#0000FFFF>🚁九尾狐: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>";
+                result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾狐: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
             }
             if (small != null)
             {
                 double left = Math.Max(0, small.Timer.TimeLeft);
-                result += "\n" + $"<align=left><size=25><color=#0000FFFF>🚁九尾增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>";
+                result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
             }
-            return result == "" ? new[] { "" } : new[] { result };
+            BuildSpawnUIEvent?.Invoke(UILocate.Left, ref result);
+            return result.ToString() == "" ? new[] { "" } : new[] { result.ToString() };
         }
-
         private static string[] ChaosSpawnGetter(Player player)
         {
             if (player == null || player.IsAlive || !(player.Role is SpectatorRole)) return new[] { "" };
@@ -639,20 +648,20 @@ namespace NS_site27_api.Modules.PlayerManagement
             var big = WaveManager.Waves.FirstOrDefault(x => x is ChaosSpawnWave) as ChaosSpawnWave;
             var small = WaveManager.Waves.FirstOrDefault(x => x is ChaosMiniWave) as ChaosMiniWave;
 
-            string result = "";
+            StringBuilder result = new StringBuilder("");
             if (big != null)
             {
                 double left = Math.Max(0, big.Timer.TimeLeft);
-                result = $"<align=right><size=25><color=#008000FF>🚗混沌: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>";
+                result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
             }
             if (small != null)
             {
                 double left = Math.Max(0, small.Timer.TimeLeft);
-                result += "\n" + $"<align=right><size=25><color=#008000FF>🚗混沌增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>";
+                result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
             }
-            return result == "" ? new[] { "" } : new[] { result };
+            BuildSpawnUIEvent?.Invoke(UILocate.Right, ref result);
+            return result.ToString() == "" ? new[] { "" } : new[] { result.ToString() };
         }
-
         private static string[] SpawnHintGetter(Player player)
         {
             if (player == null || player.IsAlive || !(player.Role is SpectatorRole)) return new[] { "" };
@@ -667,18 +676,22 @@ namespace NS_site27_api.Modules.PlayerManagement
             { if (!WaveCalc.IsRunning) WaveCalc.Restart(); }
             else { WaveCalc.Stop(); }
 
+            StringBuilder sb = new StringBuilder("<size=22>");
+
             if (ChaosBig?.IsAnimationPlaying == true)
-                return new[] { $"<size=22><color=#FFC0CB>你将在{(ChaosBig.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚗混沌</color></size>" };
-            if (NtfBig?.IsAnimationPlaying == true)
-                return new[] { $"<size=22><color=#FFC0CB>你将在{(NtfBig.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚁九尾狐</color></size>" };
-            if (ChaosSmall?.IsAnimationPlaying == true)
-                return new[] { $"<size=22><color=#FFC0CB>你将在{(ChaosSmall.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚗混沌增援</color></size>" };
-            if (NtfSmall?.IsAnimationPlaying == true)
-                return new[] { $"<size=22><color=#FFC0CB>你将在{(NtfSmall.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚁九尾狐增援</color></size>" };
+                sb.Append($"<color=#FFC0CB>你将在{(ChaosBig.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚗混沌</color>\n");
+            else if (NtfBig?.IsAnimationPlaying == true)
+                sb.Append($"<color=#FFC0CB>你将在{(NtfBig.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚁九尾狐</color>\n");
+            else if (ChaosSmall?.IsAnimationPlaying == true)
+                sb.Append($"<color=#FFC0CB>你将在{(ChaosSmall.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚗混沌增援</color>\n");
+            else if (NtfSmall?.IsAnimationPlaying == true)
+                sb.Append($"<color=#FFC0CB>你将在{(NtfSmall.AnimationDuration - WaveCalc.Elapsed.TotalSeconds):F0}秒后复活为🚁九尾狐增援</color>\n");
+            BuildSpawnUIEvent?.Invoke(UILocate.Middle, ref sb);
+            sb.Append("</size>");
 
-            return new[] { "" };
+
+            return sb.Length == 0 ? new[] { "" } : new[] { sb.ToString() };
         }
-
         public static void AddScoreChange(Player player, int amount, string reason)
         {
             ScoreQueue.Add(new ScoreChange { Player = player, Amount = amount, Reason = reason, Time = Time.time });
@@ -708,11 +721,13 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             CurrentTip = PlayerManagementModule.Get().Config.tips.RandomItem();
         }
-        public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev) {
+        public static void AnnouncingNtfEntrance(AnnouncingNtfEntranceEventArgs ev)
+        {
             UpdateTip();
             ntfWave++;
         }
-        public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev) { 
+        public static void AnnouncingChaosEntrance(AnnouncingChaosEntranceEventArgs ev)
+        {
             UpdateTip();
             ChaosCount++;
         }

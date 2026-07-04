@@ -16,7 +16,6 @@ namespace NS_site27_api.Core.UI
 
         public void AddMessage(Player player, string id, Func<Player, string[]> getter,UIPosition position)
         {
-            
             var r = RueDisplay.Get(player);
             var e = new DynamicElement(position.Y,x =>
             {

@@ -259,6 +259,8 @@
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\Lobby\LobbyModule.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />
+    <Compile Include="Modules\SettingManager\SettingManager.cs" />
+    <Compile Include="Modules\SettingManager\SettingManagerConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Core\CorePlugin.cs" />

@@ -21,7 +21,7 @@ namespace NS_site27_heavy.Core
         void OnReloadConfig();
     }
 
-    public static class CorePlugin
+    public static class HeavyCorePlugin
     {
         public static Plugin Instance { get; internal set; }
         public static HarmonyLib.Harmony Harmony { get; internal set; }

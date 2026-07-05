@@ -5,10 +5,12 @@ using LabApi.Events.Handlers;
 using LabApi.Features.Wrappers;
 using MEC;
 using NS_site27_heavy.heavy.SpecialWaveManager;
+using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using ProjectMER.Features.Objects;
 using ProjectMER.Features.Serializable.Schematics;
 using RemoteAdmin.Communication;
+using Respawning.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +26,6 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string WaveName => "test";
 
         public int TotalCount => 3;
-        
 
         public int RemainCount { get; set; } = 3;
 
@@ -32,7 +33,6 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public float LastSpawnTime { get; set; } = 0;
         public override WaveUIPosition WaveUIPosition { get; set; } = WaveUIPosition.Left;
-
         public override (bool success, string output) CheckWaveConditions(bool isDebug = false)
         {
             return (true, "Only force");
@@ -55,7 +55,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             CurrentSpawning = null;
         }
 
-        public override (bool success, Player[] spawnedPlayers) SpawnPlayers(Player[] WaitingToSpawn)
+        public override (bool success, List<Player> spawnedPlayers) SpawnPlayers(List<Player> WaitingToSpawn)
         {
             foreach (var item in WaitingToSpawn)
             {
@@ -105,7 +105,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public GameObject PlayerCamera;
         public Animator HeliAnim;
         public GameObject root;
-        public Action<SpecialWave, Player[]> OnPlayDone;
+        public Action<SpecialWave, List<Player>> OnPlayDone;
         public IEnumerator<float> AnimUpdater()
         {
             isInAnim = true;
@@ -201,7 +201,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                     else if(!CalledSpawn)
                     {
                         CalledSpawn = true;
-                        OnPlayDone?.Invoke(this, CurrentSpawning.ToArray());
+                        OnPlayDone?.Invoke(this, CurrentSpawning.ToList());
 
                     }
                 }
@@ -226,7 +226,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             HasLanded = true;
             
         }
-        public bool TryStartAnimation(Player[] WaitingToSpawn, Action<SpecialWave, Player[]> OnPlayDone)
+        public bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone)
         {
             OnRestartRound();
             CurrentSpawning = new(); 

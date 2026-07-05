@@ -2,6 +2,7 @@ using Exiled.API.Features;
 using Exiled.API.Features.Core.UserSettings;
 using MEC;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.SettingManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,43 +33,80 @@ namespace NS_site27_api.Modules.Abilities
         bool Done { get; }
     }
 
+    public class PlayerAbilitySet
+    {
+        public List<AbilityBase> RoleAbilities = new List<AbilityBase>();
+        public List<ItemAbilityBase> ItemAbilities = new List<ItemAbilityBase>();
+
+        public bool HasAny() => RoleAbilities.Count > 0 || ItemAbilities.Count > 0;
+
+        public IEnumerable<AbilityBase> AllAbilities()
+        {
+            foreach (var a in RoleAbilities) yield return a;
+            foreach (var a in ItemAbilities) yield return a;
+        }
+
+        public bool HasVisible()
+        {
+            foreach (var ability in AllAbilities())
+            {
+                try
+                {
+                    if (ability is ICounted c && (c.count > 0 || c.TotalCount > 0)) return true;
+                    if (ability is ITiming t && (!t.Done || t.CoolDownRemaining > 0)) return true;
+                    if (!string.IsNullOrEmpty(ability.CustomInfoToShow)) return true;
+                }
+                catch { return true; }
+            }
+            return false;
+        }
+
+        public PlayerAbilitySet GetOrCreate(Player player)
+        {
+            if (!PlayerAbilities.TryGetValue(player, out var set))
+            {
+                set = new PlayerAbilitySet();
+                PlayerAbilities[player] = set;
+            }
+            return set;
+        }
+
+        public static Dictionary<Player, PlayerAbilitySet> PlayerAbilities = new Dictionary<Player, PlayerAbilitySet>();
+    }
+
     public abstract class AbilityBase
     {
-        public static Dictionary<Player, List<AbilityBase>> PlayerAbilities = new Dictionary<Player, List<AbilityBase>>();
         public readonly int offset = 5000;
 
         public static bool RegisterForPlayer(Player player, AbilityBase ab)
         {
             if (player == null) return false;
-            if (!PlayerAbilities.TryGetValue(player, out var list))
-            {
-                list = new List<AbilityBase>();
-                PlayerAbilities.Add(player, list);
-            }
-            list.Add(ab);
+            var set = new PlayerAbilitySet().GetOrCreate(player);
+            set.RoleAbilities.Add(ab);
             return true;
         }
 
         public static bool RegisterForPlayer(Player player, IEnumerable<AbilityBase> abs)
         {
             if (player == null) return false;
-            if (!PlayerAbilities.TryGetValue(player, out var list))
-            {
-                list = new List<AbilityBase>();
-                PlayerAbilities.Add(player, list);
-            }
-            list.AddRange(abs);
+            var set = new PlayerAbilitySet().GetOrCreate(player);
+            set.RoleAbilities.AddRange(abs);
             return true;
         }
 
         public static bool UnregisterForPlayer(Player player, AbilityBase ab)
         {
             if (player == null) return false;
-            if (PlayerAbilities.TryGetValue(player, out var list))
-            {
-                list.Remove(ab);
-            }
+            if (PlayerAbilitySet.PlayerAbilities.TryGetValue(player, out var set))
+                set.RoleAbilities.Remove(ab);
             return true;
+        }
+
+        public static PlayerAbilitySet GetPlayerAbilitySet(Player player)
+        {
+            if (player == null) return null;
+            PlayerAbilitySet.PlayerAbilities.TryGetValue(player, out var set);
+            return set;
         }
 
         public abstract string Name { get; }
@@ -126,10 +164,8 @@ namespace NS_site27_api.Modules.Abilities
 
             if (!OnTrigger())
                 return;
-
+            if (cooldown.IsReady) cooldown.Trigger(Time + WaitForDoneTime);
             count--;
-
-            if (cooldown.IsReady) cooldown.Trigger(WaitForDoneTime);
             DoneCooldown.Trigger(WaitForDoneTime);
             CorePlugin.RunCoroutine(CooldownStart());
         }
@@ -168,7 +204,7 @@ namespace NS_site27_api.Modules.Abilities
         public virtual void Unregister(Player player) { }
     }
 
-    public abstract class KeyAbility : CoolDownAbility
+    public abstract class KeyAbility : CoolDownAbility, IRegisiterNeeded<AbilityBase>
     {
         public SettingBase setting = null;
         public abstract KeyCode KeyCode { get; }
@@ -176,7 +212,6 @@ namespace NS_site27_api.Modules.Abilities
 
         public KeyAbility() : base()
         {
-            InitSetting();
         }
 
         public KeyAbility(Player player) : base(player)
@@ -188,47 +223,43 @@ namespace NS_site27_api.Modules.Abilities
         {
             if (CorePlugin.Instance == null) return;
 
-            if (Plugin.MenuCache.Any(x => x.Id == id))
-            {
-                setting = Plugin.MenuCache.FirstOrDefault(x => x.Id == id);
-            }
-            else
-            {
-                try
+            int keyId = id + (int)KeyCode * 7919;
+            setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
+                keyId, Name, KeyCode, Des,
+                pressedPlayer =>
                 {
-                    setting = new KeybindSetting(id, Name, KeyCode, true, hintDescription: Des, onChanged: (p, sb) =>
+                    if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
-                        if (sb is KeybindSetting kbs && kbs.IsPressed)
-                        {
-                            if (activeAbilities.TryGetValue(p, out var abilities))
-                            {
-                                var a = abilities.FirstOrDefault(x => x.id == kbs.Id);
-                                a?.OnTriggerInternal(p);
-                            }
-                        }
-                    });
-                    Plugin.MenuCache.Add(setting);
-                }
-                catch { }
-            }
+                        foreach (var a in abilities.Where(x => x.KeyCode == KeyCode).ToList())
+                            a.OnTriggerInternal(pressedPlayer);
+                    }
+                });
         }
 
         public override AbilityBase Register(Player player)
         {
-            var a = (KeyAbility)Activator.CreateInstance(this.GetType(), player);
+            // Allow non-public constructors (internal) when creating per-player instance
+            var a = (KeyAbility)Activator.CreateInstance(this.GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { player }, null) as KeyAbility;
+            if (a == null)
+            {
+                // fallback to parameterless construction then set player and initialize
+                var tmp = (KeyAbility)Activator.CreateInstance(this.GetType());
+                tmp.player = player;
+                tmp.InitSetting();
+                tmp.InternalRegisterPlayer(player);
+                return tmp;
+            }
             a.InternalRegisterPlayer(player);
             return a;
         }
 
         public void InternalRegisterPlayer(Player player)
         {
+            // ensure setting is initialized before registering
+            if (setting == null) InitSetting();
             if (CorePlugin.Instance == null) return;
 
-            try
-            {
-                Plugin.Register(player, setting);
-            }
-            catch { }
+            SettingManager.Instance?.RegisterForPlayer(player, setting);
 
             if (!activeAbilities.ContainsKey(player))
                 activeAbilities.Add(player, new List<KeyAbility> { this });
@@ -240,18 +271,14 @@ namespace NS_site27_api.Modules.Abilities
 
         public override void Unregister(Player player)
         {
-            try
-            {
-                Plugin.Unregister(player, setting);
-            }
-            catch { }
+            SettingManager.Instance?.UnregisterForPlayer(player, setting);
 
             if (activeAbilities.TryGetValue(player, out var list))
                 list.Remove(this);
         }
     }
 
-    public abstract class PassAbility : AbilityBase
+    public abstract class PassAbility : AbilityBase, IRegisiterNeeded<AbilityBase>
     {
         public static bool _initialized;
         public Player player;
@@ -293,6 +320,9 @@ namespace NS_site27_api.Modules.Abilities
                 activeAbilities.Add(player, new List<PassAbility> { this });
             else
                 activeAbilities[player].Add(this);
+
+            // ensure refresher coroutine is started
+            Init();
         }
 
         public virtual void Unregister(Player player)
@@ -305,6 +335,7 @@ namespace NS_site27_api.Modules.Abilities
         public PassAbility(Player player)
         {
             this.player = player;
+            Init();
         }
     }
 }

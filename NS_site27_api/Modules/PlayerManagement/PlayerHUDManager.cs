@@ -197,7 +197,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static string Scp079Text = "<align=right><color=red>SCP079:<color=green>LV {lv} <color=yellow>Exp {exp}</color>";
         public static string ZombieText = "<align=right><color=red>SCP049-2:<color=green>{count}个</color>";
 
-        public static List<Player> Scp = new List<Player>();
+        public static HashSet<Player> Scp = new HashSet<Player>();
         public static Hint shower;
         static CoroutineHandle refresher;
         static void WaitingForPlayers()

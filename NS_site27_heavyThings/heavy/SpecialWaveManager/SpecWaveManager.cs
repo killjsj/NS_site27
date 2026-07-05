@@ -103,7 +103,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             }
             if(isSpawning)
             {
-                if(CurrentWave !=null && CurrentWave is IAnimWave anim)
+                if(CurrentWave !=null && CurrentWave is IAnimWave anim && CurrentWave.IsEnabled)
                 {
                     var r = anim.GetSpawingUIText();
                     if (!string.IsNullOrEmpty(r))
@@ -116,7 +116,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             {
                 foreach (var item in RegWaves)
                 {
-                    if (item.WaveUIPosition == waveUIPosition)
+                    if (item.WaveUIPosition == waveUIPosition && item.IsEnabled)
                     {
                         var r = item.GetWaitingSpawningUIText();
                         if(!string.IsNullOrEmpty(r))
@@ -145,26 +145,43 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 item.OnRestartRound();
             }
         }
-        public static void OnAnimDone(SpecialWave item, Player[] WaitingToSpawn)
+        public static void OnAnimDone(SpecialWave item, List<Player> WaitingToSpawn)
         {
             try
             {
-                var (spawnSuccess, spawnedPlayers) = item.SpawnPlayers(WaitingToSpawn);
-                if (spawnSuccess)
+                var roleAssignments = new Dictionary<ReferenceHub, PlayerRoles.RoleTypeId>();
+                foreach (var player in WaitingToSpawn)
                 {
-                    if (item is ITiming timingWave2)
-                    {
-                        timingWave2.LastSpawnTime = Time.time;
-                    }
-                    if (item is ICountedWave countedWave2)
-                    {
-                        countedWave2.RemainCount--;
-                    }
-                    Log.Info($"[SWM] spawned wave {item.GetType().Name}");
-                }
-                else
+                    roleAssignments.Add(player.ReferenceHub, PlayerRoles.RoleTypeId.CustomRole);
+                } 
+                var LabEvent = new LabApi.Events.Arguments.ServerEvents.WaveRespawningEventArgs(item, roleAssignments);
+                LabApi.Events.Handlers.ServerEvents.OnWaveRespawning(LabEvent);
+                if (LabEvent.IsAllowed)
                 {
-                    Log.Error($"[SWM] Failed to spawn players for wave {item.GetType().Name}.");
+                    WaitingToSpawn = LabEvent.SpawningPlayers.Select(x=>Player.Get(x)).ToList();
+                    {
+                        var (spawnSuccess, spawnedPlayers) = item.SpawnPlayers(WaitingToSpawn);
+                        if (spawnSuccess)
+                        {
+                            if (item is ITiming timingWave2)
+                            {
+                                timingWave2.LastSpawnTime = Time.time;
+                            }
+                            if (item is ICountedWave countedWave2)
+                            {
+                                countedWave2.RemainCount--;
+                            }
+                            var LabEvented = new LabApi.Events.Arguments.ServerEvents.WaveRespawnedEventArgs(item, spawnedPlayers.Select(x => LabApi.Features.Wrappers.Player.Get(x.ReferenceHub)).ToList());
+                            LabApi.Events.Handlers.ServerEvents.OnWaveRespawned(LabEvented);
+
+                            Exiled.Events.Handlers.Server.OnRespawnedTeam(item, spawnedPlayers.Select(x => x.ReferenceHub).ToList());
+                            Log.Info($"[SWM] spawned wave {item.GetType().Name}");
+                        }
+                        else
+                        {
+                            Log.Error($"[SWM] Failed to spawn players for wave {item.GetType().Name}.");
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -201,7 +218,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                                     isInNeedToCallCheck = false;
                                 }
                             }
-                            if (isInNeedToCallCheck && CanStartSpawn)
+                            if (isInNeedToCallCheck && CanStartSpawn && item.IsEnabled)
                             {
                                 var (success, output) = item.CheckWaveConditions();
                                 if (success)
@@ -232,14 +249,14 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public static SpecialWave CurrentWave = null;
         public static bool StartWave(SpecialWave wave)
         {
-            if (wave == null || !CanStartSpawn)
+            if (wave == null || !CanStartSpawn || !wave.IsEnabled)
                 return false;
             Log.Info($"[SWM] spawning wave {wave.GetType().Name}");
             CurrentWave = wave;
             IsInAnim = true;
             try
             {
-                var p = WaveSpawner.GetAvailablePlayers(PlayerRoles.Team.OtherAlive, wave.MaxSpawnedOnce).Select(x=>Player.Get(x)).ToArray();
+                var p = WaveSpawner.GetAvailablePlayers(PlayerRoles.Team.OtherAlive, wave.MaxSpawnedOnce).Select(x=>Player.Get(x)).ToList();
                 if (wave is IAnimWave animWave)
                 {
                     Log.Info($"[SWM] spawning wave {wave.GetType().Name} - Anim");

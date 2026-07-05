@@ -9,6 +9,7 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Features.Wrappers;
 using Mirror;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.SettingManagement;
 using NS_site27_api.Core.UI;
 using Org.BouncyCastle.Bcpg;
 using Org.BouncyCastle.Bcpg.Sig;
@@ -70,7 +71,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.IsAllowed && !ev.NewRole.IsScp() && ev.Player.Role.Team == Team.SCPs)
             {
-                Plugin.Unregister(ev.Player, VoiceSetting);
+                SettingManager.Instance.UnregisterForPlayer(ev.Player, VoiceSetting);
                 TalkTohumanScp.Remove(ev.Player);
                 if (ScpToSpeaker.TryGetValue(ev.Player, out var speakerToy))
                 {
@@ -82,7 +83,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (ev.IsAllowed && ev.NewRole.IsScp() && ev.Player.Role.Team != Team.SCPs)
             {
                 TalkTohumanScp.Remove(ev.Player);
-                Plugin.Register(ev.Player, VoiceSetting);
+                SettingManager.Instance.RegisterForPlayer(ev.Player, VoiceSetting);
             }
         }
         public static List<Player> TalkTohumanScp = new List<Player>();

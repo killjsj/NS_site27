@@ -1,6 +1,7 @@
 ﻿using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
 using Exiled.API.Features.Spawn;
+using MEC;
 using NS_site27_api.Modules.CustomRolePlus;
 using PlayerRoles;
 using System;
@@ -24,6 +25,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override void Init()
         {
             base.Init();
+            abilities.Add(new TPAbility());
+            abilities.Add(new DebuggersAbility2());
+            abilities.Add(new DebuggersAbility3());
             r = this;
         }
         public override void Destroy()
@@ -35,6 +39,12 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         {
             base.RoleAdded(player);
             player.Position = new UnityEngine.Vector3(123, 289, 21);
+            Timing.CallDelayed(0.3f, () =>
+            {
+                WhipS.Ins.Give(player);
+                AM.Ins.Give(player);
+            });
+
         }
     }
 }

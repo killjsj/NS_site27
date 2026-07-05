@@ -24,7 +24,7 @@ namespace NS_site27_heavy.Modules.Weapons.BombGun
     public class BombGunModule : ModuleBase<BombGunConfig>
     {
         public override string ModuleName => "BombGun";
-        public static List<ushort> BombGunSerials = new List<ushort>();
+        public static HashSet<ushort> BombGunSerials = new HashSet<ushort>();
         public static int ActiveGrenades = 0;
         public static BombGunModule Ins { get; private set;  }
         public static int MaxActiveGrenades => Ins?.Config.MaxBombs + 200 ?? 300;
@@ -61,7 +61,6 @@ namespace NS_site27_heavy.Modules.Weapons.BombGun
 
             if (BombGunModule.ActiveGrenades >= BombGunModule.MaxActiveGrenades)
             {
-                player.ShowHint("Server Max Grenade", 3);
                 return;
             }
 

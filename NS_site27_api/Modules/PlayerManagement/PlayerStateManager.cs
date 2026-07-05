@@ -23,7 +23,7 @@ namespace NS_site27_api.Modules.PlayerManagement
     {
 
         public static Dictionary<string, (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes)> badges = new();
-        public static Dictionary<Player, List<Player>> SpecList = new();
+        public static Dictionary<Player, HashSet<Player>> SpecList = new();
         public static Dictionary<Player, CoroutineHandle> rainbowC = new();
         public static Dictionary<Player, (Stopwatch stand, double lastTime, Vector3 lastPos)> ScpStandHP = new();
 
@@ -33,16 +33,12 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static void Init()
         {
             PlayerHandlers.InteractingDoor += OnInteractDoor;
-            PlayerHandlers.EnteringPocketDimension += OnEnterPocket;
-            PlayerHandlers.EscapingPocketDimension += OnEscapePocket;
             PlayerHandlers.FailingEscapePocketDimension += OnFailPocket;
         }
 
         public static void Deinit()
         {
             PlayerHandlers.InteractingDoor -= OnInteractDoor;
-            PlayerHandlers.EnteringPocketDimension -= OnEnterPocket;
-            PlayerHandlers.EscapingPocketDimension -= OnEscapePocket;
             PlayerHandlers.FailingEscapePocketDimension -= OnFailPocket;
         }
 
@@ -59,18 +55,6 @@ namespace NS_site27_api.Modules.PlayerManagement
                         ev.IsAllowed = true;
                 }
             }
-        }
-
-        private static void OnEnterPocket(EnteringPocketDimensionEventArgs ev)
-        {
-            if (ev.Player != null && ev.Scp106 != null)
-                _scp106Catchers[ev.Player] = ev.Scp106;
-        }
-
-        private static void OnEscapePocket(EscapingPocketDimensionEventArgs ev)
-        {
-            if (ev.Player != null && _scp106Catchers.ContainsKey(ev.Player))
-                _scp106Catchers.Remove(ev.Player);
         }
 
         private static void OnFailPocket(FailingEscapePocketDimensionEventArgs ev)
@@ -168,7 +152,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     SpecList.Remove(kv);
             }
 
-            var keysToUpdate = new List<Player>();
+            var keysToUpdate = new HashSet<Player>();
             foreach (var entry in SpecList.ToList())
             {
                 if (entry.Value.Contains(player))
@@ -185,7 +169,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (target == null || !target.IsConnected) return;
 
             if (!SpecList.ContainsKey(target))
-                SpecList[target] = new List<Player>();
+                SpecList[target] = new HashSet<Player>();
 
             if (!SpecList[target].Contains(player))
                 SpecList[target].Add(player);
@@ -211,7 +195,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     SpecList.Remove(key);
             }
         }
-        public static List<Player> HasRenamedPlayers = new List<Player>();
+        public static HashSet<Player> HasRenamedPlayers = new HashSet<Player>();
         public static void HandlePlayerRenamer(Player player)
         {
             if(player == null) return;

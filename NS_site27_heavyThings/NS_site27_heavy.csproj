@@ -130,10 +130,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="heavy\Core\Configs\ModuleConfigManager.cs" />
-    <Compile Include="heavy\Core\CorePlugin.cs" />
+    <Compile Include="heavy\Core\HeavyCorePlugin.cs" />
+    <Compile Include="heavy\Module\TestWaveAndRole\MainItem.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\MainRole.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\MainWave.cs" />
+    <Compile Include="heavy\Module\TestWaveAndRole\SkyNet.cs" />
     <Compile Include="heavy\Module\Weapons\BombGun\BombGunModule.cs" />
+    <Compile Include="heavy\Module\Weapons\SpeedBuildItem\SpeedBuildItem.cs" />
+    <Compile Include="heavy\Module\Weapons\Turret\Turret.cs" />
     <Compile Include="heavy\SpecialWaveManager\SpecWaveClasses.cs" />
     <Compile Include="heavy\SpecialWaveManager\SpecWaveManager.cs" />
     <Compile Include="Plugin.cs" />

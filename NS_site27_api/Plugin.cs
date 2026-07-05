@@ -33,38 +33,6 @@ namespace NS_site27_api
         public static Plugin Instance { get; private set; }
         public MySQLConnect connect = new MySQLConnect();
 
-        public static List<SettingBase> MenuCache = new List<SettingBase>();
-        public static Dictionary<Player, List<SettingBase>> PlayerMenuCache = new Dictionary<Player, List<SettingBase>>();
-
-        public static IEnumerable<SettingBase> Register(Player player, SettingBase setting, bool bypassCheck = false)
-            => Register(player, new SettingBase[] { setting }, bypassCheck);
-
-        public static IEnumerable<SettingBase> Register(Player player, IEnumerable<SettingBase> settings, bool bypassCheck = false)
-        {
-            if (!PlayerMenuCache.TryGetValue(player, out var playerMenu))
-            {
-                playerMenu = new List<SettingBase>();
-                PlayerMenuCache[player] = playerMenu;
-            }
-
-            var result = SettingBase.Register(player, settings.Where(x => bypassCheck || !playerMenu.Any(y => y.Id == x.Id))).ToList();
-            playerMenu.AddRange(result);
-            return result;
-        }
-
-        public static IEnumerable<SettingBase> Unregister(Player player, SettingBase setting = null, bool bypassCheck = false)
-            => Unregister(player, new SettingBase[] { setting }, bypassCheck);
-
-        public static IEnumerable<SettingBase> Unregister(Player player, IEnumerable<SettingBase> settings = null, bool bypassCheck = false)
-        {
-            if (!PlayerMenuCache.TryGetValue(player, out var playerMenu) || playerMenu.Count == 0)
-                return Enumerable.Empty<SettingBase>();
-
-            var result = SettingBase.Unregister(player, settings.Where(x => bypassCheck || playerMenu.Any(y => y.Id == x.Id))).ToList();
-            playerMenu.RemoveAll(x => result.Contains(x));
-            return result;
-        }
-
         private IUIService _uiService;
         public override void OnEnabled()
         {
@@ -112,8 +80,6 @@ namespace NS_site27_api
             }
 
             CorePlugin.Modules.Clear();
-            MenuCache.Clear();
-            PlayerMenuCache.Clear();
             CorePlugin.Harmony.UnpatchAll();
             CorePlugin.Harmony = null;
             CorePlugin.Instance = null;
@@ -181,7 +147,6 @@ namespace NS_site27_api
         private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
         {
             ev.Player.CleanupPlayer();
-            PlayerMenuCache.Remove(ev.Player);
         }
     }
 

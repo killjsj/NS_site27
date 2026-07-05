@@ -96,7 +96,7 @@ namespace NS_site27_api.Core.UI
     public interface IUIService
     {
         void AddMessage(Player player, string id, Func<Player, string[]> getter, UIPosition position);
-        void AddMessage(Player player, string id, string message,  UIPosition position);
+        void AddMessage(Player player, string id, string message, UIPosition position);
         void RemoveMessage(Player player, string id);
         void CleanupPlayer(Player player);
     }
@@ -115,13 +115,13 @@ namespace NS_site27_api.Core.UI
             List<string> waitingforRemove = new();
             while (true)
             {
-                
+
                 foreach (var item in _playerMessages)
                 {
                     waitingforRemove.Clear();
-                    foreach (var item2 in item.Value.Where(x=>x.Value.duration > 0).ToArray())
+                    foreach (var item2 in item.Value.Where(x => x.Value.duration > 0).ToArray())
                     {
-                        if(Time.fixedTime - item2.Value.startAt > item2.Value.duration)
+                        if (Time.fixedTime - item2.Value.startAt > item2.Value.duration)
                         {
                             RemoveMessage(item.Key, item2.Key);
                         }
@@ -163,7 +163,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, Func<Player, string[]> getter, float duration = 5, ScreenPosition position = ScreenPosition.Center)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -177,7 +177,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration = 5, ScreenPosition position = ScreenPosition.Center)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -191,7 +191,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration, float x, float y)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -205,7 +205,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, Func<Player, string[]> getter, float duration, float x, float y)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -233,7 +233,7 @@ namespace NS_site27_api.Core.UI
 
         public static void AddMessage(this Player player, string id, string message, float duration, UIPosition uIPosition)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
 
             if (!_playerMessages.TryGetValue(player, out var msgs))
             {
@@ -247,7 +247,7 @@ namespace NS_site27_api.Core.UI
 
         public static void RemoveMessage(this Player player, string id)
         {
-                        if (player == null || player.IsNPC) return;
+            if (player == null || player.IsNPC) return;
             if (_playerMessages.TryGetValue(player, out var msgs))
             {
                 msgs.Remove(id);

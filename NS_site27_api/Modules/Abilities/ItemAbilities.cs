@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine;
 using PlayerRoles.Subroutines;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.SettingManagement;
 namespace NS_site27_api.Modules.Abilities
 {
     public abstract class ItemAbilityBase : AbilityBase
@@ -19,6 +20,9 @@ namespace NS_site27_api.Modules.Abilities
         {
             OwnerId = ownerId;
         }
+
+        // �Ƿ���ָ�����/��Ʒ����¿��ã�Ĭ�Ͽ��ã�
+        public virtual bool IsAvailable(Player player, Exiled.API.Features.Items.Item item) => true;
     }
 
     public abstract class ItemCoolDownAbility : ItemAbilityBase, ICounted, ITiming
@@ -46,7 +50,6 @@ namespace NS_site27_api.Modules.Abilities
                 return;
 
             count--;
-
             if (cooldown.IsReady) cooldown.Trigger(WaitForDoneTime);
             DoneCooldown.Trigger(WaitForDoneTime);
             CorePlugin.RunCoroutine(CooldownStart());
@@ -78,7 +81,7 @@ namespace NS_site27_api.Modules.Abilities
         public abstract bool OnTrigger();
     }
 
-    public abstract class ItemKeyAbility : ItemCoolDownAbility
+    public abstract class ItemKeyAbility : ItemCoolDownAbility, IRegisiterNeeded<ItemAbilityBase>
     {
         public SettingBase setting = null;
         public Player player;
@@ -87,50 +90,55 @@ namespace NS_site27_api.Modules.Abilities
 
         public ItemKeyAbility() : base()
         {
-            InitSetting();
         }
 
         public ItemKeyAbility(ushort serial) : base(serial)
         {
-            InitSetting();
+
         }
 
         private void InitSetting()
         {
             if (CorePlugin.Instance == null) return;
 
-            if (Plugin.MenuCache.Any(x => x.Id == id))
-            {
-                setting = Plugin.MenuCache.FirstOrDefault(x => x.Id == id);
-            }
-            else
-            {
-                try
+            int keyId = id + (int)KeyCode * 7919;
+            setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
+                keyId, Name, KeyCode, Des,
+                pressedPlayer =>
                 {
-                    setting = new KeybindSetting(id, Name, KeyCode, true, hintDescription: Des, onChanged: (p, sb) =>
+                    if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
-                        if (sb is KeybindSetting kbs && kbs.IsPressed)
-                        {
-                            if (activeAbilities.TryGetValue(p, out var abilities))
-                            {
-                                var a = abilities.FirstOrDefault(x => x.id == kbs.Id);
-                                a?.OnTriggerInternal(p);
-                            }
-                        }
-                    });
-                    Plugin.MenuCache.Add(setting);
-                }
-                catch { }
+                        foreach (var a in abilities.Where(x => x.KeyCode == KeyCode).ToList())
+                            a.OnTriggerInternal(pressedPlayer);
+                    }
+                });
+        }
+
+        public ItemAbilityBase Register(Player player)
+        {
+            // create per-player instance (try to use internal/public constructors taking ushort, fallback to parameterless)
+            ItemKeyAbility a = null;
+            try
+            {
+                a = Activator.CreateInstance(this.GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { (ushort)0 }, null) as ItemKeyAbility;
             }
+            catch { }
+            if (a == null)
+            {
+                a = (ItemKeyAbility)Activator.CreateInstance(this.GetType());
+            }
+            a.player = player;
+            a.InternalRegister(player);
+            return a;
         }
 
         public void InternalRegister(Player panel)
         {
-            try
-            {
-                Plugin.Register(player, setting);
-            }
-            catch { }
+            player = panel;
+            // ensure setting initialized and registered to player UI
+            if (setting == null) InitSetting();
+
+            SettingManager.Instance?.RegisterForPlayer(player, setting);
 
             if (!activeAbilities.ContainsKey(player))
                 activeAbilities.Add(player, new List<ItemKeyAbility> { this });
@@ -140,6 +148,12 @@ namespace NS_site27_api.Modules.Abilities
             CorePlugin.RunCoroutine(CooldownReset());
         }
 
-        public virtual void Unregister(Player player) { }
+        public virtual void Unregister(Player player)
+        {
+            SettingManager.Instance?.UnregisterForPlayer(player, setting);
+            if (activeAbilities.TryGetValue(player, out var list))
+                list.Remove(this);
+        }
     }
 }
+

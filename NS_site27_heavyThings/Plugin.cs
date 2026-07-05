@@ -30,12 +30,12 @@ namespace NS_site27_heavy
         public override void OnEnabled()
         {
             Instance = this;
-            CorePlugin.Instance = this;
+            HeavyCorePlugin.Instance = this;
             Log.Info("NS_site27 <color=red>heavy</color> plugin starting...");
 
             ModuleConfigManager.Initialize(this);
-            CorePlugin.Harmony = new Harmony("NS_site27.plugin.heavy");
-            CorePlugin.Harmony.PatchAll();
+            HeavyCorePlugin.Harmony = new Harmony("NS_site27.plugin.heavy");
+            HeavyCorePlugin.Harmony.PatchAll();
 
             DiscoverAndLoadModules();
             CustomRole.RegisterRoles(false);
@@ -45,7 +45,7 @@ namespace NS_site27_heavy
             PlayerHandlers.Left += OnPlayerLeft;
             CustomItem.RegisterItems();
 
-            Log.Info($"NS_site27 heavy plugin enabled with {CorePlugin.Modules.Count} modules.");
+            Log.Info($"NS_site27 heavy plugin enabled with {HeavyCorePlugin.Modules.Count} modules.");
             base.OnEnabled();
         }
 
@@ -55,16 +55,16 @@ namespace NS_site27_heavy
             ServerHandlers.RestartingRound -= OnRestartingRound;
             PlayerHandlers.Left -= OnPlayerLeft;
 
-            foreach (var module in CorePlugin.Modules.Reverse<IModule>())
+            foreach (var module in HeavyCorePlugin.Modules.Reverse<IModule>())
             {
                 try { module.OnDisable(); }
                 catch (Exception ex) { Log.Error($"Error disabling module {module.ModuleName}: {ex}"); }
             }
 
-            CorePlugin.Modules.Clear();
-            CorePlugin.Harmony.UnpatchAll();
-            CorePlugin.Harmony = null;
-            CorePlugin.Instance = null;
+            HeavyCorePlugin.Modules.Clear();
+            HeavyCorePlugin.Harmony.UnpatchAll();
+            HeavyCorePlugin.Harmony = null;
+            HeavyCorePlugin.Instance = null;
 
             Log.Info("NS_site27 plugin heavy disabled.");
             base.OnDisabled();
@@ -72,10 +72,10 @@ namespace NS_site27_heavy
 
         public override void OnReloaded()
         {
-            CorePlugin.Harmony.UnpatchAll();
-            CorePlugin.Harmony.PatchAll();
+            HeavyCorePlugin.Harmony.UnpatchAll();
+            HeavyCorePlugin.Harmony.PatchAll();
 
-            foreach (var module in CorePlugin.Modules)
+            foreach (var module in HeavyCorePlugin.Modules)
             {
                 try
                 {
@@ -103,7 +103,7 @@ namespace NS_site27_heavy
                         var obj = (IModule)Activator.CreateInstance(type);
                         if (!obj.IsEnabled) continue;
                         obj.OnEnable();
-                        CorePlugin.Modules.Add(obj);
+                        HeavyCorePlugin.Modules.Add(obj);
                     
                     Log.Info($"Module '{obj.ModuleName}' loaded.");
                 }
@@ -116,12 +116,12 @@ namespace NS_site27_heavy
         }
         private void OnWaitingForPlayers()
         {
-            CorePlugin.RestartingRound();
+            HeavyCorePlugin.RestartingRound();
         }
 
         private void OnRestartingRound()
         {
-            CorePlugin.RestartingRound();
+            HeavyCorePlugin.RestartingRound();
         }
 
         private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
@@ -145,13 +145,13 @@ namespace NS_site27_heavy
             }
             ModuleConfigManager.ClearCache();
 
-            foreach (var module in CorePlugin.Modules)
+            foreach (var module in HeavyCorePlugin.Modules)
             {
                 try { module.OnReloadConfig(); }
                 catch (Exception ex) { Log.Error($"Error reloading module {module.ModuleName}: {ex}"); }
             }
 
-            response = $"Config cache cleared, {CorePlugin.Modules.Count} modules reloaded.";
+            response = $"Config cache cleared, {HeavyCorePlugin.Modules.Count} modules reloaded.";
             return true;
         }
     }
@@ -181,7 +181,7 @@ namespace NS_site27_heavy
             }
 
             var waveName = arguments.First();
-            var manager = CorePlugin.GetModule<SpecWaveManager>();
+            var manager = HeavyCorePlugin.GetModule<SpecWaveManager>();
             if (manager == null)
             {
                 response = "SpecWaveManager module is not loaded.";

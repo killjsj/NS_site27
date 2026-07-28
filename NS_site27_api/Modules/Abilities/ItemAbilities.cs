@@ -21,7 +21,6 @@ namespace NS_site27_api.Modules.Abilities
             OwnerId = ownerId;
         }
 
-        // �Ƿ���ָ�����/��Ʒ����¿��ã�Ĭ�Ͽ��ã�
         public virtual bool IsAvailable(Player player, Exiled.API.Features.Items.Item item) => true;
     }
 

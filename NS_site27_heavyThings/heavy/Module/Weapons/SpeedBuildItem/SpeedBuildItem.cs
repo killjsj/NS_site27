@@ -41,7 +41,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
 
         public static uint SpeedBuildItemID = 5096;
 
-        public override string ModuleName => throw new NotImplementedException();
+        public override string ModuleName => "SpeedBuilditem";
 
         [CustomItem(ItemType.GrenadeFlash)]
         public class SpeedBuildItem : CustomItemPlus
@@ -390,7 +390,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 Player attacker = Player.Get(attackerDamageHandler.Attacker);
                 this.ServerDamageWindow(damage);
                 if ((handler is MicroHidDamageHandler)) return true;
-                if (attackerDamageHandler.Attacker.Hub.inventory.CurItem != null)
+                if (attacker.CurrentItem != null)
                 {
                     if (attacker.CurrentItem is Exiled.API.Features.Items.Firearm firearm)
                     {

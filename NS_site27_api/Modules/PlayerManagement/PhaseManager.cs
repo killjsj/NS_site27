@@ -1,13 +1,14 @@
 using Exiled.API.Features;
 using NS_site27_api.Modules.MySQL;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
     public static class PhaseManager
     {
         public static MySQLConnect SQL => Plugin.Instance?.connect;
-
         public enum GamePhase
         {
             FreshStart, FirstGlimpse, MinorAchievement, SteadyProgress,
@@ -15,17 +16,17 @@ namespace NS_site27_api.Modules.PlayerManagement
             RenownedFar, SupremeRealm
         }
 
-        public static GamePhase GetPhase(Player player)
+        public async static Task<GamePhase> GetPhase(Player player)
         {
             if (player == null) return GamePhase.FreshStart;
-            return HoursToPhase(GetHours(player));
+            return HoursToPhase(await GetHours(player));
         }
 
-        public static double GetHours(Player player)
+        public async static Task<double> GetHours(Player player)
         {
             if (player == null) return 0;
-            var user = SQL?.QueryUser(player.UserId);
-            return (user?.total_duration ?? TimeSpan.Zero).TotalHours;
+            var user = await SQL?.QueryUserAsync(player.UserId);
+            return (user.total_duration ?? TimeSpan.Zero).TotalHours;
         }
 
         public static GamePhase HoursToPhase(double hours)
@@ -57,16 +58,16 @@ namespace NS_site27_api.Modules.PlayerManagement
             _ => "?"
         };
 
-        public static string GetPhaseProgressString(Player player)
+        public static async Task<string> GetPhaseProgressString(Player player)
         {
-            double hours = GetHours(player);
-            var phase = GetPhase(player);
+            double hours = await GetHours(player);
+            var phase = await GetPhase(player);
             return GetPhaseProgressString(player, phase, hours);
         }
 
-        public static string GetPhaseProgressString(Player player, GamePhase phase)
+        public static async Task<string> GetPhaseProgressString(Player player, GamePhase phase)
         {
-            double hours = GetHours(player);
+            double hours = await GetHours(player);
             return GetPhaseProgressString(player, phase, hours);
         }
         public static string PhaseToColor(GamePhase phase)

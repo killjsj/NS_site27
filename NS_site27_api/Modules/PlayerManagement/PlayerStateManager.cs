@@ -99,7 +99,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     if (hub == null) return ;
                     if (player == null) return;
             (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes) badgeData = ("","",new List<string>(new[]{ "white" }),DateTime.UtcNow,true,"");
-            if (!badges.TryGetValue(player.UserId, out badgeData) && !player.RemoteAdminAccess) return;
+            if (!badges.TryGetValue(player.UserId, out badgeData)) return;
             if (DuelManager.PlayerBadges.ContainsKey(player.UserId)) return;
             var text = badgeData.badge;
             if (player.RemoteAdminAccess && AdminAssignModule.CachedGroups.ContainsKey(player))
@@ -107,10 +107,13 @@ namespace NS_site27_api.Modules.PlayerManagement
                 text += $"({AdminAssignModule.CachedGroups[player].BadgeText})";
             }
             if (hub.serverRoles.Network_myText == null)
+            {
                 player.RankName = text;
-
-            if (!hub.serverRoles.Network_myText.Contains(text))
+            }
+            else if (!hub.serverRoles.Network_myText.Contains(text))
+            {
                 player.RankName = text;
+            }
 
             if (badgeData.color != null && badgeData.color.Contains("rainbow"))
             {
@@ -196,10 +199,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             }
         }
         public static HashSet<Player> HasRenamedPlayers = new HashSet<Player>();
-        public static void HandlePlayerRenamer(Player player)
+        public static async void HandlePlayerRenamer(Player player)
         {
             if(player == null) return;
-            var pstr = PhaseManager.GetPhaseProgressString(player);
+            var pstr = await PhaseManager.GetPhaseProgressString(player);
             if(!HasRenamedPlayers.Contains(player))
             {
                 player.DisplayNickname = $"{pstr}{player.Nickname}";

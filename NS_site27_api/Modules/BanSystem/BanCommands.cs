@@ -56,7 +56,7 @@ namespace NS_site27_api.Modules.BanSystem
                 if (player == null) continue;
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
-                sql?.InsertBanRecord(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
+                _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
                 //player.Ban((uint)(duration * 60), reason);
                 player.Kick(reason,runner);
             }
@@ -121,7 +121,7 @@ namespace NS_site27_api.Modules.BanSystem
 
         private static List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)> SqlQueryAllBan(MySQLConnect sql, string userId)
         {
-            return GetSQL()?.QueryAllBan(userId);
+            return GetSQL()?.QueryAllBanAsync(userId).GetAwaiter().GetResult();
         }
     }
 }

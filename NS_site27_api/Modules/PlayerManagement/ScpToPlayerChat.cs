@@ -25,6 +25,7 @@ using VoiceChat.Codec;
 using VoiceChat.Networking;
 using YamlDotNet.Serialization;
 using Player = Exiled.API.Features.Player;
+using NS_site27_api.Modules.MessageModule;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
@@ -56,11 +57,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                         TalkTohumanScp.Remove(p);
                     }
                     string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
-                    if (p.HasMessage("ScpTalkToPlayerHint"))
-                    {
-                        p.RemoveMessage("ScpTalkToPlayerHint");
-                    }
-                    p.AddMessage("ScpTalkToPlayerHint", str, 3, 0, 305);
+                    p.RemoveHint("scphumantalk");
+                    p.AddHint("scphumantalk", 3,x=> str);
 
                 }
             });

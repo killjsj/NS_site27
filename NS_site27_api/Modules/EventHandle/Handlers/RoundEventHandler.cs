@@ -4,6 +4,7 @@ using GameCore;
 using LabApi.Events.Arguments.ServerEvents;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
 using ProjectMER.Commands.Utility;
 using Respawning.Waves;
@@ -109,7 +110,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
             ServerConfigSynchronizer.RefreshAllConfigs();
             foreach (var player in Player.Enumerable)
             {
-                player.AddMessage("RoundEndFF", cfg.RoundEndFFText, 2, ScreenPosition.CenterTop);
+                player.AddHint("RoundEndff",2,x=> cfg.RoundEndFFText);
             }
         }
 

@@ -4,6 +4,7 @@ using Exiled.Events.EventArgs.Player;
 using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
 using RemoteAdmin;
 using System;
@@ -19,7 +20,7 @@ namespace NS_site27_api.Modules.Duel
     public class DuelConfig : ModuleConfigBase
     {
         public int RequestTimeoutSeconds { get; set; } = 30;
-        public string WinnerBadgeFormat { get; set; } = "{winner}猫娘喵";
+        public string WinnerBadgeFormat { get; set; } = "{winner}的猫娘喵";
         public string BadgeColor { get; set; } = "yellow";
     }
 
@@ -87,7 +88,7 @@ namespace NS_site27_api.Modules.Duel
         {
             var from = req.From ?? (string.IsNullOrEmpty(req.FromBackup) ? null : Player.Get(req.FromBackup));
             var to = req.To ?? (string.IsNullOrEmpty(req.ToBackup) ? null : Player.Get(req.ToBackup));
-            from?.RemoveMessage(REQUEST_KEY); to?.RemoveMessage(REQUEST_KEY);
+            from?.RemoveHint(REQUEST_KEY); to?.RemoveHint(REQUEST_KEY);
             Bc(from, $"<size=20>{reason}</size>", 3);
             Bc(to, $"<size=20>{reason}</size>", 3);
         }
@@ -101,7 +102,7 @@ namespace NS_site27_api.Modules.Duel
 
             TempFlag = true;
             ActiveBattle = new CurrentBattle { From = from, To = to, Type = req.Type };
-            from.RemoveMessage(REQUEST_KEY); to.RemoveMessage(REQUEST_KEY);
+            from.RemoveHint(REQUEST_KEY); to.RemoveHint(REQUEST_KEY);
             Bc(from, $"<size=25>与{to.DisplayNickname}的决斗开始!类型:{req.Type}</size>", 5);
             Bc(to, $"<size=25>与{from.DisplayNickname}的决斗开始!类型:{req.Type}</size>", 5);
             SetupBattle(from, to, req.Type);
@@ -261,14 +262,14 @@ namespace NS_site27_api.Modules.Duel
             string[] na; var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out na);
             if (list == null || list.Count == 0) { response = "目标无效"; return false; }
             var target = Player.Get(list[0]);
-            if (target == null || target.IsAlive || target == player) { response = "目标无效/活着/自己"; return false; }
+            if (target == null || target.IsAlive || target == player || DuelManager.PlayerBadges.ContainsKey(target.UserId)) { response = "目标无效/活着/自己"; return false; }
 
             var bt = BattleType.JailBird;
             if (arguments.Count > 1 && (arguments.At(1) == "1" || arguments.At(1).ToLower() == "gun")) bt = BattleType.Gun;
 
             //BUG: possible duplicate request
             DuelManager.BattleReqs.Add(new BattleReq { From = player, FromBackup = player.UserId, To = target, ToBackup = target.UserId, Type = bt, stopwatch = Stopwatch.StartNew() });
-            target.AddMessage("FlightRequest", $"<size=27>{player.Nickname}发起决斗!类型:{bt}\n.acceptBattle .refuseBattle</size>", 10f);
+            target.AddHint("FlightRequest", 10f,x=>$"<size=27>{player.Nickname}发起决斗!类型:{bt}\n.acceptBattle .refuseBattle</size>");
             response = $"已发送,类型:{bt}"; return true;
         }
     }
@@ -305,7 +306,7 @@ namespace NS_site27_api.Modules.Duel
                 if (DuelManager.BattleReqs[i].To == player || DuelManager.BattleReqs[i].ToBackup == player.UserId)
                 {
                     var from = DuelManager.BattleReqs[i].From;
-                    from?.RemoveMessage("FlightRequest");
+                    from?.RemoveHint("FlightRequest");
                     from?.Broadcast(new Exiled.API.Features.Broadcast($"<size=27>{player.DisplayNickname}拒绝了你的决斗</size>", 3, true, default), true);
                 }
             }

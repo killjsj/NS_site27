@@ -9,6 +9,7 @@ using Exiled.CustomRoles.API.Features;
 using HarmonyLib;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Modules._Keycard;
 using NS_site27_api.Modules.EventHandle;
 using NS_site27_api.Modules.MySQL;
@@ -17,6 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
+using UnityEngine.Networking;
 using Player = Exiled.API.Features.Player;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
 using ServerHandlers = Exiled.Events.Handlers.Server;
@@ -28,27 +31,24 @@ namespace NS_site27_api
     {
         public override string Name => "NS_site27";
         public override string Author => "killjsj";
-        public override PluginPriority Priority => PluginPriority.Low;
+        public override PluginPriority Priority => PluginPriority.Medium;
 
         public static Plugin Instance { get; private set; }
         public MySQLConnect connect = new MySQLConnect();
 
-        private IUIService _uiService;
         public override void OnEnabled()
         {
             Instance = this;
             CorePlugin.Instance = this;
             Log.Info("NS_site27 plugin starting...");
-
+            
             ModuleConfigManager.Initialize(this);
 
-            _uiService = new RueIHintService();
-            UIManager.Initialize(_uiService);
-
+            var d = new DisplayKitRunner();
+            d.Enable();
             if (Config.IsEnableDatabase)
             {
-                var connStr = $"Server={Config.IpAddress};Port={Config.Port};Database={Config.Database};Uid={Config.Username};Pwd={Config.Password};allowPublicKeyRetrieval=true;Connection Timeout=30;";
-                connect.Connect(Config.IpAddress, Config.Port, Config.Username, Config.Password, Config.Database);
+                _ = connect.ConnectAsync(Config.IpAddress, Config.Port, Config.Username, Config.Password, Config.Database);
             }
 
             CorePlugin.Harmony = new Harmony("NS_site27.plugin");
@@ -60,7 +60,6 @@ namespace NS_site27_api
 
             ServerHandlers.WaitingForPlayers += OnWaitingForPlayers;
             ServerHandlers.RestartingRound += OnRestartingRound;
-            PlayerHandlers.Left += OnPlayerLeft;
             CustomItem.RegisterItems();
 
             Log.Info($"NS_site27 plugin enabled with {CorePlugin.Modules.Count} modules.");
@@ -71,7 +70,11 @@ namespace NS_site27_api
         {
             ServerHandlers.WaitingForPlayers -= OnWaitingForPlayers;
             ServerHandlers.RestartingRound -= OnRestartingRound;
-            PlayerHandlers.Left -= OnPlayerLeft;
+
+            if(DisplayKitRunner.Instance != null)
+            {
+                DisplayKitRunner.Instance.Disable();
+            }
 
             foreach (var module in CorePlugin.Modules.Reverse<IModule>())
             {
@@ -83,7 +86,6 @@ namespace NS_site27_api
             CorePlugin.Harmony.UnpatchAll();
             CorePlugin.Harmony = null;
             CorePlugin.Instance = null;
-            UIManager.Finish();
             connect.Close();
 
             Log.Info("NS_site27 plugin disabled.");
@@ -137,16 +139,13 @@ namespace NS_site27_api
         private void OnWaitingForPlayers()
         {
             CorePlugin.RestartingRound();
+
+            CustomLiteNetLib4MirrorTransport.GetConnectKey()
         }
 
         private void OnRestartingRound()
         {
             CorePlugin.RestartingRound();
-        }
-
-        private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
-        {
-            ev.Player.CleanupPlayer();
         }
     }
 

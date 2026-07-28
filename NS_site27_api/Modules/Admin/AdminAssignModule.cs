@@ -30,47 +30,52 @@ namespace NS_site27_api.Modules.Admin
         {
             Exiled.Events.Handlers.Player.Verified += Player_Verified;
         }
-        public static void Player_Verified(VerifiedEventArgs ev)
+        public static async void Player_Verified(VerifiedEventArgs ev)
         {
-            var PA = sql?.QueryAdmin(userid: ev.Player.UserId);
-            (string player_name, string port, string permissions, DateTime expiration_date, bool is_permanent, string notes)? target = null;
-            if (PA != null)
+            try
             {
-                if (PA.Count > 0)
+                if (sql == null) return;
+                var PA = await sql.QueryAdminAsync(userid: ev.Player.UserId);
+                (string player_name, string port, string permissions, DateTime expiration_date, bool is_permanent, string notes)? target = null;
+                if (PA != null)
                 {
-                    foreach (var item in PA)
+                    if (PA.Count > 0)
                     {
-                        if (item.port == ServerStatic.ServerPort.ToString() || item.port == "0")
+                        foreach (var item in PA)
                         {
-
-                            target = item;
-                            break;
-                        }
-                    }
-                    if (target != null)
-                    {
-                        var UserGroup = ServerStatic.PermissionsHandler.GetGroup(target.Value.permissions);
-                        if (UserGroup != null)
-                        {
-
-                            if (ev.Player.Group == null || (ev.Player.Group != null && ev.Player.Group.KickPower < UserGroup.KickPower))
+                            if (item.port == ServerStatic.ServerPort.ToString() || item.port == "0")
                             {
-                                Log.Info($"player {ev.Player} set group:{UserGroup.Name} due AdminSystem");
-                                ev.Player.Group = UserGroup.Clone();
-                                ev.Player.RankName = $"({UserGroup.Name})";
+
+                                target = item;
+                                break;
                             }
                         }
-                        else
+                        if (target != null)
                         {
-                            Log.Info($"failed to Set group! target:{target.Value.permissions}");
+                            var UserGroup = ServerStatic.PermissionsHandler.GetGroup(target.Value.permissions);
+                            if (UserGroup != null)
+                            {
+
+                                if (ev.Player.Group == null || (ev.Player.Group != null && ev.Player.Group.KickPower < UserGroup.KickPower))
+                                {
+                                    Log.Info($"player {ev.Player} set group:{UserGroup.Name} due AdminSystem");
+                                    ev.Player.Group = UserGroup.Clone();
+                                    ev.Player.RankName = $"({UserGroup.Name})";
+                                }
+                            }
+                            else
+                            {
+                                Log.Info($"failed to Set group! target:{target.Value.permissions}");
+                            }
                         }
                     }
                 }
+                if (ev.Player.Group != null)
+                {
+                    CachedGroups[ev.Player] = ev.Player.Group.Clone();
+                }
             }
-            if (ev.Player.Group != null)
-            {
-                CachedGroups[ev.Player] = ev.Player.Group.Clone();
-            }
+            catch (Exception ex) { Log.Error($"[AdminAssign] Player_Verified: {ex}"); }
         }
     }
 }

@@ -238,11 +238,9 @@ namespace NS_site27_api.Modules.Abilities
 
         public override AbilityBase Register(Player player)
         {
-            // Allow non-public constructors (internal) when creating per-player instance
             var a = (KeyAbility)Activator.CreateInstance(this.GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { player }, null) as KeyAbility;
             if (a == null)
             {
-                // fallback to parameterless construction then set player and initialize
                 var tmp = (KeyAbility)Activator.CreateInstance(this.GetType());
                 tmp.player = player;
                 tmp.InitSetting();
@@ -255,7 +253,7 @@ namespace NS_site27_api.Modules.Abilities
 
         public void InternalRegisterPlayer(Player player)
         {
-            // ensure setting is initialized before registering
+
             if (setting == null) InitSetting();
             if (CorePlugin.Instance == null) return;
 

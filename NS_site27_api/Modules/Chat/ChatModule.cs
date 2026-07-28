@@ -68,15 +68,15 @@ namespace NS_site27_api.Modules.Chat
     // ==================== 管理器 ====================
     public static class ChatManager
     {
-        private static ChatConfig _cfg;
-        private class TimeSorter : IComparer<ChatMessage>
+        public static ChatConfig _cfg;
+        public class TimeSorter : IComparer<ChatMessage>
         {
             public int Compare(ChatMessage x, ChatMessage y)
             {
                 return x.StartTime.CompareTo(y.StartTime);
             }
         }
-        private static TimeSorter _timeSorter = new();
+        public static TimeSorter _timeSorter = new();
         // 显示列表
         public static List<ChatMessage> ChatList = new List<ChatMessage>();
         public static List<ChatMessage> AdminList = new List<ChatMessage>();
@@ -92,12 +92,12 @@ namespace NS_site27_api.Modules.Chat
         };
 
         // 冷却相关
-        private static readonly Dictionary<string, float> cooldownEndTimes = new Dictionary<string, float>();
-        private static readonly Dictionary<string, List<float>> recentMessageTimes = new Dictionary<string, List<float>>();
-        private static readonly List<ChatMessage> FirstProcesses = new();
+        public static readonly Dictionary<string, float> cooldownEndTimes = new Dictionary<string, float>();
+        public static readonly Dictionary<string, List<float>> recentMessageTimes = new Dictionary<string, List<float>>();
+        public static readonly List<ChatMessage> FirstProcesses = new();
 
         // 阵营颜色
-        private static readonly Dictionary<Team, string> teamColors = new Dictionary<Team, string>()
+        public static readonly Dictionary<Team, string> teamColors = new Dictionary<Team, string>()
         {
             { Team.SCPs, "#FF0000" },
             { Team.FoundationForces, "#0096FF" },
@@ -157,205 +157,6 @@ namespace NS_site27_api.Modules.Chat
                 recentMessageTimes[userId] = times;
             }
             times.Add(Time.time);
-        }
-        private static string GetChannelDisplay(List<ChatMessage> list, int maxLines, ChatMode mode)
-        {
-            // 移除过期消息
-            var outTime = 3f;
-            switch (mode)
-            {
-                case ChatMode.Global:
-                    outTime = _cfg.PublicChatDuration;
-                    break;
-                case ChatMode.Team:
-                    outTime = _cfg.TeamChatDuration;
-                    break;
-                case ChatMode.Admin:
-                    outTime = _cfg.AdminChatDuration;
-                    break;
-                case ChatMode.ServerBroadcast:
-                    outTime = _cfg.ServerBroadcastDuration;
-                    break;
-
-            }
-            list.RemoveAll(msg => msg.StartTime + outTime <= Time.time);
-            list.Sort(_timeSorter);
-            while (list.Count > maxLines)
-                list.RemoveAt(0);
-
-            if (list.Count == 0)
-                return string.Empty;
-            var str = "";
-            foreach (var item in list)
-            {
-                string displayText = "";
-                switch (mode)
-                {
-                    case ChatMode.Global:
-                        displayText = $"{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}";
-                        break;
-                    case ChatMode.Team:
-                        Team team = item.player.Role.Team;
-                        string color = ChatManager.GetTeamColor(team);
-                        displayText = $"<color={color}>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
-                        break;
-                    case ChatMode.Admin:
-                        string teamName = item.player.Role.Team switch
-                        {
-                            Team.FoundationForces => "基金会",
-                            Team.ChaosInsurgency => "混沌",
-                            Team.Scientists => "基金会",
-                            Team.ClassD => "混沌",
-                            Team.OtherAlive => "教程",
-                            Team.SCPs => "SCP",
-                            _ => "死人"
-                        };
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
-                        break;
-                    case ChatMode.ServerBroadcast:
-                        displayText = $"<color=red>服务器广播: {(item.player == null ? "" : $"[{item.player.Nickname}]:")} {item.InputText}</color>";
-                        break;
-                    default:
-                        break;
-                }
-                str += displayText + "\n";
-                if (item.isFirstProcess)
-                {
-                    FirstProcesses.Add(item);
-                }
-            }
-            foreach (var item in FirstProcesses)
-            {
-                list.Remove(item);
-                var i = new ChatMessage() { StartTime = item.StartTime, InputText = item.InputText, player = item.player, isFirstProcess = false };
-                list.Add(i);
-                if (item.player != null && Plugin.Instance?.connect != null)
-                {
-                    Plugin.Instance.connect.InsertChatLog(
-                        item.player.UserId,
-                        item.player.Nickname,
-                        item.InputText,
-                        mode.ToString(),
-                        Server.Port.ToString()
-                    );
-                }
-                string displayText = "";
-                switch (mode)
-                {
-                    case ChatMode.Global:
-                        displayText = $"{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}";
-                        foreach (var item1 in Player.Enumerable)
-                        {
-                            item1.SendConsoleMessage($"[公共聊天]{displayText}", "white");
-                        }
-                        break;
-                    case ChatMode.Team:
-                        Team team = item.player.Role.Team;
-                        string color = ChatManager.GetTeamColor(team);
-                        displayText = $"<color={color}>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
-
-                        foreach (var item1 in Player.Enumerable.Where(x =>
-                        {
-                            var Tteam = x.Role.Team;
-                            var pass = Tteam == team;
-                            if (!pass)
-                            {
-                                switch (Tteam)
-                                {
-                                    case Team.Scientists:
-                                    case Team.FoundationForces:
-                                        if (team == Team.Scientists || team == Team.FoundationForces)
-                                        {
-                                            pass = true;
-                                        }
-                                        break;
-                                    case Team.ClassD:
-                                    case Team.ChaosInsurgency:
-                                        if (team == Team.ClassD || team == Team.ChaosInsurgency)
-                                        {
-                                            pass = true;
-                                        }
-                                        break;
-                                }
-                            }
-                            return pass;
-                        }))
-                        {
-                            item1.SendConsoleMessage($"[队伍聊天]{displayText}", "yellow");
-                        }
-                        break;
-                    case ChatMode.Admin:
-                        string teamName = item.player.Role.Team switch
-                        {
-                            Team.FoundationForces => "基金会",
-                            Team.ChaosInsurgency => "混沌",
-                            Team.Scientists => "基金会",
-                            Team.ClassD => "混沌",
-                            Team.OtherAlive => "教程",
-                            Team.SCPs => "SCP",
-                            _ => "死人"
-                        };
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
-                        foreach (var item1 in Player.Enumerable.Where(x => x.RemoteAdminAccess && x != item.player))
-                        {
-                            item1.SendConsoleMessage($"[反馈]{displayText}", "red");
-                        }
-                        item.player.SendConsoleMessage($"[反馈]{displayText}", "red");
-                        break;
-                    case ChatMode.ServerBroadcast:
-                        displayText = $"<color=red>服务器广播: {(item.player == null ? "" : $"[{item.player.Nickname}]:")} {item.InputText}</color>";
-                        foreach (var item1 in Player.Enumerable)
-                        {
-                            item1.SendConsoleMessage($"[服务器广播] {displayText}", "red");
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            FirstProcesses.Clear();
-            return str;
-        }
-        public static string[] UpdateLoopCombined(Player player)
-        {
-            if (_cfg == null || player == null || !player.IsConnected)
-                return new[] { "" };
-            Team team = player.Role.Team;
-            switch (team)
-            {
-                case Team.Scientists:
-                    team = Team.FoundationForces;
-                    break;
-                case Team.ClassD:
-                    team = Team.ChaosInsurgency;
-                    break;
-
-                default:
-                    break;
-            }
-            if (!TeamList.ContainsKey(team))
-                team = Team.OtherAlive;
-            string ServerContent = GetChannelDisplay(ServerList, _cfg.MaxServerBroadcastLines, ChatMode.ServerBroadcast);
-            string teamContent = GetChannelDisplay(TeamList[team], _cfg.MaxTeamChatLines, ChatMode.Team);
-            string publicContent = GetChannelDisplay(ChatList, _cfg.MaxPublicChatLines, ChatMode.Global);
-            string adminContent = string.Empty;
-            if (player.RemoteAdminAccess)
-                adminContent = GetChannelDisplay(AdminList, _cfg.MaxAdminChatLines, ChatMode.Admin);
-            List<string> parts = new List<string>();
-            if (!string.IsNullOrEmpty(ServerContent)) parts.Add("<color=red>" + ServerContent + "</color>");
-            if (!string.IsNullOrEmpty(publicContent)) parts.Add("<color=white>公告聊天消息:\n" + publicContent + "</color>");
-            if (!string.IsNullOrEmpty(teamContent)) parts.Add($"<color={GetTeamColor(team)}>团队聊天消息:\n" + teamContent + "</color>");
-            if (!string.IsNullOrEmpty(adminContent)) parts.Add("<color=red>反馈:\n" + adminContent + "</color>");
-
-            if (parts.Count == 0)
-                return new[] { "" };
-
-            string combined = string.Join("\n", parts);
-            return new[] { $"<align=left><indent=-350><size={_cfg.ChatFontSize}>{combined}</size></indent></align>" };
-        }
-        public static void SetupPlayer(Player player)
-        {
-            player.AddMessage("ChatCombined", UpdateLoopCombined, -1f, 0, 800);
         }
         public static void Cleanup()
         {

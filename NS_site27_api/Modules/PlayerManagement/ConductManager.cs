@@ -1,6 +1,8 @@
+using Discord;
 using Exiled.API.Features;
 using NS_site27_api.Modules.MySQL;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
@@ -11,10 +13,10 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public enum ConductTier { Outstanding, Acceptable, Ordinary, Lax, Negative, Worst }
 
-        public static ConductTier GetConduct(Player player)
+        public static async Task<ConductTier> GetConduct(Player player)
         {
             if (player == null) return ConductTier.Outstanding;
-            return ViolationsToTier(GetViolations(player));
+            return ViolationsToTier(await GetViolations(player));
         }
 
         public static ConductTier ViolationsToTier(int violations) => violations switch
@@ -27,11 +29,13 @@ namespace NS_site27_api.Modules.PlayerManagement
             _ => ConductTier.Worst
         };
 
-        public static int GetViolations(Player player)
+        public async static Task<int> GetViolations(Player player)
         {
             if (player == null) return 0;
             if (ViolationCache.TryGetValue(player.UserId, out var c)) return c;
-            int count = SQL?.CountUserViolations(player.UserId) ?? 0;
+            var sql = SQL;
+            if (sql == null) return 0;
+            int count = await sql.CountUserViolationsAsync(player.UserId);
             ViolationCache[player.UserId] = count;
             return count;
         }

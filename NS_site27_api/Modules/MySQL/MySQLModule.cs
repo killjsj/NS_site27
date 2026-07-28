@@ -1,321 +1,226 @@
 using Exiled.API.Features;
 using MySql.Data.MySqlClient;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
 
 namespace NS_site27_api.Modules.MySQL
 {
-    public class MySQLConfig : Core.ModuleConfigBase
-    {
-        public string IpAddress { get; set; } = "127.0.0.1";
-        public uint Port { get; set; } = 3306;
-        public string Username { get; set; } = "root";
-        public string Password { get; set; } = "";
-        public string Database { get; set; } = "site27";
-    }
-
     public class MySQLConnect
     {
-        private MySqlConnection _Connection;
-        private string _ConnectionString;
+        private string _connectionString;
         public bool Connected { get; private set; }
 
-        // 缓存相关 -------------------------------------------------
-        // 玩家信息缓存
-        private readonly ConcurrentDictionary<string, UserCacheEntry> _userCache = new(StringComparer.OrdinalIgnoreCase);
-        // 玩家统计缓存
-        private readonly ConcurrentDictionary<string, PlayerStatsCacheEntry> _playerStatsCache = new(StringComparer.OrdinalIgnoreCase);
-        // 缓存滑动过期时间（可根据需要调整）
-        private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(10);
-
-        // 缓存条目结构
-        private class UserCacheEntry
+        public async Task ConnectAsync(string ip, uint port, string username, string password, string database)
         {
-            public int Uid;
-            public string Name;
-            public int Experience;
-            public double? ExpMultiplier;
-            public int Point;
-            public string Ip;
-            public DateTime? LastTime;
-            public TimeSpan? TotalDuration;
-            public TimeSpan? TodayDuration;
-            public DateTime LastAccess;
-        }
-
-        private class PlayerStatsCacheEntry
-        {
-            public int TotalKills;
-            public int TotalDeaths;
-            public int TotalEscapes;
-            public DateTime LastAccess;
-        }
-        // 缓存结束 -------------------------------------------------
-
-        public void Connect(string ip, uint port, string username, string password, string database)
-        {
-            _ConnectionString = $"Server={ip};Port={port};Database={database};Uid={username};Pwd={password};allowPublicKeyRetrieval=true;Connection Timeout=30;";
+            _connectionString = $"Server={ip};Port={port};Database={database};Uid={username};Pwd={password};" +
+                                "allowPublicKeyRetrieval=true;Connection Timeout=30;Pooling=true;";
 
             try
             {
-                _Connection = new MySqlConnection(_ConnectionString);
-                _Connection.Open();
-                _Connection.Close();
+                using (var conn = new MySqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+                }
                 Connected = true;
                 Log.Info("Database connected.");
             }
             catch (Exception ex)
             {
+                Connected = false;
                 Log.Error($"Database Connection failed: {ex}");
             }
         }
 
-        // ---------- QueryUser (带缓存) ----------
-        public (int uid, string name, int experience, double? expMultiplier, int point, string ip, DateTime? last_time, TimeSpan? total_duration, TimeSpan? today_duration) QueryUser(string userid)
+        public async Task<(int uid, string name, int experience, double? expMultiplier, int point, string ip,
+            DateTime? last_time, TimeSpan? total_duration, TimeSpan? today_duration)> QueryUserAsync(string userid)
         {
-            if (!Connected) return (0, null, 0, 0, 1, null, null, null, null);
+            if (!Connected) return (0, null, 0, null, 0, null, null, null, null);
+            await Awaitable.BackgroundThreadAsync();
 
-            // 尝试从缓存获取
-            if (_userCache.TryGetValue(userid, out var cacheEntry))
-            {
-                // 检查是否过期（滑动过期）
-                if (DateTime.UtcNow - cacheEntry.LastAccess < CacheSlidingExpiration)
-                {
-                    // 刷新访问时间并返回缓存值
-                    cacheEntry.LastAccess = DateTime.UtcNow;
-                    return (cacheEntry.Uid, cacheEntry.Name, cacheEntry.Experience, cacheEntry.ExpMultiplier, cacheEntry.Point, cacheEntry.Ip, cacheEntry.LastTime, cacheEntry.TotalDuration, cacheEntry.TodayDuration);
-                }
-                // 过期则移除，继续查询数据库
-                _userCache.TryRemove(userid, out _);
-            }
-
-            // 查询数据库
-            string query = "SELECT uid, name, experience, experience_multiplier, point, ip, today_duration, total_duration, last_time FROM user WHERE userid = @userid";
+            const string query = @"SELECT uid, name, experience, experience_multiplier, point, ip,
+                                    last_time, total_duration, today_duration
+                                   FROM user WHERE userid = @userid";
 
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(query, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            int uid = reader.IsDBNull(reader.GetOrdinal("uid")) ? 0 : reader.GetInt32("uid");
-                            string name = reader.IsDBNull(reader.GetOrdinal("name")) ? null : reader.GetString("name");
-                            int exp = reader.IsDBNull(reader.GetOrdinal("experience")) ? 0 : reader.GetInt32("experience");
-                            double? expMul = reader.IsDBNull(reader.GetOrdinal("experience_multiplier")) ? (double?)null : reader.GetDouble("experience_multiplier");
-                            int point = reader.IsDBNull(reader.GetOrdinal("point")) ? 0 : reader.GetInt32("point");
-                            string ipStr = reader.IsDBNull(reader.GetOrdinal("ip")) ? "1.1.1.1" : reader.GetString("ip");
-                            DateTime? lastTime = reader.IsDBNull(reader.GetOrdinal("last_time")) ? (DateTime?)null : reader.GetDateTime("last_time");
-                            TimeSpan? totalDur = reader.IsDBNull(reader.GetOrdinal("total_duration")) ? (TimeSpan?)null : reader.GetTimeSpan("total_duration");
-                            TimeSpan? todayDur = reader.IsDBNull(reader.GetOrdinal("today_duration")) ? (TimeSpan?)null : reader.GetTimeSpan("today_duration");
+                    await conn.OpenAsync();
 
-                            // 存入缓存
-                            var newEntry = new UserCacheEntry
-                            {
-                                Uid = uid,
-                                Name = name,
-                                Experience = exp,
-                                ExpMultiplier = expMul,
-                                Point = point,
-                                Ip = ipStr,
-                                LastTime = lastTime,
-                                TotalDuration = totalDur,
-                                TodayDuration = todayDur,
-                                LastAccess = DateTime.UtcNow
-                            };
-                            _userCache[userid] = newEntry;
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            // 获取所有列序号
+                            int uidOrd = reader.GetOrdinal("uid");
+                            int nameOrd = reader.GetOrdinal("name");
+                            int expOrd = reader.GetOrdinal("experience");
+                            int mulOrd = reader.GetOrdinal("experience_multiplier");
+                            int ptOrd = reader.GetOrdinal("point");
+                            int ipOrd = reader.GetOrdinal("ip");
+                            int lastOrd = reader.GetOrdinal("last_time");
+                            int totalDurOrd = reader.GetOrdinal("total_duration");
+                            int todayDurOrd = reader.GetOrdinal("today_duration");
+
+                            int uid = reader.IsDBNull(uidOrd) ? 0 : reader.GetInt32(uidOrd);
+                            string name = reader.IsDBNull(nameOrd) ? null : reader.GetString(nameOrd);
+                            int exp = reader.IsDBNull(expOrd) ? 0 : reader.GetInt32(expOrd);
+                            double? expMul = reader.IsDBNull(mulOrd) ? (double?)null : reader.GetDouble(mulOrd);
+                            int point = reader.IsDBNull(ptOrd) ? 0 : reader.GetInt32(ptOrd);
+                            string ipStr = reader.IsDBNull(ipOrd) ? null : reader.GetString(ipOrd);
+                            DateTime? lastTime = reader.IsDBNull(lastOrd) ? (DateTime?)null : reader.GetDateTime(lastOrd);
+                            TimeSpan? totalDur = reader.IsDBNull(totalDurOrd) ? (TimeSpan?)null : ((MySqlDataReader)reader).GetTimeSpan(totalDurOrd);
+                            TimeSpan? todayDur = reader.IsDBNull(todayDurOrd) ? (TimeSpan?)null : ((MySqlDataReader)reader).GetTimeSpan(todayDurOrd);
+                            await Awaitable.MainThreadAsync();
 
                             return (uid, name, exp, expMul, point, ipStr, lastTime, totalDur, todayDur);
                         }
                     }
                 }
             }
-            catch (Exception ex) { Log.Error($"QueryUser error: {ex.Message}"); }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open) _Connection.Close();
-            }
-            return (0, null, 0, 0, 1, null, null, null, null);
+            catch (Exception ex) { Log.Error($"QueryUser error: {ex}"); }
+            await Awaitable.MainThreadAsync();
+
+            return (0, null, 0, null, 0, null, null, null, null);
         }
 
-        // ---------- QueryPlayerStats (带缓存) ----------
-        public (int TotalKills, int TotalDeaths, int TotalEscapes) QueryPlayerStats(string userid)
+        public async Task<(int TotalKills, int TotalDeaths, int TotalEscapes)> QueryPlayerStatsAsync(string userid)
         {
             if (!Connected) return (0, 0, 0);
 
-            // 尝试从缓存获取
-            if (_playerStatsCache.TryGetValue(userid, out var cacheEntry))
-            {
-                if (DateTime.UtcNow - cacheEntry.LastAccess < CacheSlidingExpiration)
-                {
-                    cacheEntry.LastAccess = DateTime.UtcNow;
-                    return (cacheEntry.TotalKills, cacheEntry.TotalDeaths, cacheEntry.TotalEscapes);
-                }
-                _playerStatsCache.TryRemove(userid, out _);
-            }
-
-            string query = "SELECT total_kills, total_deaths, total_escapes FROM player_stats WHERE userid = @userid";
+            const string query = "SELECT total_kills, total_deaths, total_escapes FROM player_stats WHERE userid = @userid";
+            await Awaitable.BackgroundThreadAsync();
 
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(query, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    using (var reader = cmd.ExecuteReader())
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        if (reader.Read())
+                        if (await reader.ReadAsync())
                         {
-                            int total_kills = reader.IsDBNull(reader.GetOrdinal("total_kills")) ? 0 : reader.GetInt32("total_kills");
-                            int total_deaths = reader.IsDBNull(reader.GetOrdinal("total_deaths")) ? 0 : reader.GetInt32("total_deaths");
-                            int total_escapes = reader.IsDBNull(reader.GetOrdinal("total_escapes")) ? 0 : reader.GetInt32("total_escapes");
+                            int killsOrd = reader.GetOrdinal("total_kills");
+                            int deathsOrd = reader.GetOrdinal("total_deaths");
+                            int escOrd = reader.GetOrdinal("total_escapes");
 
-                            var newEntry = new PlayerStatsCacheEntry
-                            {
-                                TotalKills = total_kills,
-                                TotalDeaths = total_deaths,
-                                TotalEscapes = total_escapes,
-                                LastAccess = DateTime.UtcNow
-                            };
-                            _playerStatsCache[userid] = newEntry;
+                            int kills = reader.IsDBNull(killsOrd) ? 0 : reader.GetInt32(killsOrd);
+                            int deaths = reader.IsDBNull(deathsOrd) ? 0 : reader.GetInt32(deathsOrd);
+                            int escapes = reader.IsDBNull(escOrd) ? 0 : reader.GetInt32(escOrd); await Awaitable.MainThreadAsync();
 
-                            return (total_kills, total_deaths, total_escapes);
+                            return (kills, deaths, escapes);
                         }
                     }
                 }
             }
-            catch (Exception ex) { Log.Error($"QueryPlayerStats error: {ex.Message}"); }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open) _Connection.Close();
-            }
+            catch (Exception ex) { Log.Error($"QueryPlayerStats error: {ex}"); }
+            await Awaitable.MainThreadAsync();
+
             return (0, 0, 0);
         }
 
-        // ---------- UpdatePlayerStat (写入同时更新缓存) ----------
-        public void UpdatePlayerStat(string userid, int TotalKills = -1, int TotalDeaths = -1, int TotalEscapes = -1)
+        public async Task UpdatePlayerStatAsync(string userid, int TotalKills = -1, int TotalDeaths = -1, int TotalEscapes = -1)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return;
+            await Awaitable.BackgroundThreadAsync();
+
+            var current = await QueryPlayerStatsAsync(userid);
+            int kills = TotalKills == -1 ? current.TotalKills : TotalKills;
+            int deaths = TotalDeaths == -1 ? current.TotalDeaths : TotalDeaths;
+            int escapes = TotalEscapes == -1 ? current.TotalEscapes : TotalEscapes;
+
+            const string sql = @"INSERT INTO player_stats (userid, total_kills, total_deaths, total_escapes)
+                                 VALUES (@userid, @kills, @deaths, @escs)
+                                 ON DUPLICATE KEY UPDATE
+                                     total_kills = VALUES(total_kills),
+                                     total_deaths = VALUES(total_deaths),
+                                     total_escapes = VALUES(total_escapes);";
 
             try
             {
-                // 从缓存或数据库获取当前值
-                var c = QueryPlayerStats(userid);
-                TotalKills = TotalKills == -1 ? c.TotalKills : TotalKills;
-                TotalDeaths = TotalDeaths == -1 ? c.TotalDeaths : TotalDeaths;
-                TotalEscapes = TotalEscapes == -1 ? c.TotalEscapes : TotalEscapes;
-
-                string sql = @"INSERT INTO player_stats (userid, total_kills, total_deaths, total_escapes)
-VALUES (@userid, @kills, @deaths, @escs)
-ON DUPLICATE KEY UPDATE
-    total_kills = VALUES(total_kills),
-    total_deaths = VALUES(total_deaths),
-    total_escapes = VALUES(total_escapes);";
-
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(sql, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    cmd.Parameters.AddWithValue("@kills", TotalKills);
-                    cmd.Parameters.AddWithValue("@deaths", TotalDeaths);
-                    cmd.Parameters.AddWithValue("@escs", TotalEscapes);
-                    cmd.ExecuteNonQuery();
+                    cmd.Parameters.AddWithValue("@kills", kills);
+                    cmd.Parameters.AddWithValue("@deaths", deaths);
+                    cmd.Parameters.AddWithValue("@escs", escapes);
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
-
-                // 写入成功后直接更新缓存（无需等待过期）
-                _playerStatsCache[userid] = new PlayerStatsCacheEntry
-                {
-                    TotalKills = TotalKills,
-                    TotalDeaths = TotalDeaths,
-                    TotalEscapes = TotalEscapes,
-                    LastAccess = DateTime.UtcNow
-                };
             }
-            catch (Exception ex) { Log.Error($"UpdatePlayerStat error: {ex.Message}"); }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open) _Connection.Close();
-            }
+            catch (Exception ex) { Log.Error($"UpdatePlayerStat error: {ex}"); }
         }
 
-        // ---------- Update (写入同时更新缓存) ----------
-        public void Update(string userid, string name = null, int experience = -1, double? expMultiplier = null,
+        public async Awaitable UpdateAsync(string userid, string name = null, int experience = -1, double? expMultiplier = null,
             string ip = null, int point = -1, DateTime? last_time = null, TimeSpan? today_duration = null, TimeSpan? total_duration = null)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return;
+            await Awaitable.BackgroundThreadAsync();
+            var p = await QueryUserAsync(userid);
+            name = name ?? p.name;
+            point = point == -1 ? p.point : point;
+            experience = experience == -1 ? p.experience : experience;
+            expMultiplier = expMultiplier ?? p.expMultiplier;
+            ip = ip ?? p.ip;
+            last_time = last_time ?? p.last_time;
+            today_duration = today_duration ?? p.today_duration;
+            total_duration = total_duration ?? p.total_duration;
+
+            const string sql = @"INSERT INTO user (userid, name, experience, experience_multiplier, ip, point,
+                                                    today_duration, total_duration, last_time)
+                                 VALUES (@userid, @name, @experience, @experience_multiplier, @ip, @point,
+                                         @today_duration, @total_duration, @last_time)
+                                 ON DUPLICATE KEY UPDATE
+                                     name = VALUES(name),
+                                     experience = VALUES(experience),
+                                     experience_multiplier = VALUES(experience_multiplier),
+                                     ip = VALUES(ip),
+                                     point = VALUES(point),
+                                     today_duration = VALUES(today_duration),
+                                     total_duration = VALUES(total_duration),
+                                     last_time = VALUES(last_time);";
 
             try
             {
-                // 从缓存或数据库获取当前值
-                var p = QueryUser(userid);
-                name = name ?? p.name;
-                point = point == -1 ? p.point : point;
-                experience = experience == -1 ? p.experience : experience;
-                expMultiplier = expMultiplier ?? p.expMultiplier;
-                ip = ip ?? p.ip;
-                last_time = last_time ?? p.last_time;
-                today_duration = today_duration ?? p.today_duration;
-                total_duration = total_duration ?? p.total_duration;
-
-                string sql = @"INSERT INTO user (userid, name, experience, experience_multiplier, ip, point, today_duration, total_duration, last_time)
-                    VALUES (@userid, @name, @experience, @experience_multiplier, @ip, @point, @today_duration, @total_duration, @last_time)
-                    ON DUPLICATE KEY UPDATE name=VALUES(name), experience=VALUES(experience), experience_multiplier=VALUES(experience_multiplier),
-                    ip=VALUES(ip), point=VALUES(point), today_duration=VALUES(today_duration), total_duration=VALUES(total_duration), last_time=VALUES(last_time);";
-
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(sql, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    cmd.Parameters.AddWithValue("@name", name ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@name", (object)name ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@experience", experience);
-                    cmd.Parameters.AddWithValue("@experience_multiplier", expMultiplier ?? 1.0);
-                    cmd.Parameters.AddWithValue("@ip", ip ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@experience_multiplier", (object)expMultiplier ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ip", (object)ip ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@point", point);
                     cmd.Parameters.AddWithValue("@today_duration", today_duration ?? TimeSpan.Zero);
                     cmd.Parameters.AddWithValue("@total_duration", total_duration ?? TimeSpan.Zero);
                     cmd.Parameters.AddWithValue("@last_time", last_time ?? DateTime.Now);
-                    cmd.ExecuteNonQuery();
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
-
-                // 更新缓存
-                _userCache[userid] = new UserCacheEntry
-                {
-                    Uid = p.uid,
-                    Name = name,
-                    Experience = experience,
-                    ExpMultiplier = expMultiplier,
-                    Point = point,
-                    Ip = ip,
-                    LastTime = last_time,
-                    TotalDuration = total_duration,
-                    TodayDuration = today_duration,
-                    LastAccess = DateTime.UtcNow
-                };
             }
-            catch (Exception ex) { Log.Error($"Update error: {ex.Message}"); }
-            finally
-            {
-                if (_Connection.State == ConnectionState.Open) _Connection.Close();
-            }
+            catch (Exception ex) { Log.Error($"Update error: {ex}"); }
         }
 
-        // ---- 以下为无需缓存的写入/低频查询方法，保持原样 ----
-
-        public void InsertChatLog(string userid, string name, string message, string channel, string port)
+        public async Awaitable InsertChatLogAsync(string userid, string name, string message, string channel, string port)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return;
+            await Awaitable.BackgroundThreadAsync();
+
+            const string sql = "INSERT INTO chat_log (userid, name, message, channel, time, port) VALUES (@userid, @name, @message, @channel, @time, @port)";
+
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(
-                    "INSERT INTO chat_log (userid, name, message, channel, time, port) VALUES (@userid, @name, @message, @channel, @time, @port)",
-                    _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
                     cmd.Parameters.AddWithValue("@name", name ?? "");
@@ -323,74 +228,99 @@ ON DUPLICATE KEY UPDATE
                     cmd.Parameters.AddWithValue("@channel", channel ?? "");
                     cmd.Parameters.AddWithValue("@time", DateTime.Now);
                     cmd.Parameters.AddWithValue("@port", port ?? "");
-                    cmd.ExecuteNonQuery();
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
-            catch (Exception ex) { Log.Error($"InsertChatLog: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"InsertChatLog: {ex}"); }
         }
 
-        public int CountUserViolations(string userid)
+        public async Task<int> CountUserViolationsAsync(string userid)
         {
+            await Awaitable.BackgroundThreadAsync();
             if (!Connected || string.IsNullOrEmpty(userid)) return 0;
+
+            const string sql = "SELECT COUNT(*) FROM ban WHERE userid = @userid";
+
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM ban WHERE userid = @userid", _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    await conn.OpenAsync();
+                    var result = await cmd.ExecuteScalarAsync();
+                    await Awaitable.MainThreadAsync();
+                    return Convert.ToInt32(result);
                 }
             }
-            catch (Exception ex) { Log.Error($"CountUserViolations: {ex.Message}"); return 0; }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"CountUserViolations: {ex}"); await Awaitable.MainThreadAsync();
+                return 0; }
         }
 
-        public List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)> QueryAllBan(string INuserid)
+        public async Task<List<(string issuer_name, string issuer_userid, string name, string userid, string reason,
+            DateTime start_time, DateTime end_time, string port)>> QueryAllBanAsync(string userid)
         {
             var bans = new List<(string, string, string, string, string, DateTime, DateTime, string)>();
-
             if (!Connected) return bans;
+            await Awaitable.BackgroundThreadAsync();
 
-            string query = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port FROM ban WHERE userid = @userid";
+            const string query = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port
+                                   FROM ban WHERE userid = @userid";
 
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(query, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@userid", INuserid);
-                    using (var reader = cmd.ExecuteReader())
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        while (reader.Read())
+                        int issuerNameOrd = reader.GetOrdinal("issuer_name");
+                        int issuerUserIdOrd = reader.GetOrdinal("issuer_userid");
+                        int nameOrd = reader.GetOrdinal("name");
+                        int userIdOrd = reader.GetOrdinal("userid");
+                        int reasonOrd = reader.GetOrdinal("reason");
+                        int startOrd = reader.GetOrdinal("start_time");
+                        int endOrd = reader.GetOrdinal("end_time");
+                        int portOrd = reader.GetOrdinal("port");
+
+                        while (await reader.ReadAsync())
                         {
-                            string issuer_name = reader["issuer_name"] as string ?? "Unknown";
-                            string issuer_userid = reader["issuer_userid"] as string ?? "Unknown";
-                            string name = reader["name"] as string ?? "Unknown";
-                            string userid = reader["userid"] as string ?? "Unknown";
-                            string reason = reader["reason"] as string ?? "未提供理由";
-                            DateTime start_time = reader.GetDateTime("start_time");
-                            DateTime end_time = reader.GetDateTime("end_time");
-                            string port = reader["port"] as string ?? "Unknown";
-                            bans.Add((issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port));
+                            bans.Add((
+                                reader.IsDBNull(issuerNameOrd) ? "Unknown" : reader.GetString(issuerNameOrd),
+                                reader.IsDBNull(issuerUserIdOrd) ? "Unknown" : reader.GetString(issuerUserIdOrd),
+                                reader.IsDBNull(nameOrd) ? "Unknown" : reader.GetString(nameOrd),
+                                reader.IsDBNull(userIdOrd) ? "Unknown" : reader.GetString(userIdOrd),
+                                reader.IsDBNull(reasonOrd) ? "未提供理由" : reader.GetString(reasonOrd),
+                                reader.GetDateTime(startOrd),
+                                reader.GetDateTime(endOrd),
+                                reader.IsDBNull(portOrd) ? "Unknown" : reader.GetString(portOrd)
+                            ));
                         }
                     }
                 }
             }
-            catch (Exception ex) { Log.Error($"❌ 查询所有封禁记录失败: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"查询所有封禁记录失败: {ex}"); }
+                    await Awaitable.MainThreadAsync();
             return bans;
         }
 
-        public bool InsertBanRecord(string userid, string name, string issuer_userid, string issuer_name, string reason, DateTime start, DateTime end, string port)
+        public async Task<bool> InsertBanRecordAsync(string userid, string name, string issuer_userid, string issuer_name,
+            string reason, DateTime start, DateTime end, string port)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return false;
+            await Awaitable.BackgroundThreadAsync();
+
+            const string sql = @"INSERT INTO ban (issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port)
+                                 VALUES (@issuer_name, @issuer_userid, @name, @userid, @reason, @start_time, @end_time, @port)";
+
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(
-                    "INSERT INTO ban (issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port) VALUES (@issuer_name, @issuer_userid, @name, @userid, @reason, @start_time, @end_time, @port)",
-                    _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@issuer_name", issuer_name ?? "Unknown");
                     cmd.Parameters.AddWithValue("@issuer_userid", issuer_userid ?? "Unknown");
@@ -400,107 +330,179 @@ ON DUPLICATE KEY UPDATE
                     cmd.Parameters.AddWithValue("@start_time", start);
                     cmd.Parameters.AddWithValue("@end_time", end);
                     cmd.Parameters.AddWithValue("@port", port ?? "Unknown");
-                    cmd.ExecuteNonQuery();
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
+                    await Awaitable.MainThreadAsync();
                 return true;
             }
-            catch (Exception ex) { Log.Error($"InsertBanRecord: {ex.Message}"); return false; }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"InsertBanRecord: {ex}");
+                await Awaitable.MainThreadAsync();
+
+                return false; }
         }
 
-        public (string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start, DateTime end, string port)? QueryBan(string userid)
+        public async Task<(string issuer_name, string issuer_userid, string name, string userid, string reason,
+            DateTime start, DateTime end, string port)?> QueryBanAsync(string userid)
         {
             if (!Connected || string.IsNullOrEmpty(userid)) return null;
-            try
-            {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(
-                    "SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port FROM ban WHERE userid = @userid AND end_time > NOW() ORDER BY end_time DESC LIMIT 1",
-                    _Connection))
-                {
-                    cmd.Parameters.AddWithValue("@userid", userid);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            return (reader["issuer_name"] as string, reader["issuer_userid"] as string, reader["name"] as string,
-                                reader["userid"] as string, reader["reason"] as string, reader.GetDateTime("start_time"),
-                                reader.GetDateTime("end_time"), reader["port"] as string);
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Error($"QueryBan: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
-            return null;
-        }
+            await Awaitable.BackgroundThreadAsync();
 
-        public List<(string player_name, string port, string permissions, DateTime expiration, bool permanent, string notes)> QueryAdmin(string userid)
-        {
-            var result = new List<(string, string, string, DateTime, bool, string)>();
-            if (!Connected || string.IsNullOrEmpty(userid)) return result;
-            try
-            {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(
-                    "SELECT player_name, port, permissions, expiration_date, is_permanent, notes FROM admin WHERE userid = @userid AND (is_permanent = 1 OR expiration_date > NOW()) ORDER BY is_permanent DESC, expiration_date ASC",
-                    _Connection))
-                {
-                    cmd.Parameters.AddWithValue("@userid", userid);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            result.Add((reader["player_name"] as string ?? "Unknown", reader["port"] as string ?? "Unknown",
-                                reader["permissions"] as string ?? "none", reader.GetDateTime("expiration_date"),
-                                reader.GetBoolean("is_permanent"), reader["notes"] as string ?? ""));
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Error($"QueryAdmin: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
-            return result;
-        }
-
-        public List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)> QueryBadge(string userid)
-        {
-            var badges = new List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)>();
-            if (!Connected || string.IsNullOrEmpty(userid)) return badges;
-
-            string query = @"SELECT player_name, badge, color, expiration_date, is_permanent, notes FROM badge WHERE userid = @userid AND (is_permanent = 1 OR expiration_date > NOW()) ORDER BY is_permanent DESC, expiration_date ASC";
+            const string sql = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port
+                                 FROM ban WHERE userid = @userid AND end_time > NOW()
+                                 ORDER BY end_time DESC LIMIT 1";
 
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(query, _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid);
-                    using (var reader = cmd.ExecuteReader())
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        while (reader.Read())
+                        if (await reader.ReadAsync())
                         {
-                            string player_name = reader["player_name"] as string ?? string.Empty;
-                            string badgeName = reader["badge"] as string ?? "";
-                            string color = reader["color"] as string ?? "white";
-                            DateTime expiration_date = reader.GetDateTime("expiration_date");
-                            bool is_permanent = reader.GetInt32("is_permanent") == 1;
-                            string notes = reader["notes"] as string ?? string.Empty;
-                            badges.Add((player_name, badgeName, color, expiration_date, is_permanent, notes));
+                            int issuerNameOrd = reader.GetOrdinal("issuer_name");
+                            int issuerUserIdOrd = reader.GetOrdinal("issuer_userid");
+                            int nameOrd = reader.GetOrdinal("name");
+                            int userIdOrd = reader.GetOrdinal("userid");
+                            int reasonOrd = reader.GetOrdinal("reason");
+                            int startOrd = reader.GetOrdinal("start_time");
+                            int endOrd = reader.GetOrdinal("end_time");
+                            int portOrd = reader.GetOrdinal("port");
+                            await Awaitable.MainThreadAsync();
+
+                            return (
+                                reader.IsDBNull(issuerNameOrd) ? null : reader.GetString(issuerNameOrd),
+                                reader.IsDBNull(issuerUserIdOrd) ? null : reader.GetString(issuerUserIdOrd),
+                                reader.IsDBNull(nameOrd) ? null : reader.GetString(nameOrd),
+                                reader.IsDBNull(userIdOrd) ? null : reader.GetString(userIdOrd),
+                                reader.IsDBNull(reasonOrd) ? null : reader.GetString(reasonOrd),
+                                reader.GetDateTime(startOrd),
+                                reader.GetDateTime(endOrd),
+                                reader.IsDBNull(portOrd) ? null : reader.GetString(portOrd)
+                            );
                         }
                     }
                 }
             }
-            catch (Exception ex) { Log.Error($"❌ 查询用户 {userid} 的徽章失败: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"QueryBan: {ex}"); }
+            await Awaitable.MainThreadAsync();
+
+            return null;
+        }
+
+        public async Task<List<(string player_name, string port, string permissions, DateTime expiration, bool permanent, string notes)>> QueryAdminAsync(string userid)
+        {
+            var result = new List<(string, string, string, DateTime, bool, string)>();
+            if (!Connected || string.IsNullOrEmpty(userid)) return result;
+            await Awaitable.BackgroundThreadAsync();
+
+            const string sql = @"SELECT player_name, port, permissions, expiration_date, is_permanent, notes
+                                 FROM admin WHERE userid = @userid
+                                 AND (is_permanent = 1 OR expiration_date > NOW())
+                                 ORDER BY is_permanent DESC, expiration_date ASC";
+
+            try
+            {
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        int nameOrd = reader.GetOrdinal("player_name");
+                        int portOrd = reader.GetOrdinal("port");
+                        int permOrd = reader.GetOrdinal("permissions");
+                        int expOrd = reader.GetOrdinal("expiration_date");
+                        int permanentOrd = reader.GetOrdinal("is_permanent");
+                        int notesOrd = reader.GetOrdinal("notes");
+
+                        while (await reader.ReadAsync())
+                        {
+                            result.Add((
+                                reader.IsDBNull(nameOrd) ? "Unknown" : reader.GetString(nameOrd),
+                                reader.IsDBNull(portOrd) ? "Unknown" : reader.GetString(portOrd),
+                                reader.IsDBNull(permOrd) ? "none" : reader.GetString(permOrd),
+                                reader.GetDateTime(expOrd),
+                                reader.GetBoolean(permanentOrd),
+                                reader.IsDBNull(notesOrd) ? "" : reader.GetString(notesOrd)
+                            ));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Error($"QueryAdmin: {ex}"); }
+            await Awaitable.MainThreadAsync();
+
+            return result;
+        }
+
+        public async Task<List<(string player_name, string badge, string color, DateTime expiration_date, bool is_permanent, string notes)>> QueryBadgeAsync(string userid)
+        {
+            var badges = new List<(string, string, string, DateTime, bool, string)>();
+            if (!Connected) return badges;
+
+            const string query = @"SELECT player_name, badge, color, expiration_date, is_permanent, notes
+                                   FROM badge WHERE userid = @userid
+                                   AND (is_permanent = 1 OR expiration_date > NOW())
+                                   ORDER BY is_permanent DESC, expiration_date ASC";
+            await Awaitable.BackgroundThreadAsync();
+
+            try
+            {
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@userid", userid);
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        int nameOrd = reader.GetOrdinal("player_name");
+                        int badgeOrd = reader.GetOrdinal("badge");
+                        int colorOrd = reader.GetOrdinal("color");
+                        int expOrd = reader.GetOrdinal("expiration_date");
+                        int permanentOrd = reader.GetOrdinal("is_permanent");
+                        int notesOrd = reader.GetOrdinal("notes");
+
+                        while (await reader.ReadAsync())
+                        {
+                            badges.Add((
+                                reader.IsDBNull(nameOrd) ? string.Empty : reader.GetString(nameOrd),
+                                reader.IsDBNull(badgeOrd) ? "" : reader.GetString(badgeOrd),
+                                reader.IsDBNull(colorOrd) ? "white" : reader.GetString(colorOrd),
+                                reader.GetDateTime(expOrd),
+                                reader.GetBoolean(permanentOrd),
+                                reader.IsDBNull(notesOrd) ? string.Empty : reader.GetString(notesOrd)
+                            ));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Error($"查询用户 {userid} 的徽章失败: {ex}"); }
+            await Awaitable.MainThreadAsync();
+
             return badges;
         }
 
-        public void LogAdminPermission(string userid, string name, int port, string command, string result, string additionalInfo = "", string group = "")
+        public async Task LogAdminPermissionAsync(string userid, string name, int port, string command, string result,
+            string additionalInfo = "", string group = "")
         {
             if (!Connected) return;
+
+            const string sql = @"INSERT INTO admin_log (userid, name, operation_time, port, command_name, command_result, additional_info, admingroup)
+                                 VALUES (@userid, @name, @operation_time, @port, @command_name, @command_result, @additional_info, @admingroup)";
+            await Awaitable.BackgroundThreadAsync();
+
             try
             {
-                _Connection.Open();
-                using (var cmd = new MySqlCommand(
-                    "INSERT INTO admin_log (userid, name, operation_time, port, command_name, command_result, additional_info, admingroup) VALUES (@userid, @name, @operation_time, @port, @command_name, @command_result, @additional_info, @admingroup)",
-                    _Connection))
+                using (var conn = new MySqlConnection(_connectionString))
+                using (var cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@userid", userid ?? "");
                     cmd.Parameters.AddWithValue("@name", name ?? "");
@@ -510,21 +512,13 @@ ON DUPLICATE KEY UPDATE
                     cmd.Parameters.AddWithValue("@command_result", result ?? "");
                     cmd.Parameters.AddWithValue("@additional_info", additionalInfo ?? "");
                     cmd.Parameters.AddWithValue("@admingroup", group ?? "");
-                    cmd.ExecuteNonQuery();
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
-            catch (Exception ex) { Log.Error($"LogAdminPermission: {ex.Message}"); }
-            finally { if (_Connection.State == ConnectionState.Open) _Connection.Close(); }
+            catch (Exception ex) { Log.Error($"LogAdminPermission: {ex}"); }
         }
 
-        public void Close()
-        {
-            _Connection?.Close();
-        }
-
-        ~MySQLConnect()
-        {
-            Close();
-        }
+        public void Close() { Connected = false; }
     }
 }

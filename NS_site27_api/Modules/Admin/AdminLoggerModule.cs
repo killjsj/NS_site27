@@ -38,7 +38,7 @@ namespace NS_site27_api.Modules.Admin
                 {
                     group = AdminAssignModule.CachedGroups[ev.Player];
                 }
-                sql?.LogAdminPermission(ev.Player.UserId, ev.Player.DisplayNickname, Exiled.API.Features.Server.Port, ev.Query, ev.Response, group: ev.Player.Group.Name);
+                _ = sql?.LogAdminPermissionAsync(ev.Player.UserId, ev.Player.DisplayNickname, Exiled.API.Features.Server.Port, ev.Query, ev.Response, group: ev.Player.Group.Name);
             }
         }
     }

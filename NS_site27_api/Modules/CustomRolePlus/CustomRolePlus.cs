@@ -1,4 +1,5 @@
-﻿using Exiled.API.Enums;
+﻿using DisplayKit.Elements;
+using Exiled.API.Enums;
 using Exiled.API.Extensions;
 using Exiled.API.Features;
 using Exiled.API.Features.DamageHandlers;
@@ -21,15 +22,141 @@ using LabApi.Events.Handlers;
 using MEC;
 using MonoMod.Utils;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Modules.Abilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace NS_site27_api.Modules.CustomRolePlus
 {
+    public class abilitiesLayer : DisplayLayer
+    {
+        public override string Id { get; set; } = "abilitiesShower";
+
+        public override void InitNodes(Player target, DisplayCanvas canvas)
+        {
+
+            /*
+            canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) 
+            */
+            // start define of VisualElement
+            DisplayElement VisualElement = canvas.AddElement();
+            VisualElement.BaseElement.name = "VisualElement";
+            VisualElement.Flex.Grow = 1f;
+            VisualElement.Position.Position = Position.Absolute;
+            VisualElement.Position.Top = Length.Percent(70f);
+            VisualElement.Size.MaxWidth = Length.Percent(15f);
+            VisualElement.Align.AlignSelf = Align.FlexStart;
+            VisualElement.Position.Right = Length.Percent(16.5f);
+
+            /*
+            canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) -> specUiText(Label - id:2, 1th child of VisualElement) 
+            */
+            // start define of specUiText
+            DisplayText specUiText = VisualElement.AddText("");
+            specUiText.BaseElement.name = "specUiText";
+            specUiText.Background.Color = new Color(0.6509804f, 1f, 0.6666667f, 0.471f);
+            specUiText.Text.Color = Color.black;
+            specUiText.Text.Wrap = WhiteSpace.Normal;
+            specUiText.Text.Overflow = TextOverflow.Ellipsis;
+            specUiText.Spacing.PaddingTop = 0f;
+            specUiText.Spacing.PaddingRight = 0f;
+            specUiText.Spacing.PaddingBottom = 0f;
+            specUiText.Spacing.PaddingLeft = 0f;
+
+
+        }
+
+        public override void Update(Player p, DisplayCanvas canvas)
+        {
+            foreach (var Eitem in canvas.Children)
+            {
+                if(Eitem.BaseElement.name == "specUiText" && Eitem is DisplayText t)
+                {
+                    string showing = "<align=right><size=24><color=white>\n";
+                    if (p != null)
+                    {
+                        if (!string.IsNullOrEmpty(p.UniqueRole))
+                        {
+                            var r = CustomRole.Get(p.UniqueRole);
+                            // 修复：防止 CustomRole.Get 返回 null 导致空引用
+                            if (r != null)
+                            {
+                                showing += $"你是: {p.UniqueRole}\n{r.Description}\n";
+                            }
+                            else
+                            {
+                                showing += $"你是: {p.UniqueRole}\n";
+                            }
+                        }
+                        if (CustomItemPlus.PlayerItems.ContainsKey(p))
+                        {
+                            showing += "物品:\n";
+                            foreach (var item in CustomItemPlus.PlayerItems[p])
+                            {
+                                var c = item.Item2;
+                                if (c != null)
+                                {
+                                    if (p.CurrentItem != null && item.Item1 == p.CurrentItem.Serial)
+                                    {
+                                        showing += $">{c.Name}:{c.GetUIDescription(p)}\n";
+                                    }
+                                    else
+                                    {
+                                        showing += $"{c.Name}\n";
+                                    }
+                                }
+                            }
+                        }
+                        var set = AbilityBase.GetPlayerAbilitySet(p);
+                        if (set != null)
+                        {
+                            foreach (var item in set.AllAbilities())
+                            {
+                                var N = item.Name;
+                                var CustomInfo = item.CustomInfoToShow;
+                                bool show = false;
+                                string nS = $"{N}: ";
+                                if (item is ICounted CDA)
+                                {
+                                    var Count = CDA.count;
+                                    var TotalCount = CDA.TotalCount;
+                                    nS += $"<color={(Count == 0 ? "red" : "green")}>{Count}</color>/{TotalCount} ";
+                                    show = true;
+                                }
+                                if (item is ITiming timing)
+                                {
+                                    var RemainTime = timing.CoolDownRemaining;
+                                    var SkillRemainTime = timing.DoneRemaining;
+                                    nS += $"{(!timing.Done ? "还剩下:" : "冷却:")}{(!timing.Done ? SkillRemainTime : RemainTime):F0}s ";
+                                    show = true;
+                                }
+                                if (!string.IsNullOrEmpty(item.CustomInfoToShow))
+                                {
+                                    show = true;
+                                    nS += $"{CustomInfo}";
+                                }
+                                nS += "\n";
+                                if (show)
+                                {
+                                    showing += nS;
+                                }
+                            }
+                        }
+                    }
+                    showing += "</color></size></align>";
+                    if(showing != t.Content)
+                    {
+                        t.Content = showing;
+                    }
+                }
+            }
+        }
+    }
     public abstract class CustomRolePlus : CustomRole
     {
         // 所有玩家共享的能力模板
@@ -38,92 +165,14 @@ namespace NS_site27_api.Modules.CustomRolePlus
         override protected void ShowMessage(Player player)
         {
         }
-
-        public static string[] abilitiesShower(Player p)
-        {
-            string showing = "<align=right><size=24><color=white>\n";
-            if (p != null)
-            {
-                if (!string.IsNullOrEmpty(p.UniqueRole))
-                {
-                    var r = CustomRole.Get(p.UniqueRole);
-                    // 修复：防止 CustomRole.Get 返回 null 导致空引用
-                    if (r != null)
-                    {
-                        showing += $"你是: {p.UniqueRole}\n{r.Description}\n";
-                    }
-                    else
-                    {
-                        showing += $"你是: {p.UniqueRole}\n";
-                    }
-                }
-                if (CustomItemPlus.PlayerItems.ContainsKey(p))
-                {
-                    showing += "物品:\n";
-                    foreach (var item in CustomItemPlus.PlayerItems[p])
-                    {
-                        var c = item.Item2;
-                        if (c != null)
-                        {
-                            if (p.CurrentItem != null && item.Item1 == p.CurrentItem.Serial)
-                            {
-                                showing += $">{c.Name}:{c.Description}\n";
-                            }
-                            else
-                            {
-                                showing += $"{c.Name}\n";
-                            }
-                        }
-                    }
-                }
-                var set = AbilityBase.GetPlayerAbilitySet(p);
-                if (set != null)
-                {
-                    foreach (var item in set.AllAbilities())
-                    {
-                        var N = item.Name;
-                        var CustomInfo = item.CustomInfoToShow;
-                        bool show = false;
-                        string nS = $"{N}: ";
-                        if (item is ICounted CDA)
-                        {
-                            var Count = CDA.count;
-                            var TotalCount = CDA.TotalCount;
-                            nS += $"<color={(Count == 0 ? "red" : "green")}>{Count}</color>/{TotalCount} ";
-                            show = true;
-                        }
-                        if (item is ITiming timing)
-                        {
-                            var RemainTime = timing.CoolDownRemaining;
-                            var SkillRemainTime = timing.DoneRemaining;
-                            nS += $"{(!timing.Done ? "还剩下:" : "冷却:")}{(!timing.Done ? SkillRemainTime : RemainTime):F0}s ";
-                            show = true;
-                        }
-                        if (!string.IsNullOrEmpty(item.CustomInfoToShow))
-                        {
-                            show = true;
-                            nS += $"{CustomInfo}";
-                        }
-                        nS += "\n";
-                        if (show)
-                        {
-                            showing += nS;
-                        }
-                    }
-                }
-            }
-            showing += "</color></size></align>";
-            return new[] { showing };
-        }
-
         public static void AddAbilityMessage(Player player)
         {
-            player.AddMessage("abilitiesShower", abilitiesShower, -1, 325, 300);
+            player.AddLayer("abilitiesShower");
         }
 
         public static void RemoveAbilityMessage(Player player)
         {
-            player.RemoveMessage("abilitiesShower");
+            player.RemoveLayer("abilitiesShower");
         }
 
         private static bool HasVisibleAbilitiesOrItems(Player player)
@@ -851,6 +900,11 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 RefreshPlayersItems(ev.Player);
                 RefreshAbilityMessage(ev.Player);
             });
+        }
+
+        public virtual string GetUIDescription(Player p)
+        {
+            return Description;
         }
     }
 

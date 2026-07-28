@@ -31,7 +31,6 @@ namespace NS_site27_api.Modules.SpawnProtection
         {
             ServerHandlers.EndingRound += OnRoundEnd;
             PlayerHandlers.Left += OnPlayerLeave;
-            PlayerHandlers.Verified += OnVerified;
             PlayerHandlers.ChangingRole += ChangingRole;
             PlayerHandlers.Shot += Shot;
             ServerHandlers.RespawnedTeam += RespawnedTeam;
@@ -41,7 +40,6 @@ namespace NS_site27_api.Modules.SpawnProtection
         {
             ServerHandlers.EndingRound -= OnRoundEnd;
             PlayerHandlers.Left -= OnPlayerLeave;
-            PlayerHandlers.Verified -= OnVerified;
             PlayerHandlers.ChangingRole -= ChangingRole;
             PlayerHandlers.Shot -= Shot;
             ServerHandlers.RespawnedTeam -= RespawnedTeam;
@@ -70,27 +68,6 @@ namespace NS_site27_api.Modules.SpawnProtection
                 Log.Error($"[SpawnProtection] Error: {ex.Message}");
             }
         }
-        private string[] FrontEnd(Player player)
-        {
-            var spawnProtectedEffect = player.GetEffect(EffectType.SpawnProtected);
-            if (spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled)
-                return null;
-            var remainingTime = spawnProtectedEffect.TimeLeft;
-            var text = "";
-            if (remainingTime > 0 && spawnProtectedEffect.IsEnabled)
-            {
-                text = Config.InProtect.Replace("{remainingTime}", $"{remainingTime:F0}");
-            } else
-            if (LoseProtectAt.TryGetValue(player,out var t) && t.lost)
-            {
-                if (Time.time - t.time >= 5f)
-                {
-                    text = Config.OutProtect;
-                }
-            }
-            return new[ ]{ text };
-        }
-
         private void Shot(ShotEventArgs ev)
         {
             if (ev.Player.GetEffect(EffectType.SpawnProtected) != null)
@@ -132,10 +109,6 @@ namespace NS_site27_api.Modules.SpawnProtection
         private void ChangingRole(ChangingRoleEventArgs ev)
         {
             ev.Player.DisableEffect(EffectType.SpawnProtected);
-        }
-        private void OnVerified(VerifiedEventArgs ev)
-        {
-            if (ev.Player != null) ev.Player.AddMessage("ProtectionMessage", FrontEnd, -1, ScreenPosition.Top);
         }
     }
 }

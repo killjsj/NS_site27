@@ -8,6 +8,7 @@ using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
 using NS_site27_api.Modules.Abilities;
 using NS_site27_api.Modules.EventHandle.Handlers;
+using NS_site27_api.Modules.MessageModule;
 using NS_site27_api.Modules.MySQL;
 using NS_site27_api.Modules.PlayerManagement;
 using PlayerRoles;
@@ -57,21 +58,11 @@ namespace NS_site27_api.Modules.ItemCleaner
         private static bool _stop;
         private void OnVerified(VerifiedEventArgs ev)
         {
-            if (!_stop) { 
-                if(ev.Player != null)
-                {
-                    ev.Player.AddMessage("ItemCleaner", GetDisplayText, -1, 0,this.Config.yPos);
-                }
-            }
         }
         public static void RoundStarted()
         {
             _stop = false;
             _handle = Timing.RunCoroutine(Cleaner());
-        }
-        public static string[] GetDisplayText(Player p)
-        {
-            return ShowingStr;
         }
         public static void OnWaitingForPlayers()
         {
@@ -82,10 +73,9 @@ namespace NS_site27_api.Modules.ItemCleaner
         {
             _stop = true;
             if (_handle.IsRunning) Timing.KillCoroutines(_handle);
-            foreach (var player in Player.Enumerable)
-                player.RemoveMessage("ItemCleaner");
         }
-        public static string[] ShowingStr = new[] { "" };
+        public static string ShowingStr =  "";
+        public static bool countdownstart = false;
         private static IEnumerator<float> Cleaner()
         {
             var module = ItemCleanerModule.Ins;
@@ -102,18 +92,33 @@ namespace NS_site27_api.Modules.ItemCleaner
                 {
                     //ShowingStr[0] = "";
                 }
+                //start countdown
                 else if (counter <= cfg.CleanTime)
                 {
-                    ShowingStr[0] = cfg.StartingClean.Replace("{second}", (cfg.CleanTime - counter).ToString("F0"));
+                    if(!countdownstart)
+                    {
+                        foreach (var item in Player.Enumerable)
+                        {
+                            item.AddHint("clean_startcountdown",cfg.CleanTime - counter, x => ShowingStr);
+                        }
+                        countdownstart = true;
+                    }
+                    ShowingStr = cfg.StartingClean.Replace("{second}", (cfg.CleanTime - counter).ToString("F0"));
                 }
                 else
                 {
-                    ShowingStr[0] = "";
+                        countdownstart = false;
+                    foreach (var item in Player.Enumerable)
+                    {
+                        item.RemoveHint("clean_startcountdown");
+                    }
+                    ShowingStr = "";
                     counter = -cfg.DoneCleanShowTime;
                     CleanItem();
                 }
             }
         }
+        public static bool showstart = false;
         public static async Awaitable CleanItem()
         {
             await Awaitable.MainThreadAsync();
@@ -170,9 +175,18 @@ namespace NS_site27_api.Modules.ItemCleaner
                         await Awaitable.NextFrameAsync();
                     }
                 }
-                ShowingStr[0] = cfg.DoneClean.Replace("{body}", cleanedBodyCount.ToString()).Replace("{item}", cleanedItemCount.ToString());
+                    foreach (var item in Player.Enumerable)
+                    {
+                        item.AddHint("DoneCleanShow", cfg.DoneCleanShowTime, x => ShowingStr);
+                    }
+                
+                ShowingStr = cfg.DoneClean.Replace("{body}", cleanedBodyCount.ToString()).Replace("{item}", cleanedItemCount.ToString());
                 await Awaitable.WaitForSecondsAsync(cfg.DoneCleanShowTime);
-                ShowingStr[0] = "";
+                foreach (var item in Player.Enumerable)
+                {
+                    item.RemoveHint("DoneCleanShow");
+                }
+                ShowingStr = "";
             }
             catch (Exception e)
             {

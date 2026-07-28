@@ -3,6 +3,7 @@ using AutoEvent.API;
 using AutoEvent.API.Enums;
 using AutoEvent.Interfaces;
 using CustomRendering;
+using DisplayKit.Elements;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Toys;
@@ -10,6 +11,7 @@ using Exiled.Events.EventArgs.Player;
 using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Core.UI.DisplayKit;
 using PlayerRoles;
 using ProjectMER.Features.Objects;
 using ProjectMER.Features.Serializable;
@@ -19,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace NS_site27_api.Core
 {
@@ -34,8 +37,9 @@ namespace NS_site27_api.Core
         B,
 
     }
-    class czsz : Event<czszConfig, czszTranslation>, IEventMap,IModule
+    class czsz : Event<czszConfig, czszTranslation>, IEventMap, IModule
     {
+        public static czsz instance;
         public override string Name { get; set; } = "占领";
         public override string Description { get; set; } = "testing";
         public override string Author { get; set; } = "killjsj";
@@ -45,8 +49,8 @@ namespace NS_site27_api.Core
             MapName = "czsz",
             Position = Vector3.zero
         };
-        public List<Player> BTeam = new List<Player>();
-        public List<Player> ATeam = new List<Player>();
+        public static List<Player> BTeam = new List<Player>();
+        public static List<Player> ATeam = new List<Player>();
         internal GameObject ASpawnPoint { get; set; }
         internal GameObject BSpawnPoint { get; set; }
         internal GameObject ATexts { get; set; }
@@ -67,11 +71,11 @@ namespace NS_site27_api.Core
 
         public bool IsEnabled { get; set; } = true;
 
-        public int Apoints = 0;
-        public int Bpoints = 0;
-        public int ALives = 0;
-        public int BLives = 0;
-        public bool stop = false;
+        public static int Apoints = 0;
+        public static int Bpoints = 0;
+        public static int ALives = 0;
+        public static int BLives = 0;
+        public static bool stop = false;
         public List<CoroutineHandle> coroutines = new();
         public Stopwatch time = new();
         protected override bool IsRoundDone()
@@ -121,11 +125,11 @@ namespace NS_site27_api.Core
             }
             if (Awin)
             {
-               AutoEvent.API.Extensions.ServerBroadcast("A队获得胜利!", 3);
+                AutoEvent.API.Extensions.ServerBroadcast("A队获得胜利!", 3);
             }
             else if (Bwin)
             {
-               AutoEvent.API.Extensions.ServerBroadcast("B队获得胜利!", 3);
+                AutoEvent.API.Extensions.ServerBroadcast("B队获得胜利!", 3);
             }
             else
             {
@@ -142,40 +146,11 @@ namespace NS_site27_api.Core
             }
             foreach (var item in Player.Enumerable)
             {
-                item.RemoveMessage("czszPoint");
+                item.RemoveLayer("czszUI");
             }
             base.OnCleanup();
         }
         public TimeSpan RemainTime;
-        public string[] shower(Player player)
-        {
-            var pointMess = "";
-            foreach (var pair in InPoint)
-            {
-                var point = pair.Key;
-                var players = pair.Value;
-                var Aplayers = players.Intersect(ATeam).ToList();
-                var Bplayers = players.Intersect(BTeam).ToList();
-                var p = TPoint[point];
-                var pl = player;
-                var color = "white";
-                if (pl != null)
-                {
-                    if (ATeam.Contains(pl))
-                    {
-                        color = p.A > p.B ? "green" : p.B > p.A ? "red" : "yellow";
-                    }
-                    else if (BTeam.Contains(pl))
-                    {
-                        color = p.B > p.A ? "green" : p.A > p.B ? "red" : "yellow";
-                    }
-                    else
-                        color = "yellow";
-                }
-                pointMess += $"<size=18><color={color}>{point}点 A队占领:{p.A:F1}% B队占领:{p.B:F1}% A队人数:{Aplayers.Count} B队人数:{Bplayers.Count}</color></size=18>\n";
-            }
-            return new[] { $"<size=22>{pointMess}A队积分:{Apoints} 剩余命数:{Math.Max(0, Config.TotalLives - ALives)}\nB队积分:{Bpoints} 剩余命数:{Math.Max(0, Config.TotalLives - BLives)}\n目标:{Config.TargetPoint} 时间:{RemainTime.TotalSeconds:F0}</size=22>" };
-        }
         protected override void ProcessFrame()
         {
 
@@ -239,14 +214,14 @@ namespace NS_site27_api.Core
                     // 双方人数相等 → 不动（可选：缓慢衰减）
                     if (aPlayers == bPlayers && aPlayers > 1)
                     {
-                        if (progress.A > 0) { progress.A-=UnityEngine.Random.Range(-1,2);; }
-                        if (progress.B > 0){ progress.B-= UnityEngine.Random.Range(-1,2); }
+                        if (progress.A > 0) { progress.A -= UnityEngine.Random.Range(-1, 2); ; }
+                        if (progress.B > 0) { progress.B -= UnityEngine.Random.Range(-1, 2); }
                         TPoint[point] = progress;  // 如果有修改，再赋值
                         continue;
                     }
 
                     int advantage = aPlayers - bPlayers;
-                    float speed = Math.Min(5f, Math.Abs(advantage*1.5f)); // 人数差距越大，速度越快（可调）
+                    float speed = Math.Min(5f, Math.Abs(advantage * 1.5f)); // 人数差距越大，速度越快（可调）
 
                     if (advantage > 0) // A 队优势
                     {
@@ -278,7 +253,7 @@ namespace NS_site27_api.Core
                     TPoint[point] = progress;  // 写回字典
                 }
                 RemainTime = TimeSpan.FromSeconds(Config.TotalTime - time.Elapsed.TotalSeconds);
-                if( RemainTime.TotalSeconds <= 0)
+                if (RemainTime.TotalSeconds <= 0)
                 {
                     stop = true;
                 }
@@ -338,11 +313,11 @@ namespace NS_site27_api.Core
             { pointType.B, (0,0) },
             { pointType.C, (0,0)}
         };
-             Apoints = 0;
-             Bpoints = 0;
-             ALives = 0;
-             BLives = 0;
-             stop = false;
+            Apoints = 0;
+            Bpoints = 0;
+            ALives = 0;
+            BLives = 0;
+            stop = false;
             foreach (var item in MapInfo.Map.AttachedBlocks)
             {
                 switch (item.name)
@@ -434,31 +409,106 @@ namespace NS_site27_api.Core
                     item.Position = BSpawnPoint.transform.position;
                 }
                 i++;
-                item.AddMessage("czszPoint", shower, -1, UIPosition.FromEnum(ScreenPosition.MiddleRight));
+                item.AddLayer("czszUI");
             }
             p = AutoEvent.API.Extensions.PlayAudio("czsz1.ogg");
             Timing.CallDelayed(20, () => { p = AutoEvent.API.Extensions.PlayAudio("czsz2.ogg", true); });
             coroutines.Add(Timing.RunCoroutine(StayUpdate()));
             coroutines.Add(Timing.RunCoroutine(PointUpdate()));
         }
+        public class czszUI : DisplayLayer
+        {
+            public override string Id { get; set; } = "czszUI";
 
+            public override void InitNodes(Player target, DisplayCanvas canvas)
+            {
+                /*
+                canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) 
+                */
+                // start define of VisualElement
+                DisplayElement VisualElement = canvas.AddElement();
+                VisualElement.BaseElement.name = "VisualElement";
+                VisualElement.Flex.Grow = 1f;
+                VisualElement.Position.Position = Position.Absolute;
+                VisualElement.Position.Top = Length.Percent(54f);
+                VisualElement.Position.Left = Length.Percent(62f);
+                VisualElement.Size.MaxWidth = Length.Percent(15f);
+                VisualElement.Size.MaxHeight = Length.Percent(28f);
+                VisualElement.Align.AlignSelf = Align.FlexStart;
+
+                /*
+                canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) -> zhanlText(Label - id:2, 1th child of VisualElement) 
+                */
+                // start define of zhanlText
+                DisplayText zhanlText = VisualElement.AddText("");
+                zhanlText.BaseElement.name = "zhanlText";
+                zhanlText.Background.Color = new Color(0.6784314f, 0.2f, 0.7372549f, 0.31f);
+                zhanlText.Text.Color = new Color(0f, 0.4901961f, 1f, 1f);
+                zhanlText.Text.Wrap = WhiteSpace.Normal;
+                zhanlText.Text.Overflow = TextOverflow.Ellipsis;
+            }
+
+            public override void Update(Player target, DisplayCanvas canvas)
+            {
+                foreach (var item in canvas.Children)
+                {
+                    var re = "";
+                    var pointMess = "";
+                    foreach (var pair in InPoint)
+                    {
+                        var point = pair.Key;
+                        var players = pair.Value;
+                        var Aplayers = players.Intersect(ATeam).ToList();
+                        var Bplayers = players.Intersect(BTeam).ToList();
+                        var p = TPoint[point];
+                        var pl = target;
+                        var color = "white";
+                        if (pl != null)
+                        {
+                            if (ATeam.Contains(pl))
+                            {
+                                color = p.A > p.B ? "green" : p.B > p.A ? "red" : "yellow";
+                            }
+                            else if (BTeam.Contains(pl))
+                            {
+                                color = p.B > p.A ? "green" : p.A > p.B ? "red" : "yellow";
+                            }
+                            else
+                                color = "yellow";
+                        }
+                        pointMess += $"<size=18><color={color}>{point}点 A队占领:{p.A:F1}% B队占领:{p.B:F1}% A队人数:{Aplayers.Count} B队人数:{Bplayers.Count}</color></size=18>\n";
+                    }
+                    re = $"<size=22>{pointMess}A队积分:{Apoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - ALives)}\nB队积分:{Bpoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - BLives)}\n目标:{instance.Config.TargetPoint} 时间:{instance.RemainTime.TotalSeconds:F0}</size=22>";
+
+                    if (item is DisplayText t && item.BaseElement.name == "zhanlText")
+                    {
+                        if (re != t.Content)
+                        {
+                            t.Content = re;
+                        }
+                    }
+                }
+            }
+        }
         public void OnEnable()
         {
             var result = EventManager.RegisterEvent(this);
-
+            instance = this;
             if (result != EventRegistrationResult.Success)
                 Log.Warn($"Failed to register event: {result}");
         }
 
         public void OnDisable()
         {
-                    EventManager.UnregisterEvent(this);
+            EventManager.UnregisterEvent(this);
+            instance = null;
         }
 
         public void OnReloadConfig()
         {
         }
     }
+
     public class PointTrigger : MonoBehaviour
     {
         private BoxCollider _collider;

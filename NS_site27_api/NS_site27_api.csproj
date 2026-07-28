@@ -238,6 +238,22 @@
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+    </Reference>
     <Reference Include="YamlDotNet, Version=18.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
       <HintPath>..\packages\YamlDotNet.18.1.0\lib\net47\YamlDotNet.dll</HintPath>
     </Reference>
@@ -247,6 +263,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\czsz.cs" />
+    <Compile Include="Core\UI\DisplayKit\baseclass.cs" />
+    <Compile Include="Core\UI\DisplayKit\DisplayKitRunner.cs" />
+    <Compile Include="Core\UI\DisplayKit\DisplayKitTempInterface.cs" />
     <Compile Include="Modules\Abilities\AbilityBase.cs" />
     <Compile Include="Modules\Abilities\ItemAbilities.cs" />
     <Compile Include="Modules\Admin\AdminLoggerModule.cs" />
@@ -254,10 +273,13 @@
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVeriferAndRAQuery.cs" />
     <Compile Include="Modules\CustomRolePlus\CustomRolePlus.cs" />
+    <Compile Include="Modules\HarmonyPatches\Patches\CommandProcessorPatch.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
     <Compile Include="Modules\ItemCleaner\ItemCleanerModule.cs" />
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
     <Compile Include="Modules\Lobby\LobbyModule.cs" />
+    <Compile Include="Modules\MessageModule\PlayerMessageLayer.cs" />
+    <Compile Include="Modules\PlayerManagement\PlayerManagerDisplayKitHUD.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />
     <Compile Include="Modules\SettingManager\SettingManager.cs" />
     <Compile Include="Modules\SettingManager\SettingManagerConfig.cs" />
@@ -265,8 +287,6 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="Core\CorePlugin.cs" />
     <Compile Include="Core\Configs\ModuleConfigManager.cs" />
-    <Compile Include="Core\UI\UIManager.cs" />
-    <Compile Include="Core\UI\RueIDisplayService.cs" />
     <Compile Include="Modules\SpawnProtection\SpawnProtectionModule.cs" />
     <Compile Include="Modules\MySQL\MySQLModule.cs" />
     <Compile Include="Modules\Chat\ChatModule.cs" />

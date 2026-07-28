@@ -33,24 +33,19 @@ namespace NS_site27_api.Modules.Lobby
         }
         public void Verified(VerifiedEventArgs ev)
         {
-            ev.Player.AddMessage("LobbyUI", (p) => ShowingString, -1, 0, 799 - 47);
             ev.Player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Tutorial, PlayerRoles.RoleChangeReason.None, PlayerRoles.RoleSpawnFlags.All);
         }
         public CoroutineHandle handle;
         public void RoundStarted()
         {
             Timing.KillCoroutines(handle);
-            foreach (var item in Player.Enumerable)
-            {
-                item.RemoveMessage("LobbyUI");
-            }
         }
         public void WaitingForPlayers()
         {
             GameObject.Find("StartRound").transform.localScale = Vector3.zero;
             handle = Timing.RunCoroutine(PlayerRefreshLoop());
         }
-        public string[] ShowingString = new string[] { "" };
+        public static string ShowingString ="";
         private IEnumerator<float> PlayerRefreshLoop()
         {
             while (Round.IsLobby && RoundStart.singleton.Timer != -1)
@@ -72,7 +67,7 @@ namespace NS_site27_api.Modules.Lobby
                         re += $"距离开始还剩:{RoundStart.singleton.Timer} 秒! ";
                     }
                     re += "</size></color>";
-                    ShowingString[0] = re;
+                    ShowingString = re;
                 }
                 catch (Exception e)
                 {
@@ -80,7 +75,7 @@ namespace NS_site27_api.Modules.Lobby
                 }
                 yield return Timing.WaitForSeconds(0.2f);
             }
-            ShowingString[0] = "";
+            ShowingString = "";
         }
 
     }

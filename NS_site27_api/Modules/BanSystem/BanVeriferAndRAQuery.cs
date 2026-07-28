@@ -47,20 +47,24 @@ namespace NS_site27_api.Modules.BanSystem
             }
         }
 
-        public void OnPreVerifer(PreAuthenticatingEventArgs ev) { 
-            if(GetSQL() != null)
+        public async void OnPreVerifer(PreAuthenticatingEventArgs ev) {
+            try
             {
-                var re = GetSQL().QueryBan(ev.UserId);
+                if(GetSQL() != null)
+                {
+                    var re = await GetSQL().QueryBanAsync(ev.UserId);
 
-                if (re != null && re.HasValue) {
-                    bool thisServer = re.Value.port != "0" ? re.Value.port == Server.Port.ToString() : true;
+                    if (re != null && re.HasValue) {
+                        bool thisServer = re.Value.port != "0" ? re.Value.port == Server.Port.ToString() : true;
 
-                    if (re?.end > DateTime.UtcNow && thisServer)
-                    {
-                        ev.RejectBanned(re?.reason, re.Value.end,true);
+                        if (re?.end > DateTime.UtcNow && thisServer)
+                        {
+                            ev.RejectBanned(re?.reason, re.Value.end,true);
+                        }
                     }
                 }
             }
+            catch (Exception ex) { Log.Error($"[BanVerifer] OnPreVerifer: {ex}"); }
         }
         private static MySQLConnect GetSQL()
         {

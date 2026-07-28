@@ -174,7 +174,8 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                 float deltaYaw = Mathf.DeltaAngle(centerYaw, playerYaw);
 
                                 const float limit = 20f;
-
+                                // This is obsoleted because 15.0 will have MouseLock enum
+                                // Think you NW I JUST WROTE THIS IN 7/6 AND OBSOLETE IN 7/8
                                 if (Mathf.Abs(deltaPitch) > limit || Mathf.Abs(deltaYaw) > limit)
                                 {
                                     float clampedDeltaPitch = Mathf.Clamp(deltaPitch, -limit, limit);

@@ -17,11 +17,13 @@ using InventorySystem.Items.Usables.Scp330;
 using MEC;
 using MySqlX.XDevAPI;
 using NS_site27_api.Core;
+using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Modules.MySQL;
 using PlayerRoles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using VoiceChat.Filters;
 using static InventorySystem.Items.Firearms.ShotEvents.ShotEventManager;
@@ -147,17 +149,21 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         private MySQLConnect SQL => Plugin.Instance?.connect;
 
-        private void OnVerified(VerifiedEventArgs ev)
+        private async void OnVerified(VerifiedEventArgs ev)
         {
-            if (ev.Player == null) return;
-            var sql = SQL;
-            if (sql != null)
+            try
             {
-                PlayerDataManager.GetServerTime(ev.Player);
-                sql.Update(ev.Player.UserId, ev.Player.Nickname, last_time: DateTime.Now, ip: ev.Player.IPAddress);
-            }
+                if (ev.Player == null) return;
+                var sql = SQL;
+                if (sql != null)
+                {
+                    PlayerDataManager.GetServerTime(ev.Player);
+                    sql.UpdateAsync(ev.Player.UserId, ev.Player.Nickname, last_time: DateTime.Now, ip: ev.Player.IPAddress);
+                }
 
-            PlayerHUDManager.RegisterPlayer(ev.Player);
+                PlayerHUDManager.RegisterPlayer(ev.Player);
+            }
+            catch (Exception ex) { Log.Error($"[PM] OnVerified: {ex}"); }
         }
 
         private void OnChangingRole(ChangingRoleEventArgs ev)
@@ -205,45 +211,52 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerDataManager.AddEscape(ev.Player);
         }
 
-        private void OnLeft(LeftEventArgs ev)
+        private async void OnLeft(LeftEventArgs ev)
         {
-            var sql = SQL;
-            if (sql == null) return;
-            var session = PlayerDataManager.GetServerTime(ev.Player);
-            var user = sql.QueryUser(ev.Player.UserId);
-            var total = (user.total_duration ?? TimeSpan.Zero) + session;
-            sql.Update(ev.Player.UserId, name: ev.Player.Nickname, today_duration: PlayerDataManager.GetTodayTime(ev.Player), total_duration: total);
-            sql.Update(ev.Player.UserId, point: GetOrCreateStats(ev.Player).Points);
+            try
+            {
+                var sql = SQL;
+                if (sql == null) return;
+                var session = PlayerDataManager.GetServerTime(ev.Player);
+                var user = await sql.QueryUserAsync(ev.Player.UserId);
+                var total = (user.total_duration ?? TimeSpan.Zero) + session;
+                await sql.UpdateAsync(ev.Player.UserId, name: ev.Player.Nickname, today_duration: PlayerDataManager.GetTodayTime(ev.Player), total_duration: total);
+                await sql.UpdateAsync(ev.Player.UserId, point: (await GetOrCreateStats(ev.Player)).Points);
 
-            PlayerDataManager.StopServerTime(ev.Player);
-            // 移除玩家的今日计时器，防止在OnRestarting中重复添加时间
-            PlayerDataManager.TodayTimers.Remove(ev.Player);
-            PlayerStateManager.HasRenamedPlayers.Remove(ev.Player);
-            PlayerDataManager.TodayTimeCache.Remove(ev.Player);
+                PlayerDataManager.StopServerTime(ev.Player);
+                PlayerDataManager.TodayTimers.Remove(ev.Player);
+                PlayerStateManager.HasRenamedPlayers.Remove(ev.Player);
+                PlayerDataManager.TodayTimeCache.Remove(ev.Player);
+                ev.Player.RemoveLayer("PlayerManager");
 
-            PlayerHUDManager.UnregisterPlayer(ev.Player);
+            }
+            catch (Exception ex) { Log.Error($"[PM] OnLeft: {ex}"); }
         }
 
-        private void OnRestarting()
+        private async void OnRestarting()
         {
-            var sql = SQL;
-            if (sql == null) return;
-            foreach (var kv in PlayerDataManager.TodayTimers.ToArray())
+            try
             {
-                kv.Value.Stop();
-                var session = PlayerDataManager.GetServerTime(kv.Key);
-                PlayerDataManager.StopServerTime(kv.Key);
-                var user = sql.QueryUser(kv.Key.UserId);
-                sql.Update(kv.Key.UserId, name: kv.Key.Nickname, today_duration: PlayerDataManager.GetTodayTime(kv.Key), total_duration: (user.total_duration ?? TimeSpan.Zero) + session);
-            }
-            foreach (var item in RoundStats)
-            {
-                sql.Update(item.Key.UserId, point:item.Value.Points);
+                var sql = SQL;
+                if (sql == null) return;
+                foreach (var kv in PlayerDataManager.TodayTimers.ToArray())
+                {
+                    kv.Value.Stop();
+                    var session = PlayerDataManager.GetServerTime(kv.Key);
+                    PlayerDataManager.StopServerTime(kv.Key);
+                    var user = await sql.QueryUserAsync(kv.Key.UserId);
+                    await sql.UpdateAsync(kv.Key.UserId, name: kv.Key.Nickname, today_duration: PlayerDataManager.GetTodayTime(kv.Key), total_duration: (user.total_duration ?? TimeSpan.Zero) + session);
+                }
+                foreach (var item in RoundStats)
+                {
+                    await sql.UpdateAsync(item.Key.UserId, point: item.Value.Points);
 
+                }
+                PlayerDataManager.TodayTimeCache.Clear();
+                PlayerStateManager.HasRenamedPlayers.Clear();
+                PlayerDataManager.TodayTimers.Clear();
             }
-            PlayerDataManager.TodayTimeCache.Clear();
-            PlayerStateManager.HasRenamedPlayers.Clear();
-            PlayerDataManager.TodayTimers.Clear();
+            catch (Exception ex) { Log.Error($"[PM] OnRestarting: {ex}"); }
         }
 
         private void OnWaiting()
@@ -277,7 +290,6 @@ namespace NS_site27_api.Modules.PlayerManagement
                     PlayerHUDManager.dd = 0;
                     PlayerHUDManager.gruad = 0;
                     PlayerHUDManager.chaos = 0;
-  
 
                     foreach (var player in Player.Enumerable)
                     {
@@ -294,7 +306,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                                 PlayerHUDManager.chaos++; break;
                             case RoleTypeId.ClassD: PlayerHUDManager.dd++; break;
                         }
-                    if (player == null) continue;
+                        if (player == null) continue;
                         PlayerStateManager.HandleBadgeSync(player, player.ReferenceHub);
 
                         if (player.Role is SpectatorRole spectatorRole)
@@ -308,6 +320,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     }
                 }
                 catch (Exception e) { Log.Error($"[PM] Refresh: {e}"); }
+
                 yield return Timing.WaitForSeconds(0.3f);
             }
         }
@@ -325,13 +338,13 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public static Dictionary<Player, RoundStatistics> RoundStats = new Dictionary<Player, RoundStatistics>();
 
-        public static RoundStatistics GetOrCreateStats(Player player)
+        public async static Task<RoundStatistics> GetOrCreateStats(Player player)
         {
             if (player == null) return null;
             if (!RoundStats.ContainsKey(player))
             {
                 RoundStats[player] = new RoundStatistics();
-                RoundStats[player].Points = PlayerDataManager.GetPoint(player);
+                RoundStats[player].Points = await PlayerDataManager.GetPoint(player);
             }
             return RoundStats[player];
         }

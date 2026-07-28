@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
@@ -61,6 +62,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static Dictionary<Player, Stopwatch> TodayTimers = new Dictionary<Player, Stopwatch>();
         public static Dictionary<Player, Stopwatch> ServerTimers = new Dictionary<Player, Stopwatch>();
         public static Dictionary<Player, TimeSpan> TodayTimeCache = new Dictionary<Player, TimeSpan>();
+
         public static TimeSpan GetTodayTime(Player player)
         {
             if (player == null) return TimeSpan.Zero;
@@ -71,90 +73,99 @@ namespace NS_site27_api.Modules.PlayerManagement
             }
             var t = Stopwatch.StartNew();
             TodayTimers[player] = t;
-            var existing = SQL?.QueryUser(player.UserId).today_duration;
-            if (existing.HasValue) TodayTimeCache[player] = existing.Value;
-            return t.Elapsed + (existing ?? TimeSpan.Zero);
+            var existing = TodayTimeCache.TryGetValue(player, out var cachedTime) ? cachedTime : TimeSpan.Zero;
+            return t.Elapsed + existing;
         }
+
         public static TimeSpan GetAllTime(Player player)
         {
             if (player == null) return TimeSpan.Zero;
-            var existing = SQL?.QueryUser(player.UserId).total_duration;
-            return (existing ?? TimeSpan.Zero) + GetServerTime(player);
+            return GetServerTime(player);
         }
+
         public static TimeSpan GetServerTime(Player player)
         {
             if (player == null) return TimeSpan.Zero;
             if (ServerTimers.TryGetValue(player, out var sw))
-            {
                 return sw.Elapsed;
-            }
             var t = Stopwatch.StartNew();
             ServerTimers[player] = t;
             return t.Elapsed;
         }
+
         public static void StopServerTime(Player player)
         {
-            if (player == null) return ;
+            if (player == null) return;
             if (ServerTimers.TryGetValue(player, out var sw))
-            {
                 sw.Stop();
-            }
         }
-        public static int GetPoint(Player player)
+
+        public async static Task<int> GetPoint(Player player)
         {
             if (player == null) return 0;
             if (PointCache.TryGetValue(player, out var p)) return p;
-            var result = SQL?.QueryUser(player.UserId).point ?? 0;
-            PointCache[player] = result;
-            return result;
+            var sql = SQL;
+            if (sql == null) return 0;
+            var user = await sql.QueryUserAsync(player.UserId);
+            if (user.today_duration.HasValue) TodayTimeCache[player] = user.today_duration.Value;
+            PointCache[player] = user.point;
+            return 0;
         }
 
-        public static void AddPoint(Player player, int points, AddPointReason reason)
+        public static async Task AddPoint(Player player, int points, AddPointReason reason)
         {
             if (player == null) return;
-            var atkStats = PlayerManagementModule.GetOrCreateStats(player);
+            var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
             int cur = atkStats.Points + points;
             if (cur < 0) cur = 0;
             PointCache[player] = cur;
             atkStats.Points = cur;
-            SQL?.Update(player.UserId, point: cur);
-            PlayerHUDManager.AddScoreChange(player, points, reason.GetDisplayText());
+            _ = SQL?.UpdateAsync(player.UserId, point: cur);
         }
-        public static void AddDeath(Player player, int count = 1)
+
+        public static async Task AddDeath(Player player, int count = 1)
         {
-            var cr = SQL?.QueryPlayerStats(player.UserId);
-            if (cr.HasValue)
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalDeaths: cr.Value.TotalDeaths + count);
-            }
-            else
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalDeaths: count);
-            }
+            if (player == null) return;
+            var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
+            int cur = atkStats.Deaths + count;
+            if (cur < 0) cur = 0;
+            PointCache[player] = cur;
+            atkStats.Deaths = cur;
+            var sql = SQL;
+            if (sql == null) return; 
+            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            SQL?.UpdatePlayerStatAsync(player.UserId, TotalDeaths: cr.TotalDeaths + count);
+            
         }
-        public static void AddKills(Player player, int count = 1)
+
+        public static async Task AddKills(Player player, int count = 1)
         {
-            var cr = SQL?.QueryPlayerStats(player.UserId);
-            if (cr.HasValue)
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalKills: cr.Value.TotalKills + count);
-            }
-            else
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalKills: count);
-            }
+            if (player == null) return;
+            var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
+            int cur = atkStats.Kills + count;
+            if (cur < 0) cur = 0;
+            PointCache[player] = cur;
+            atkStats.Kills = cur;
+            var sql = SQL;
+            if (sql == null) return;
+            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            SQL?.UpdatePlayerStatAsync(player.UserId, TotalKills: cr.TotalKills + count);
+
         }
-        public static void AddEscape(Player player, int count = 1)
+
+        public static async Task AddEscape(Player player, int count = 1)
         {
-            var cr = SQL?.QueryPlayerStats(player.UserId);
-            if (cr.HasValue)
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalEscapes: cr.Value.TotalEscapes + count);
-            }
-            else
-            {
-                SQL?.UpdatePlayerStat(player.UserId, TotalEscapes: count);
-            }
+            if (player == null) return;
+            var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
+            int cur = atkStats.Escapes + count;
+            if (cur < 0) cur = 0;
+            PointCache[player] = cur;
+            atkStats.Escapes = cur;
+            var sql = SQL;
+            if (sql == null) return;
+            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            SQL?.UpdatePlayerStatAsync(player.UserId, TotalEscapes: cr.TotalEscapes + count);
+
         }
     }
 }

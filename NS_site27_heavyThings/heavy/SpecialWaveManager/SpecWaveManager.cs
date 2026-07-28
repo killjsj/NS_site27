@@ -27,7 +27,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         private CoroutineHandle loop;
         public override void OnDisable()
         {
-            PlayerHUDManager.BuildSpawnUIEvent -= PlayerHUDManager_BuildSpawnUIEvent;
+            PlayerManagerDisplayKitHUD.BuildSpawnUIEvent -= PlayerHUDManager_BuildSpawnUIEvent;
             RestartingRound();
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
             Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
@@ -43,7 +43,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
 
         public override void OnEnable()
         {
-            PlayerHUDManager.BuildSpawnUIEvent += PlayerHUDManager_BuildSpawnUIEvent;
+            PlayerManagerDisplayKitHUD.BuildSpawnUIEvent += PlayerHUDManager_BuildSpawnUIEvent;
             Ins = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += WaitingForPlayers;
             Exiled.Events.Handlers.Server.RoundStarted += RoundStarted;
@@ -80,22 +80,22 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 }
             }
         }
-        private void PlayerHUDManager_BuildSpawnUIEvent(PlayerHUDManager.UILocate locate, ref StringBuilder AppendString)
+        private void PlayerHUDManager_BuildSpawnUIEvent(PlayerManagerDisplayKitHUD.UILocate locate, ref StringBuilder AppendString)
         {
             if(!Round.IsStarted) return;
             bool isSpawning = false;
             WaveUIPosition waveUIPosition = WaveUIPosition.None;
             switch (locate)
             {
-                case PlayerHUDManager.UILocate.Left:
+                case PlayerManagerDisplayKitHUD.UILocate.Left:
                     waveUIPosition = WaveUIPosition.Left;
                     AppendString.Append("<align=left><size=25>");
                     break;
-                case PlayerHUDManager.UILocate.Right:
+                case PlayerManagerDisplayKitHUD.UILocate.Right:
                     AppendString.Append("<align=right><size=25>");
                     waveUIPosition = WaveUIPosition.Right;
                     break;
-                case PlayerHUDManager.UILocate.Middle:
+                case PlayerManagerDisplayKitHUD.UILocate.Middle:
                     isSpawning = true;
                     break;
                 default:

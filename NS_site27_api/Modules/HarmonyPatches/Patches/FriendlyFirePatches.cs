@@ -1,6 +1,5 @@
 using Exiled.API.Features;
 using HarmonyLib;
-using Mirror;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.EventHandle;
 using PlayerRoles;
@@ -43,16 +42,23 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         {
             var ffManager = GetFFManager();
             if (ffManager == null)
+            {
                 return IsEnemyDefault(attacker.GetTeam(), victim.GetTeam());
+            }
 
-            if (attacker == Server.Host.ReferenceHub) return true;
-            if ((victim.isServer || victim == Server.Host.ReferenceHub) && !victim.IsDummy) return false;
+            if (attacker == Server.Host.ReferenceHub)
+            {
+                return true;
+            }
+
+            if ((victim.isServer || victim == Server.Host.ReferenceHub) && !victim.IsDummy)
+            {
+                return false;
+            }
 
             var a = Player.Get(attacker);
             var v = Player.Get(victim);
-            if (a == null || v == null) return true;
-
-            return ffManager.IsDamaging(a, v);
+            return a == null || v == null || ffManager.IsDamaging(a, v);
         }
 
         private static IFFManager GetFFManager()
@@ -83,9 +89,15 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         public static bool ProcessDamagePrefix(AttackerDamageHandler __instance, ReferenceHub ply)
         {
             var ffManager = GetFFManager();
-            if (ffManager == null) return true;
+            if (ffManager == null)
+            {
+                return true;
+            }
 
-            if (__instance.Attacker.Hub == null || ply == null) return true;
+            if (__instance.Attacker.Hub == null || ply == null)
+            {
+                return true;
+            }
 
             //BUG: Spawn protect check may not properly disable damage under certain edge cases
             return false;

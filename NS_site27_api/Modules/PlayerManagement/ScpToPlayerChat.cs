@@ -1,35 +1,25 @@
-﻿using AudioManagerAPI.Defaults;
-using AudioManagerAPI.Features.Enums;
+﻿using AudioManagerAPI.Features.Enums;
 using AudioManagerAPI.Speakers.State;
 using Exiled.API.Extensions;
-using Exiled.API.Features;
 using Exiled.API.Features.Core.UserSettings;
 using Exiled.Events.EventArgs.Player;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Features.Wrappers;
-using Mirror;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.MessageModule;
 using NS_site27_api.Modules.SettingManagement;
-using NS_site27_api.Core.UI;
-using Org.BouncyCastle.Bcpg;
-using Org.BouncyCastle.Bcpg.Sig;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using VoiceChat.Codec;
 using VoiceChat.Networking;
 using YamlDotNet.Serialization;
 using Player = Exiled.API.Features.Player;
-using NS_site27_api.Modules.MessageModule;
 
 namespace NS_site27_api.Modules.PlayerManagement
 {
-    class ScpToPlayerChat : ModuleBase<ScpToPlayerChatConfig>
+    internal class ScpToPlayerChat : ModuleBase<ScpToPlayerChatConfig>
     {
         public static ScpToPlayerChat Instance { get; private set; }
         public override string ModuleName => "ScpToPlayerChat";
@@ -44,21 +34,21 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public override void OnEnable()
         {
-            VoiceSetting = new KeybindSetting(this.Config.SettingId, "SCP对人类语音", UnityEngine.KeyCode.V, false, false, "按下此键可以让SCP的语音对人类可听", 255, null, (p, sb) =>
+            VoiceSetting = new KeybindSetting(Config.SettingId, "SCP对人类语音", UnityEngine.KeyCode.V, false, false, "按下此键可以让SCP的语音对人类可听", 255, null, (p, sb) =>
             {
-                if (p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
+            if (p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
+            {
+                if (!TalkTohumanScp.Contains(p))
                 {
-                    if (!TalkTohumanScp.Contains(p))
-                    {
-                        TalkTohumanScp.Add(p);
-                    }
-                    else
-                    {
-                        TalkTohumanScp.Remove(p);
-                    }
-                    string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
-                    p.RemoveHint("scphumantalk");
-                    p.AddHint("scphumantalk", 3,x=> str);
+                    TalkTohumanScp.Add(p);
+                }
+                else
+                {
+                    _ = TalkTohumanScp.Remove(p);
+                }
+                string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
+                p.RemoveHint("scphumantalk");
+                p.AddHint("scphumantalk", 3, x => new MsgUpdateResult() { Content = str, Title = "scpTalkToHuman"});
 
                 }
             });
@@ -70,7 +60,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (ev.IsAllowed && !ev.NewRole.IsScp() && ev.Player.Role.Team == Team.SCPs)
             {
                 SettingManager.Instance.UnregisterForPlayer(ev.Player, VoiceSetting);
-                TalkTohumanScp.Remove(ev.Player);
+                _ = TalkTohumanScp.Remove(ev.Player);
                 if (ScpToSpeaker.TryGetValue(ev.Player, out var speakerToy))
                 {
                     AudioManagerAPI.Controllers.ControllerIdManager.ReleaseController(speakerToy.ControllerId);
@@ -80,13 +70,13 @@ namespace NS_site27_api.Modules.PlayerManagement
             }
             if (ev.IsAllowed && ev.NewRole.IsScp() && ev.Player.Role.Team != Team.SCPs)
             {
-                TalkTohumanScp.Remove(ev.Player);
+                _ = TalkTohumanScp.Remove(ev.Player);
                 SettingManager.Instance.RegisterForPlayer(ev.Player, VoiceSetting);
             }
         }
-        public static List<Player> TalkTohumanScp = new List<Player>();
-        public static Dictionary<Player, LabApi.Features.Wrappers.SpeakerToy> ScpToSpeaker = new Dictionary<Player, LabApi.Features.Wrappers.SpeakerToy>();
-        private static SpeakerToy _speakerPrefab;
+        public static List<Player> TalkTohumanScp = new();
+        public static Dictionary<Player, LabApi.Features.Wrappers.SpeakerToy> ScpToSpeaker = new();
+        private static readonly SpeakerToy _speakerPrefab;
         public static SettingBase VoiceSetting { get; private set; }
 
         public static void VoiceChatting(PlayerSendingVoiceMessageEventArgs ev)
@@ -131,12 +121,12 @@ namespace NS_site27_api.Modules.PlayerManagement
                         hub.connectionToClient.Send(vm, 0);
                     }
                 }
-                
+
             }
         }
     }
 
-    class ScpToPlayerChatConfig : ModuleConfigBase
+    internal class ScpToPlayerChatConfig : ModuleConfigBase
     {
         [YamlMember(Description = "语音设置ID")]
         public int SettingId { get; set; } = 12332;

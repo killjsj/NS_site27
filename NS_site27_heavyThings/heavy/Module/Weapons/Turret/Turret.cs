@@ -1,43 +1,25 @@
-﻿using AdminToys;
-using CommandSystem;
+﻿using CommandSystem;
 using Decals;
 using DrawableLine;
 using Exiled.API.Extensions;
 using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
-using Exiled.API.Features.DamageHandlers;
-using Exiled.API.Features.Items;
-using Exiled.API.Features.Pickups;
 using Exiled.API.Features.Spawn;
 using Exiled.CustomItems.API.Features;
-using Exiled.Events.EventArgs.Player;
-using Exiled.Events.Handlers;
-using Footprinting;
-using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Autosync;
-using InventorySystem.Items.Firearms;
-using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
-using LabApi.Features.Wrappers;
 using MapGeneration.StaticHelpers;
 using Mirror;
 using NS_site27_api.Modules.CustomRolePlus;
 using PlayerRoles;
-using PlayerStatsSystem;
-using ProjectMER.Commands.Modifying.Rotation;
-using ProjectMER.Commands.Utility;
-using ProjectMER.Features.Enums;
 using ProjectMER.Features.Objects;
 using ProjectMER.Features.Serializable.Schematics;
 using RelativePositioning;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Utils;
 using Utils.Networking;
@@ -48,12 +30,12 @@ using Time = UnityEngine.Time;
 
 namespace Next_generationSite_27.UnionP.Turret
 {
-    class Builder : MonoBehaviour
+    internal class Builder : MonoBehaviour
     {
         public Exiled.API.Features.Pickups.Pickup pickup = null;
         public Quaternion playerRotation;
         public Player Owner = null;
-        void OnCollisionEnter(Collision collision)
+        private void OnCollisionEnter(Collision collision)
         {
             if (Owner == null)
             {
@@ -84,7 +66,7 @@ namespace Next_generationSite_27.UnionP.Turret
             {
                 Spawned = true;
                 Vector3 wallNormal = collision.contacts[0].normal;
-                Quaternion bunkerRotation = CalculateBunkerRotation(wallNormal, playerRotation);
+                _ = CalculateBunkerRotation(wallNormal, playerRotation);
 
                 pickup.Destroy();
                 Destroy(this);
@@ -103,11 +85,11 @@ namespace Next_generationSite_27.UnionP.Turret
             Vector3 playerForward = playerRot * Vector3.forward;
             Vector3 playerRight = playerRot * Vector3.right;
             Vector3 projectedForward = Vector3.ProjectOnPlane(playerForward, wallNormal).normalized;
-            Vector3 projectedRight = Vector3.ProjectOnPlane(playerRight, wallNormal).normalized;
+            _ = Vector3.ProjectOnPlane(playerRight, wallNormal).normalized;
             if (projectedForward.magnitude < 0.1f)
             {
                 projectedForward = Vector3.ProjectOnPlane(Vector3.forward, wallNormal).normalized;
-                projectedRight = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
+                _ = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
             }
 
             // 创建旋转：向前方向是投影后的玩家方向，向上方向是墙面法线
@@ -166,10 +148,12 @@ namespace Next_generationSite_27.UnionP.Turret
         public ItemType Type
         {
             get => _Type;
-            set { _Type = value; itemBase = CreateOnwerItem(); c_firerate = 0f;
+            set
+            {
+                _Type = value; itemBase = CreateOnwerItem(); c_firerate = 0f;
                 var _ = firerate;
-                handler = new PlayerStatsSystem.FirearmDamageHandler(firearm: (itemBase as InventorySystem.Items.Firearms.Firearm), 0, 1);
-                 ammoLeft = totalAmmo;
+                handler = new PlayerStatsSystem.FirearmDamageHandler(firearm: itemBase as InventorySystem.Items.Firearms.Firearm, 0, 1);
+                ammoLeft = totalAmmo;
                 var fireM = (itemBase as InventorySystem.Items.Firearms.Firearm).Modules.FirstOrDefault(x => x is HitscanHitregModuleBase) as HitscanHitregModuleBase;
 
                 Log.Info($"Turret damage set to {fireM.BaseDamage},1 shot");
@@ -195,8 +179,8 @@ namespace Next_generationSite_27.UnionP.Turret
         public HitscanResult ResultNonAlloc = new();
         public void SpawnDecal(Vector3 position, Vector3 startPosition, DecalPoolType type = DecalPoolType.Blood)
         {
-            RelativePosition hitPoint = new RelativePosition(position);
-            RelativePosition startRaycastPoint = new RelativePosition(startPosition);
+            RelativePosition hitPoint = new(position);
+            RelativePosition startRaycastPoint = new(startPosition);
             ModularAutosyncItem autoItem = itemBase as ModularAutosyncItem;
             for (byte b = 0; b < autoItem.AllSubcomponents.Length; b++)
             {
@@ -205,7 +189,7 @@ namespace Next_generationSite_27.UnionP.Turret
                     using (new AutosyncRpc(autoItem.ItemId, out var writer))
                     {
                         writer.WriteByte(b);
-                        writer.WriteByte(((IConvertible)0).ToByte((IFormatProvider)null));
+                        writer.WriteByte(((IConvertible)0).ToByte(null));
 
                         writer.WriteByte((byte)type);
                         writer.WriteRelativePosition(hitPoint);
@@ -222,16 +206,16 @@ namespace Next_generationSite_27.UnionP.Turret
             {
                 return;
             }
-            RelativePosition hitPoint = new RelativePosition(Info.point);
-            RelativePosition startRaycastPoint = new RelativePosition(startPosition);
+            RelativePosition hitPoint = new(Info.point);
+            RelativePosition startRaycastPoint = new(startPosition);
             for (byte b = 0; b < autoItem.AllSubcomponents.Length; b++)
             {
-                if (autoItem.AllSubcomponents[b] is ImpactEffectsModule i)
+                if (autoItem.AllSubcomponents[b] is ImpactEffectsModule)
                 {
                     using (new AutosyncRpc(autoItem.ItemId, out var writer))
                     {
                         writer.WriteByte(b);
-                        writer.WriteByte(((IConvertible)2).ToByte((IFormatProvider)null));
+                        writer.WriteByte(((IConvertible)2).ToByte(null));
 
                         writer.WriteRelativePosition(hitPoint);
                         writer.WriteRelativePosition(startRaycastPoint);
@@ -250,22 +234,18 @@ namespace Next_generationSite_27.UnionP.Turret
         }
         protected void Awake()
         {
-            PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
+            PlayerRoleManager.OnRoleChanged += OnRoleChanged;
         }
         public ItemBase CreateOnwerItem()
         {
             var itemSerial = ItemSerialGenerator.GenerateNext();
             ItemBase itemBase2 = Onwer.Inventory.CreateItemInstance(new ItemIdentifier(_Type, itemSerial), true);
-            if (itemBase2 == null)
-            {
-                return null;
-            }
-            return itemBase2;
+            return itemBase2 ?? null;
         }
         // Token: 0x0600532B RID: 21291 RVA: 0x00119652 File Offset: 0x00117852
         protected void OnDestroy()
         {
-            PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
+            PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
         }
         private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevrole, PlayerRoleBase newrole)
         {
@@ -287,7 +267,7 @@ namespace Next_generationSite_27.UnionP.Turret
             ray.direction = Quaternion.Euler(angle * a) * ray.direction;
             return ray;
         }
-        RaycastHit hit;
+        private RaycastHit hit;
 
         protected RaycastHit ServerAppendPrescan(Ray targetRay, HitscanResult toAppend)
         {
@@ -296,8 +276,7 @@ namespace Next_generationSite_27.UnionP.Turret
             {
                 return default;
             }
-            IDestructible destructible;
-            if (!hit.collider.TryGetComponent<IDestructible>(out destructible))
+            if (!hit.collider.TryGetComponent<IDestructible>(out IDestructible destructible))
             {
                 toAppend.Obstacles.Add(new HitRayPair(targetRay, hit));
                 return hit;
@@ -309,7 +288,8 @@ namespace Next_generationSite_27.UnionP.Turret
         public float maxhp = 60f;
         private float c_firerate = 0f;
         public int ammoLeft = 0;
-        public float firerate {
+        public float firerate
+        {
             get
             {
 
@@ -342,7 +322,8 @@ namespace Next_generationSite_27.UnionP.Turret
         public void OnDamaged(float damage, PlayerStatsSystem.DamageHandlerBase handler, Vector3 pos)
         {
             hp -= damage;
-            if (hp <= 0f) { 
+            if (hp <= 0f)
+            {
                 turretModel.Destroy();
             }
         }
@@ -352,13 +333,21 @@ namespace Next_generationSite_27.UnionP.Turret
         public bool reloading = false;
         public void Update()
         {
-            if (!init || Onwer == null) return;
+            if (!init || Onwer == null)
+            {
+                return;
+            }
+
             limiter.Update();
 
         }
         public void FixedUpdate()
         {
-            if (!init || Onwer == null) return;
+            if (!init || Onwer == null)
+            {
+                return;
+            }
+
             Lock();
             if (Locking != null && point != null && Locking.IsAlive
                 && Vector3.Distance(shotPoint.transform.position, Locking.Position) <= DistanceToLock)
@@ -378,7 +367,11 @@ namespace Next_generationSite_27.UnionP.Turret
             {
                 foreach (var player in Player.Enumerable)
                 {
-                    if(player == null) continue;
+                    if (player == null)
+                    {
+                        continue;
+                    }
+
                     var isfriend = player == null || !player.IsAlive || player == Onwer ||
                         player.Role.Team == Onwer.Role.Team ||
                         !HitboxIdentity.IsDamageable(Onwer.ReferenceHub, player.ReferenceHub);
@@ -386,7 +379,8 @@ namespace Next_generationSite_27.UnionP.Turret
                     MirrorExtensions.SendFakeSyncVar(player, Text.netIdentity, typeof(AdminToys.TextToy), "Network_textFormat", text);
 
                 }
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
                 Log.Error(e);
             }
@@ -427,10 +421,10 @@ namespace Next_generationSite_27.UnionP.Turret
         public float DistanceToLock = 15f;
 
         private float lockProgress = 0f;  // Locking progress, starts at 0 and goes to 1
-        private float maxLockTime = 1.5f; // Maximum time to lock when at max range (15m)
-        private float minLockTime = 0.5f; // Minimum time to lock when close (you can adjust this)
+        private readonly float maxLockTime = 1.5f; // Maximum time to lock when at max range (15m)
+        private readonly float minLockTime = 0.5f; // Minimum time to lock when close (you can adjust this)
 
-        void Lock()
+        private void Lock()
         {
             if (Locking != null && Locking.IsAlive &&
                 Vector3.Distance(shotPoint.transform.position, Locking.Position) <= DistanceToLock)
@@ -440,8 +434,6 @@ namespace Next_generationSite_27.UnionP.Turret
 
             // Search for a new target if the previous one is invalid or out of range
             Locking = null;
-            float closestDist = DistanceToLock;
-
             foreach (var player in Player.Enumerable)
             {
                 if (player == null || !player.IsAlive || player == Onwer ||
@@ -478,7 +470,7 @@ namespace Next_generationSite_27.UnionP.Turret
             }
         }
 
-        PlayerStatsSystem.AttackerDamageHandler handler = new PlayerStatsSystem.FirearmDamageHandler();
+        private PlayerStatsSystem.AttackerDamageHandler handler = new PlayerStatsSystem.FirearmDamageHandler();
         protected virtual void ServerApplyDestructibleDamage(DestructibleHitPair target, HitscanResult result)
         {
             if (itemBase == null)
@@ -532,23 +524,11 @@ namespace Next_generationSite_27.UnionP.Turret
     }
     public class damageReceiver : NetworkBehaviour, IDestructible, IBlockStaticBatching
     {
-        public uint NetworkId
-        {
-            get
-            {
-                return base.netId;
-            }
-        }
+        public uint NetworkId => base.netId;
 
         // Token: 0x17000016 RID: 22
         // (get) Token: 0x06000043 RID: 67 RVA: 0x00002B88 File Offset: 0x00000D88
-        public Vector3 CenterOfMass
-        {
-            get
-            {
-                return base.transform.position;
-            }
-        }
+        public Vector3 CenterOfMass => base.transform.position;
         public Turret turret;
         public bool Damage(float damage, PlayerStatsSystem.DamageHandlerBase handler, Vector3 pos)
         {
@@ -564,27 +544,27 @@ namespace Next_generationSite_27.UnionP.Turret
         public override uint Id { get => TurretId; set => TurretId = value; }
         public override string Name { get => "炮塔"; set { } }
         public override string Description { get => "使用后在5米内表面创建炮台"; set { } }
-        public override float Weight { get =>11; set { } }
+        public override float Weight { get => 11; set { } }
         public override SpawnProperties SpawnProperties { get; set; } = new SpawnProperties();
         public static TurretItem Instance;
         public override void Init()
         {
             base.Init();
-            this.Type = ItemType.Coin;
+            Type = ItemType.Coin;
             Instance = this;
         }
         protected override void OnUsed(Player player, Item item)
         {
             base.OnUsed(player, item);
-            if(this.Check(item))
+            if (Check(item))
             {
-                Turret.Create(player.Position, Vector3.right, player);
+                _ = Turret.Create(player.Position, Vector3.right, player);
 
             }
         }
     }
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
-    class TurretCommand : ICommand
+    internal class TurretCommand : ICommand
     {
         string ICommand.Command { get; } = "turret";
 
@@ -595,16 +575,14 @@ namespace Next_generationSite_27.UnionP.Turret
         bool ICommand.Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             var runner = Player.Get(sender);
-            Player Owner = null;
+            Player Owner;
             if (arguments.Count < 1)
             {
                 Owner = runner;
             }
             else
             {
-
-                string[] newargs;
-                List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
+                List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out _);
                 if (list == null)
                 {
                     response = "An unexpected problem has occurred during PlayerId/Name array processing.";
@@ -622,7 +600,7 @@ namespace Next_generationSite_27.UnionP.Turret
                 response = "你没权 （player.KickPower < 12）";
                 return false;
             }
-            Turret.Create(Owner.CameraTransform.position, Vector3.right, Owner);
+            _ = Turret.Create(Owner.CameraTransform.position, Vector3.right, Owner);
             response = $"done!";
             return true;
 

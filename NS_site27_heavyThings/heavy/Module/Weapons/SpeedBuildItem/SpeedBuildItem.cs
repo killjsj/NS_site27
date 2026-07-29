@@ -6,32 +6,20 @@ using Exiled.API.Features.Core.UserSettings;
 using Exiled.API.Features.Pickups;
 using Exiled.API.Features.Spawn;
 using Exiled.API.Features.Toys;
-using Exiled.CustomItems.API.EventArgs;
 using Exiled.CustomItems.API.Features;
-using Exiled.CustomRoles.API.Features;
 using Exiled.Events.EventArgs.Player;
 using Footprinting;
 using InventorySystem.Items.Firearms.Modules;
-using MapGeneration;
 using MapGeneration.StaticHelpers;
-using MEC;
 using Mirror;
-using NS_site27_api.Core;
 using NS_site27_api.Modules.CustomRolePlus;
 using NS_site27_api.Modules.SettingManagement;
-using NS_site27_heavy.Core;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
-using Respawning;
-using Respawning.Waves;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
@@ -51,7 +39,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             public override uint Id { get; set; } = SpeedBuildItemID;
             public override string Name { get; set; } = "速凝掩体";
             public override string Description { get; set; }
-            public override Vector3 Scale { get => new Vector3(0.5f, 0.5f, 0.5f); set => base.Scale = value; }
+            public override Vector3 Scale { get => new(0.5f, 0.5f, 0.5f); set => base.Scale = value; }
             public override float Weight { get; set; } = 1f;
             public override SpawnProperties SpawnProperties { get; set; } = new SpawnProperties()
             {
@@ -68,19 +56,19 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 MenuInit();
                 base.Init();
             }
-            static int ytKey = 1238123;
-            static int ytButton = 1238121;
+            private static readonly int ytKey = 1238123;
+            private static readonly int ytButton = 1238121;
             public void ChangingRole(ChangingRoleEventArgs ev)
             {
                 var b = SettingManager.Instance.MenuCache.First(x => x.Id == ytButton);
                 var k = SettingManager.Instance.MenuCache.First(x => x.Id == ytKey);
                 if (ev.Player.Role.Type.IsScp())
                 {
-                    SettingManager.Instance.Unregister(ev.Player, new SettingBase[] { b, k });
+                    _ = SettingManager.Instance.Unregister(ev.Player, new SettingBase[] { b, k });
                 }
                 if (ev.NewRole.IsScp())
                 {
-                    SettingManager.Instance.Register(ev.Player, new SettingBase[] { b, k });
+                    _ = SettingManager.Instance.Register(ev.Player, new SettingBase[] { b, k });
                 }
             }
             public static void MenuInit()
@@ -125,7 +113,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                                         NetworkServer.Destroy(b.gameObject);
                                     }
                                 }
-                                
+
                             }
                         }
                     })
@@ -135,29 +123,29 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             protected void ISubscribeEvents()
             {
                 Exiled.Events.Handlers.Player.ThrownProjectile += OnDroppedItem;
-            Exiled.Events.Handlers.Player.ChangingRole += ChangingRole;
+                Exiled.Events.Handlers.Player.ChangingRole += ChangingRole;
             }
             protected void IUnsubscribeEvents()
             {
                 Exiled.Events.Handlers.Player.ThrownProjectile -= OnDroppedItem;
-            Exiled.Events.Handlers.Player.ChangingRole -= ChangingRole;
+                Exiled.Events.Handlers.Player.ChangingRole -= ChangingRole;
             }
 
             public void OnDroppedItem(ThrownProjectileEventArgs ev)
             {
-                if (this.Check(ev.Pickup))
+                if (Check(ev.Pickup))
                 {
                     ev.Pickup.Base.gameObject.AddComponent<Builder>().init(ev.Pickup, ev.Player.Rotation, ev.Player);
                 }
             }
         }
 
-        class Builder : MonoBehaviour
+        private class Builder : MonoBehaviour
         {
             public Pickup pickup = null;
             public Quaternion playerRotation;
             public Player Owner = null;
-            void OnCollisionEnter(Collision collision)
+            private void OnCollisionEnter(Collision collision)
             {
                 if (Owner == null)
                 {
@@ -208,11 +196,11 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 Vector3 playerForward = playerRot * Vector3.forward;
                 Vector3 playerRight = playerRot * Vector3.right;
                 Vector3 projectedForward = Vector3.ProjectOnPlane(playerForward, wallNormal).normalized;
-                Vector3 projectedRight = Vector3.ProjectOnPlane(playerRight, wallNormal).normalized;
+                _ = Vector3.ProjectOnPlane(playerRight, wallNormal).normalized;
                 if (projectedForward.magnitude < 0.1f)
                 {
                     projectedForward = Vector3.ProjectOnPlane(Vector3.forward, wallNormal).normalized;
-                    projectedRight = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
+                    _ = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
                 }
 
                 // 创建旋转：向前方向是投影后的玩家方向，向上方向是墙面法线
@@ -220,7 +208,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             }
         }
 
-        class ScpDisarmer : MonoBehaviour
+        private class ScpDisarmer : MonoBehaviour
         {
             public bunker Owner = null;
             public static Dictionary<Player, List<bunker>> p2b = new();
@@ -233,7 +221,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 gameObject.layer = LayerMask.NameToLayer("InvisibleCollider");
             }
 
-            void OnTriggerEnter(Collider collision)
+            private void OnTriggerEnter(Collider collision)
             {
                 if (Owner == null)
                 {
@@ -255,7 +243,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                     Log.Error("pepehm");
                 }
 
-                if (!(collision.gameObject == Owner.gameObject) && (Player.TryGet(collision.gameObject, out var p)))
+                if (!(collision.gameObject == Owner.gameObject) && Player.TryGet(collision.gameObject, out var p))
                 {
                     if (!p2b.ContainsKey(p))
                     {
@@ -287,13 +275,13 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                     Log.Error("pepehm");
                 }
 
-                if (!(collision.gameObject == Owner.gameObject) && (Player.TryGet(collision.gameObject, out var p)))
+                if (!(collision.gameObject == Owner.gameObject) && Player.TryGet(collision.gameObject, out var p))
                 {
                     if (!p2b.ContainsKey(p))
                     {
                         p2b[p] = new List<bunker>();
                     }
-                    p2b[p].Remove(Owner);
+                    _ = p2b[p].Remove(Owner);
                 }
             }
             public void init(bunker b)
@@ -318,12 +306,14 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             i.Position = pos;
             i.Base.NetworkPrimitiveType = PrimitiveType.Sphere;
             i.Rotation = rot;
-            i.Scale = new Vector3(5,5,5);
+            i.Scale = new Vector3(5, 5, 5);
             i.Color = Color.red;
             i.Collidable = false;
             i.Visible = false;
             if (!i.GameObject.TryGetComponent(out SphereCollider boxCollider))
+            {
                 boxCollider = i.GameObject.AddComponent<SphereCollider>();
+            }
 
             boxCollider.isTrigger = true;
             i.Spawn();
@@ -334,11 +324,10 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
         }
         public static RaycastHit CreateRaycastHit(Vector3 from, Vector3 to)
         {
-            RaycastHit hit;
             Vector3 direction = (to - from).normalized;
             float distance = Vector3.Distance(from, to);
 
-            if (Physics.Raycast(from, direction, out hit, distance))
+            if (Physics.Raycast(from, direction, out RaycastHit hit, distance))
             {
                 return hit;
             }
@@ -353,43 +342,34 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
         }
         public class bunker : NetworkBehaviour, IDestructible, IBlockStaticBatching
         {
-            public uint NetworkId
-            {
-                get
-                {
-                    return base.netId;
-                }
-            }
+            public uint NetworkId => base.netId;
 
             // Token: 0x17000016 RID: 22
             // (get) Token: 0x06000043 RID: 67 RVA: 0x00002B88 File Offset: 0x00000D88
-            public Vector3 CenterOfMass
-            {
-                get
-                {
-                    return base.transform.position;
-                }
-            }
+            public Vector3 CenterOfMass => base.transform.position;
             private void ServerSendImpactDecal(RaycastHit hit, Vector3 origin, DecalPoolType decalType, ImpactEffectsModule impactEffectsModule)
             {
-                typeof(ImpactEffectsModule).GetMethod("ServerSendImpactDecal", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(impactEffectsModule, new object[] { hit, origin, decalType });
+                _ = typeof(ImpactEffectsModule).GetMethod("ServerSendImpactDecal", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(impactEffectsModule, new object[] { hit, origin, decalType });
             }
             public bool Damage(float damage, DamageHandlerBase handler, Vector3 pos)
             {
-                AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-                if (attackerDamageHandler == null)
+                if (handler is not AttackerDamageHandler attackerDamageHandler)
                 {
-                    this.ServerDamageWindow(damage);
+                    ServerDamageWindow(damage);
                     return true;
                 }
-                if (!this.CheckDamagePerms(attackerDamageHandler.Attacker.Role))
+                if (!CheckDamagePerms(attackerDamageHandler.Attacker.Role))
                 {
                     return false;
                 }
-                this.LastAttacker = attackerDamageHandler.Attacker;
+                LastAttacker = attackerDamageHandler.Attacker;
                 Player attacker = Player.Get(attackerDamageHandler.Attacker);
-                this.ServerDamageWindow(damage);
-                if ((handler is MicroHidDamageHandler)) return true;
+                ServerDamageWindow(damage);
+                if (handler is MicroHidDamageHandler)
+                {
+                    return true;
+                }
+
                 if (attacker.CurrentItem != null)
                 {
                     if (attacker.CurrentItem is Exiled.API.Features.Items.Firearm firearm)
@@ -411,12 +391,12 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             }
             private void Update()
             {
-                if (!this.IsBroken || this._prevStatus)
+                if (!IsBroken || _prevStatus)
                 {
                     return;
                 }
-                base.StartCoroutine(this.BreakWindow());
-                this._prevStatus = true;
+                _ = base.StartCoroutine(BreakWindow());
+                _prevStatus = true;
             }
 
             // Token: 0x0600004B RID: 75 RVA: 0x00002D1B File Offset: 0x00000F1B
@@ -429,8 +409,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             // Token: 0x0600004C RID: 76 RVA: 0x00002D2C File Offset: 0x00000F2C
             private bool CheckDamagePerms(RoleTypeId roleType)
             {
-                PlayerRoleBase playerRoleBase;
-                return !this._preventScpDamage || (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(roleType, out playerRoleBase) && playerRoleBase.Team > Team.SCPs);
+                return !_preventScpDamage || (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(roleType, out PlayerRoleBase playerRoleBase) && playerRoleBase.Team > Team.SCPs);
             }
 
             // Token: 0x0600004D RID: 77 RVA: 0x00002D58 File Offset: 0x00000F58
@@ -441,27 +420,20 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 {
                     return;
                 }
-                this.Health -= damage;
-                if (this.Health <= 0f)
+                Health -= damage;
+                if (Health <= 0f)
                 {
-                    this.NetworkIsBroken = true;
+                    NetworkIsBroken = true;
                 }
             }
             public bool NetworkIsBroken
             {
-                get
-                {
-                    return this.IsBroken;
-                }
-                set
-                {
-                    this.IsBroken = value;
-                }
+                get => IsBroken; set => IsBroken = value;
             }
             public Footprint LastAttacker;
             public float Health = 30f;
             public bool IsBroken;
-            private bool _preventScpDamage = false;
+            private readonly bool _preventScpDamage = false;
             private bool _prevStatus;
         }
         public static void OnRoundStart()

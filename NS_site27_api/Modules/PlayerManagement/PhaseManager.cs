@@ -1,7 +1,6 @@
 using Exiled.API.Features;
 using NS_site27_api.Modules.MySQL;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.PlayerManagement
@@ -16,47 +15,79 @@ namespace NS_site27_api.Modules.PlayerManagement
             RenownedFar, SupremeRealm
         }
 
-        public async static Task<GamePhase> GetPhase(Player player)
+        public static async Task<GamePhase> GetPhase(Player player)
         {
-            if (player == null) return GamePhase.FreshStart;
-            return HoursToPhase(await GetHours(player));
+            return player == null ? GamePhase.FreshStart : HoursToPhase(await GetHours(player));
         }
 
-        public async static Task<double> GetHours(Player player)
+        public static async Task<double> GetHours(Player player)
         {
-            if (player == null) return 0;
-            var user = await SQL?.QueryUserAsync(player.UserId);
-            return (user.total_duration ?? TimeSpan.Zero).TotalHours;
+            if (player == null)
+            {
+                return 0;
+            }
+
+            var (_, _, _, _, _, _, _, total_duration, _) = await SQL?.QueryUserAsync(player.UserId);
+            return (total_duration ?? TimeSpan.Zero).TotalHours;
         }
 
         public static GamePhase HoursToPhase(double hours)
         {
-            if (hours < 5) return GamePhase.FreshStart;
-            if (hours < 10) return GamePhase.FirstGlimpse;
-            if (hours < 15) return GamePhase.MinorAchievement;
-            if (hours < 20) return GamePhase.SteadyProgress;
-            if (hours < 25) return GamePhase.BattleHardened;
-            if (hours < 30) return GamePhase.SeasonedRider;
-            if (hours < 35) return GamePhase.HundredBattles;
-            if (hours < 45) return GamePhase.RegionalForce;
-            if (hours < 55) return GamePhase.RenownedFar;
-            return GamePhase.SupremeRealm;
+            if (hours < 5)
+            {
+                return GamePhase.FreshStart;
+            }
+
+            if (hours < 10)
+            {
+                return GamePhase.FirstGlimpse;
+            }
+
+            if (hours < 15)
+            {
+                return GamePhase.MinorAchievement;
+            }
+
+            if (hours < 20)
+            {
+                return GamePhase.SteadyProgress;
+            }
+
+            if (hours < 25)
+            {
+                return GamePhase.BattleHardened;
+            }
+
+            if (hours < 30)
+            {
+                return GamePhase.SeasonedRider;
+            }
+
+            if (hours < 35)
+            {
+                return GamePhase.HundredBattles;
+            }
+
+            return hours < 45 ? GamePhase.RegionalForce : hours < 55 ? GamePhase.RenownedFar : GamePhase.SupremeRealm;
         }
 
-        public static string PhaseToName(GamePhase phase) => phase switch
+        public static string PhaseToName(GamePhase phase)
         {
-            GamePhase.FreshStart => "初入茅庐",
-            GamePhase.FirstGlimpse => "渐窥门径",
-            GamePhase.MinorAchievement => "小有成就",
-            GamePhase.SteadyProgress => "稳步前行",
-            GamePhase.BattleHardened => "久经沙场",
-            GamePhase.SeasonedRider => "驰骋多时",
-            GamePhase.HundredBattles => "身经百战",
-            GamePhase.RegionalForce => "纵横一方",
-            GamePhase.RenownedFar => "威名远扬",
-            GamePhase.SupremeRealm => "登峰造极",
-            _ => "?"
-        };
+            return phase switch
+            {
+                GamePhase.FreshStart => "初入茅庐",
+                GamePhase.FirstGlimpse => "渐窥门径",
+                GamePhase.MinorAchievement => "小有成就",
+                GamePhase.SteadyProgress => "稳步前行",
+                GamePhase.BattleHardened => "久经沙场",
+                GamePhase.SeasonedRider => "驰骋多时",
+                GamePhase.HundredBattles => "身经百战",
+                GamePhase.RegionalForce => "纵横一方",
+                GamePhase.RenownedFar => "威名远扬",
+                GamePhase.SupremeRealm => "登峰造极",
+                _ => "?"
+            };
+        }
 
         public static async Task<string> GetPhaseProgressString(Player player)
         {
@@ -90,23 +121,35 @@ namespace NS_site27_api.Modules.PlayerManagement
         private static string GetPhaseProgressString(Player player, GamePhase phase, double hours)
         {
             if (phase == GamePhase.SupremeRealm)
+            {
                 return $"[{PhaseToName(phase)}]";
+            }
 
-            double stageStart = phase switch
+            _ = phase switch
             {
-                GamePhase.FreshStart => 0, GamePhase.FirstGlimpse => 5,
-                GamePhase.MinorAchievement => 10, GamePhase.SteadyProgress => 15,
-                GamePhase.BattleHardened => 20, GamePhase.SeasonedRider => 25,
-                GamePhase.HundredBattles => 30, GamePhase.RegionalForce => 35,
-                GamePhase.RenownedFar => 45, _ => 0
+                GamePhase.FreshStart => 0,
+                GamePhase.FirstGlimpse => 5,
+                GamePhase.MinorAchievement => 10,
+                GamePhase.SteadyProgress => 15,
+                GamePhase.BattleHardened => 20,
+                GamePhase.SeasonedRider => 25,
+                GamePhase.HundredBattles => 30,
+                GamePhase.RegionalForce => 35,
+                GamePhase.RenownedFar => 45,
+                _ => 0
             };
-            double stageMax = phase switch
+            _ = phase switch
             {
-                GamePhase.FreshStart => 5, GamePhase.FirstGlimpse => 10,
-                GamePhase.MinorAchievement => 15, GamePhase.SteadyProgress => 20,
-                GamePhase.BattleHardened => 25, GamePhase.SeasonedRider => 30,
-                GamePhase.HundredBattles => 35, GamePhase.RegionalForce => 45,
-                GamePhase.RenownedFar => 55, _ => 0
+                GamePhase.FreshStart => 5,
+                GamePhase.FirstGlimpse => 10,
+                GamePhase.MinorAchievement => 15,
+                GamePhase.SteadyProgress => 20,
+                GamePhase.BattleHardened => 25,
+                GamePhase.SeasonedRider => 30,
+                GamePhase.HundredBattles => 35,
+                GamePhase.RegionalForce => 45,
+                GamePhase.RenownedFar => 55,
+                _ => 0
             };
             return $"[{PhaseToName(phase)}]";
         }

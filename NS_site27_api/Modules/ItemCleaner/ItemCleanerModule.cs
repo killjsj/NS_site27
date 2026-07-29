@@ -2,20 +2,14 @@ using Exiled.API.Features;
 using Exiled.API.Features.Pickups;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
-using GameCore;
 using MEC;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
-using NS_site27_api.Modules.Abilities;
-using NS_site27_api.Modules.EventHandle.Handlers;
 using NS_site27_api.Modules.MessageModule;
-using NS_site27_api.Modules.MySQL;
 using NS_site27_api.Modules.PlayerManagement;
 using PlayerRoles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using YamlDotNet.Serialization;
 
@@ -27,7 +21,7 @@ namespace NS_site27_api.Modules.ItemCleaner
         public string DoneClean { get; set; } = "<color=green><size=23.5>Site27扫地机清理完成 共{body}个尸体和{item}个物品</size></color>";
         public int startCountDownTime { get; set; } = 10;
         public int CleanTime { get; set; } = 300;
-        [YamlMember(Description ="决定扫地机提示y轴 范围: 0-1000 值越高 位置越高")]
+        [YamlMember(Description = "决定扫地机提示y轴 范围: 0-1000 值越高 位置越高")]
         public int yPos { get; set; } = 865;
         public float DoneCleanShowTime { get; set; } = 5;
         public ItemType[] WhiteList = (ItemType[])Enum.GetValues(typeof(ItemType));
@@ -72,14 +66,20 @@ namespace NS_site27_api.Modules.ItemCleaner
         public static void OnRoundEnded(RoundEndedEventArgs ev)
         {
             _stop = true;
-            if (_handle.IsRunning) Timing.KillCoroutines(_handle);
+            if (_handle.IsRunning)
+            {
+                _ = Timing.KillCoroutines(_handle);
+            }
         }
-        public static string ShowingStr =  "";
+        public static string ShowingStr = "";
         public static bool countdownstart = false;
         private static IEnumerator<float> Cleaner()
         {
             var module = ItemCleanerModule.Ins;
-            if (module == null) yield break;
+            if (module == null)
+            {
+                yield break;
+            }
 
             var cfg = module.Config;
             float counter = -cfg.DoneCleanShowTime;
@@ -87,7 +87,7 @@ namespace NS_site27_api.Modules.ItemCleaner
             while (!_stop)
             {
                 yield return Timing.WaitForSeconds(0.4f);
-                counter +=0.4f;
+                counter += 0.4f;
                 if (counter <= cfg.CleanTime - cfg.startCountDownTime)
                 {
                     //ShowingStr[0] = "";
@@ -95,11 +95,11 @@ namespace NS_site27_api.Modules.ItemCleaner
                 //start countdown
                 else if (counter <= cfg.CleanTime)
                 {
-                    if(!countdownstart)
+                    if (!countdownstart)
                     {
                         foreach (var item in Player.Enumerable)
                         {
-                            item.AddHint("clean_startcountdown",cfg.CleanTime - counter, x => ShowingStr);
+                            item.AddHint("clean_startcountdown", cfg.CleanTime - counter, x => new MsgUpdateResult() { Content = ShowingStr, Title = "Clean!", NoticeCircleColor = Color.red });
                         }
                         countdownstart = true;
                     }
@@ -107,14 +107,14 @@ namespace NS_site27_api.Modules.ItemCleaner
                 }
                 else
                 {
-                        countdownstart = false;
+                    countdownstart = false;
                     foreach (var item in Player.Enumerable)
                     {
                         item.RemoveHint("clean_startcountdown");
                     }
                     ShowingStr = "";
                     counter = -cfg.DoneCleanShowTime;
-                    CleanItem();
+                    _ = CleanItem();
                 }
             }
         }
@@ -131,9 +131,9 @@ namespace NS_site27_api.Modules.ItemCleaner
                 foreach (var item in Ragdoll.List.ToArray())
                 {
                     var clean = true;
-                    foreach (var s049 in PlayerHUDManager.Scp.Where(x=>x.Role.Type == RoleTypeId.Scp049))
+                    foreach (var s049 in PlayerHUDManager.Scp.Where(x => x.Role.Type == RoleTypeId.Scp049))
                     {
-                        if(Vector3.Distance(s049.Position, item.Position) < 20)
+                        if (Vector3.Distance(s049.Position, item.Position) < 20)
                         {
                             clean = false;
                             break;
@@ -144,7 +144,7 @@ namespace NS_site27_api.Modules.ItemCleaner
                         item.Destroy();
                         cleanedBodyCount++;
                     }
-                    if(cleanedBodyCount % 10 == 9)
+                    if (cleanedBodyCount % 10 == 9)
                     {
                         await Awaitable.NextFrameAsync();
                     }
@@ -152,7 +152,7 @@ namespace NS_site27_api.Modules.ItemCleaner
                 foreach (var item in Pickup.List.ToArray())
                 {
                     var clean = true;
-                    foreach (var player in Player.Enumerable.Where(x=>x.IsAlive))
+                    foreach (var player in Player.Enumerable.Where(x => x.IsAlive))
                     {
                         if (Vector3.Distance(player.Position, item.Position) < 20)
                         {
@@ -175,11 +175,12 @@ namespace NS_site27_api.Modules.ItemCleaner
                         await Awaitable.NextFrameAsync();
                     }
                 }
-                    foreach (var item in Player.Enumerable)
-                    {
-                        item.AddHint("DoneCleanShow", cfg.DoneCleanShowTime, x => ShowingStr);
-                    }
-                
+                foreach (var item in Player.Enumerable)
+                {
+
+                    item.AddHint("DoneCleanShow", cfg.DoneCleanShowTime, x => new MsgUpdateResult() { Content = ShowingStr, Title = "Cleaned", NoticeCircleColor = Color.green });
+                }
+
                 ShowingStr = cfg.DoneClean.Replace("{body}", cleanedBodyCount.ToString()).Replace("{item}", cleanedItemCount.ToString());
                 await Awaitable.WaitForSecondsAsync(cfg.DoneCleanShowTime);
                 foreach (var item in Player.Enumerable)

@@ -2,7 +2,6 @@ using HarmonyLib;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace NS_site27_api.Modules.HarmonyPatches.Patches
@@ -24,10 +23,16 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         public static void Postfix(ReferenceHub hub, IDoorPermissionRequester requester, out PermissionUsed callback, ref bool __result)
         {
             callback = null;
-            if (__result) return;
+            if (__result)
+            {
+                return;
+            }
 
             var player = Exiled.API.Features.Player.Get(hub);
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
 
             foreach (var item in hub.inventory.UserInventory.Items.Values)
             {

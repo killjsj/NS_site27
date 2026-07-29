@@ -5,22 +5,17 @@ using MEC;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NS_site27_api.Core.UI.DisplayKit
 {
-    public struct PlayerDisplayer
+    public class PlayerDisplayer
     {
         public Player player;
         public DisplayCanvas canvas;
         public DisplayLayer displayLayer;
         public override bool Equals(object obj)
         {
-            if (obj is not PlayerDisplayer other)
-                return false;
-
-            return player == other.player &&
+            return obj is PlayerDisplayer other && player == other.player &&
                    displayLayer == other.displayLayer;
         }
 
@@ -36,13 +31,17 @@ namespace NS_site27_api.Core.UI.DisplayKit
     public class DisplayKitRunner
     {
         public static DisplayKitRunner Instance;
-        private HashSet<DisplayLayer> Layers = new();
-        private Dictionary<Player, Dictionary<PlayerDisplayer, CoroutineHandle>> Players = new();
+        private readonly HashSet<DisplayLayer> Layers = new();
+        private readonly Dictionary<Player, Dictionary<PlayerDisplayer, CoroutineHandle>> Players = new();
 
         public void RegisterLayer(DisplayLayer layer)
         {
-            if (layer == null) return;
-            Layers.Add(layer);
+            if (layer == null)
+            {
+                return;
+            }
+
+            _ = Layers.Add(layer);
         }
         public IEnumerator<DisplayLayer> GetLayers()
         {
@@ -57,7 +56,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
             var l = GetLayer(id);
             if (l != null)
             {
-                Layers.Remove(l);
+                _ = Layers.Remove(l);
             }
             return l;
         }
@@ -65,7 +64,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
         {
             if (l != null)
             {
-                Layers.Remove(l);
+                _ = Layers.Remove(l);
             }
             return l;
         }
@@ -122,7 +121,10 @@ namespace NS_site27_api.Core.UI.DisplayKit
             {
                 if (Displayer.displayLayer == null ||
                         Displayer.canvas == null)
+                {
                     yield break;
+                }
+
                 try
                 {
                     Displayer.displayLayer.Update(Displayer.player, Displayer.canvas);
@@ -143,7 +145,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
                 return;
             }
             var r = l.FirstOrDefault(x => x.Key.displayLayer == layer);
-            if (r.Key.displayLayer == null)
+            if (r.Key == null)
             {
                 return;
             }
@@ -163,7 +165,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
                 return;
             }
             var r = l.FirstOrDefault(x => x.Key.displayLayer == layer);
-            if (r.Key.displayLayer == null)
+            if (r.Key == null)
             {
                 return;
             }
@@ -182,18 +184,18 @@ namespace NS_site27_api.Core.UI.DisplayKit
                 return;
             }
             var re = l.FirstOrDefault(x => x.Key.displayLayer == layer);
-            if (re.Key.displayLayer == null)
+            if (re.Key == null)
             {
                 return;
             }
             if (re.Value.IsRunning)
-                Timing.KillCoroutines(re.Value);
-            re.Key.displayLayer.DestroyNodes(player, re.Key.canvas);
-            if (re.Key.canvas != null)
             {
-                re.Key.canvas.Destroy();
+                _ = Timing.KillCoroutines(re.Value);
             }
-            l.Remove(re.Key);
+
+            re.Key.displayLayer.DestroyNodes(player, re.Key.canvas);
+            re.Key.canvas?.Destroy();
+            _ = l.Remove(re.Key);
         }
         public void RemoveLayer(Player player, string id)
         {
@@ -209,24 +211,26 @@ namespace NS_site27_api.Core.UI.DisplayKit
                 return;
             }
             var re = l.FirstOrDefault(x => x.Key.displayLayer == layer);
-            if (re.Key.displayLayer == null)
+            if (re.Key == null)
             {
                 return;
             }
             if (re.Value.IsRunning)
-                Timing.KillCoroutines(re.Value);
-            re.Key.displayLayer.DestroyNodes(player, re.Key.canvas);
-            if (re.Key.canvas != null)
             {
-                re.Key.canvas.Destroy();
+                _ = Timing.KillCoroutines(re.Value);
             }
-            l.Remove(re.Key);
+
+            re.Key.displayLayer.DestroyNodes(player, re.Key.canvas);
+            re.Key.canvas?.Destroy();
+            _ = l.Remove(re.Key);
         }
         public void Disable()
         {
             Instance = null;
             Exiled.Events.Handlers.Player.Left -= Left;
             Exiled.Events.Handlers.Server.RestartingRound -= restart;
+            Layers.Clear();
+            Players.Clear();
         }
         public void Left(LeftEventArgs ev)
         {
@@ -239,12 +243,12 @@ namespace NS_site27_api.Core.UI.DisplayKit
                         try
                         {
                             if (item.Value.IsRunning)
-                                Timing.KillCoroutines(item.Value);
-                            item.Key.displayLayer.DestroyNodes(ev.Player, item.Key.canvas);
-                            if (item.Key.canvas != null)
                             {
-                                item.Key.canvas.Destroy();
+                                _ = Timing.KillCoroutines(item.Value);
                             }
+
+                            item.Key.displayLayer.DestroyNodes(ev.Player, item.Key.canvas);
+                            item.Key.canvas?.Destroy();
                         }
                         catch (Exception e)
                         {
@@ -253,7 +257,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
                     }
                 }
             }
-            Players.Remove(ev.Player);
+            _ = Players.Remove(ev.Player);
         }
         public void restart()
         {
@@ -261,7 +265,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
             {
                 foreach (var item in player.Value)
                 {
-                    Timing.KillCoroutines(item.Value);
+                    _ = Timing.KillCoroutines(item.Value);
 
                     try
                     {

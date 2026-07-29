@@ -1,23 +1,15 @@
-﻿using AutoEvent;
-using AutoEvent.API;
+﻿using AutoEvent.API;
 using AutoEvent.API.Enums;
 using AutoEvent.Interfaces;
-using CustomRendering;
 using DisplayKit.Elements;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Toys;
 using Exiled.Events.EventArgs.Player;
 using MEC;
-using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Core.UI.DisplayKit;
 using PlayerRoles;
-using ProjectMER.Features.Objects;
-using ProjectMER.Features.Serializable;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
@@ -37,7 +29,7 @@ namespace NS_site27_api.Core
         B,
 
     }
-    class czsz : Event<czszConfig, czszTranslation>, IEventMap, IModule
+    internal class czsz : Event<czszConfig, czszTranslation>, IEventMap, IModule
     {
         public static czsz instance;
         public override string Name { get; set; } = "占领";
@@ -49,8 +41,8 @@ namespace NS_site27_api.Core
             MapName = "czsz",
             Position = Vector3.zero
         };
-        public static List<Player> BTeam = new List<Player>();
-        public static List<Player> ATeam = new List<Player>();
+        public static List<Player> BTeam = new();
+        public static List<Player> ATeam = new();
         internal GameObject ASpawnPoint { get; set; }
         internal GameObject BSpawnPoint { get; set; }
         internal GameObject ATexts { get; set; }
@@ -85,12 +77,16 @@ namespace NS_site27_api.Core
 
         protected override void OnFinished()
         {
-            if (stop) stop = false;
+            if (stop)
+            {
+                stop = false;
+            }
+
             if (coroutines != null)
             {
                 foreach (var item in coroutines)
                 {
-                    Timing.KillCoroutines(item);
+                    _ = Timing.KillCoroutines(item);
                 }
 
             }
@@ -139,11 +135,8 @@ namespace NS_site27_api.Core
         }
         protected override void OnCleanup()
         {
-            if (p != null)
-            {
-                p.Stop();
-                p = null;
-            }
+            p?.Stop();
+            p = null;
             foreach (var item in Player.Enumerable)
             {
                 item.RemoveLayer("czszUI");
@@ -228,12 +221,18 @@ namespace NS_site27_api.Core
                         if (progress.B > 0)
                         {
                             progress.B -= speed;
-                            if (progress.B < 0) progress.B = 0;
+                            if (progress.B < 0)
+                            {
+                                progress.B = 0;
+                            }
                         }
                         if (progress.A < 100)
                         {
                             progress.A += speed;
-                            if (progress.A > 100) progress.A = 100;
+                            if (progress.A > 100)
+                            {
+                                progress.A = 100;
+                            }
                         }
                     }
                     if (advantage < 0) // B 队优势
@@ -241,12 +240,18 @@ namespace NS_site27_api.Core
                         if (progress.A > 0)
                         {
                             progress.A -= speed;
-                            if (progress.A < 0) progress.A = 0;
+                            if (progress.A < 0)
+                            {
+                                progress.A = 0;
+                            }
                         }
                         else if (progress.B < 100)
                         {
                             progress.B += speed;
-                            if (progress.B > 100) progress.B = 100;
+                            if (progress.B > 100)
+                            {
+                                progress.B = 100;
+                            }
                         }
                     }
 
@@ -270,8 +275,8 @@ namespace NS_site27_api.Core
                     var players = item.Value;
                     var Aplayers = players.Intersect(ATeam).ToList();
                     var Bplayers = players.Intersect(BTeam).ToList();
-                    var p = TPoint[point];
-                    if (p.A > p.B && p.A >= 80)
+                    var (A, B) = TPoint[point];
+                    if (A > B && A >= 80)
                     {
                         if (Bplayers.Count > 0)
                         {
@@ -282,7 +287,7 @@ namespace NS_site27_api.Core
                             Apoints += 3;
                         }
                     }
-                    if (p.B > p.A && p.B >= 80)
+                    if (B > A && B >= 80)
                     {
                         if (Aplayers.Count > 0)
                         {
@@ -298,8 +303,8 @@ namespace NS_site27_api.Core
                 yield return Timing.WaitForSeconds(1f);
             }
         }
-        IAudioHandle p;
-        new czszConfig Config = new();
+        private IAudioHandle p;
+        private new czszConfig Config = new();
         protected override void OnStart()
         {
             Config = new czszConfig();
@@ -327,7 +332,9 @@ namespace NS_site27_api.Core
                             var ac = item.AddComponent<PointTrigger>();
                             ac.pointtype = pointType.A;
                             if (!item.TryGetComponent(out BoxCollider boxCollider))
+                            {
                                 boxCollider = item.AddComponent<BoxCollider>();
+                            }
 
                             boxCollider.isTrigger = true;
                             break;
@@ -337,7 +344,9 @@ namespace NS_site27_api.Core
                             var ac = item.AddComponent<PointTrigger>();
                             ac.pointtype = pointType.B;
                             if (!item.TryGetComponent(out BoxCollider boxCollider))
+                            {
                                 boxCollider = item.AddComponent<BoxCollider>();
+                            }
 
                             boxCollider.isTrigger = true;
                             break;
@@ -347,14 +356,16 @@ namespace NS_site27_api.Core
                             var ac = item.AddComponent<PointTrigger>();
                             ac.pointtype = pointType.C;
                             if (!item.TryGetComponent(out BoxCollider boxCollider))
+                            {
                                 boxCollider = item.AddComponent<BoxCollider>();
+                            }
 
                             boxCollider.isTrigger = true;
                             break;
                         }
                     case "killarea":
                         {
-                            item.AddComponent<DiedTriggert>();
+                            _ = item.AddComponent<DiedTriggert>();
                             break;
                         }
                     case "Bspawnpoint":
@@ -391,9 +402,9 @@ namespace NS_site27_api.Core
             }
             time.Restart();
             int i = 0;
-            var list3 = (from _ in Player.Enumerable
-                         orderby UnityEngine.Random.value
-                         select _);
+            var list3 = from _ in Player.Enumerable
+                        orderby UnityEngine.Random.value
+                        select _;
             foreach (var item in list3)
             {
                 if (i % 2 == 1)
@@ -412,7 +423,7 @@ namespace NS_site27_api.Core
                 item.AddLayer("czszUI");
             }
             p = AutoEvent.API.Extensions.PlayAudio("czsz1.ogg");
-            Timing.CallDelayed(20, () => { p = AutoEvent.API.Extensions.PlayAudio("czsz2.ogg", true); });
+            _ = Timing.CallDelayed(20, () => { p = AutoEvent.API.Extensions.PlayAudio("czsz2.ogg", true); });
             coroutines.Add(Timing.RunCoroutine(StayUpdate()));
             coroutines.Add(Timing.RunCoroutine(PointUpdate()));
         }
@@ -452,7 +463,6 @@ namespace NS_site27_api.Core
             {
                 foreach (var item in canvas.Children)
                 {
-                    var re = "";
                     var pointMess = "";
                     foreach (var pair in InPoint)
                     {
@@ -460,25 +470,18 @@ namespace NS_site27_api.Core
                         var players = pair.Value;
                         var Aplayers = players.Intersect(ATeam).ToList();
                         var Bplayers = players.Intersect(BTeam).ToList();
-                        var p = TPoint[point];
+                        var (A, B) = TPoint[point];
                         var pl = target;
                         var color = "white";
                         if (pl != null)
                         {
-                            if (ATeam.Contains(pl))
-                            {
-                                color = p.A > p.B ? "green" : p.B > p.A ? "red" : "yellow";
-                            }
-                            else if (BTeam.Contains(pl))
-                            {
-                                color = p.B > p.A ? "green" : p.A > p.B ? "red" : "yellow";
-                            }
-                            else
-                                color = "yellow";
+                            color = ATeam.Contains(pl)
+                                ? A > B ? "green" : B > A ? "red" : "yellow"
+                                : BTeam.Contains(pl) ? B > A ? "green" : A > B ? "red" : "yellow" : "yellow";
                         }
-                        pointMess += $"<size=18><color={color}>{point}点 A队占领:{p.A:F1}% B队占领:{p.B:F1}% A队人数:{Aplayers.Count} B队人数:{Bplayers.Count}</color></size=18>\n";
+                        pointMess += $"<size=18><color={color}>{point}点 A队占领:{A:F1}% B队占领:{B:F1}% A队人数:{Aplayers.Count} B队人数:{Bplayers.Count}</color></size=18>\n";
                     }
-                    re = $"<size=22>{pointMess}A队积分:{Apoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - ALives)}\nB队积分:{Bpoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - BLives)}\n目标:{instance.Config.TargetPoint} 时间:{instance.RemainTime.TotalSeconds:F0}</size=22>";
+                    string re = $"<size=22>{pointMess}A队积分:{Apoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - ALives)}\nB队积分:{Bpoints} 剩余命数:{Math.Max(0, instance.Config.TotalLives - BLives)}\n目标:{instance.Config.TargetPoint} 时间:{instance.RemainTime.TotalSeconds:F0}</size=22>";
 
                     if (item is DisplayText t && item.BaseElement.name == "zhanlText")
                     {
@@ -495,12 +498,14 @@ namespace NS_site27_api.Core
             var result = EventManager.RegisterEvent(this);
             instance = this;
             if (result != EventRegistrationResult.Success)
+            {
                 Log.Warn($"Failed to register event: {result}");
+            }
         }
 
         public void OnDisable()
         {
-            EventManager.UnregisterEvent(this);
+            _ = EventManager.UnregisterEvent(this);
             instance = null;
         }
 
@@ -529,7 +534,7 @@ namespace NS_site27_api.Core
             {
                 return;
             }
-            czsz.InPoint[pointtype].Add(player);
+            _ = czsz.InPoint[pointtype].Add(player);
         }
         public void OnTriggerEnter(Collider collision)
         {
@@ -538,21 +543,27 @@ namespace NS_site27_api.Core
             {
                 return;
             }
-            czsz.InPoint[pointtype].Add(player);
+            _ = czsz.InPoint[pointtype].Add(player);
         }
         public void OnCollisionExit(Collision collision)
         {
             Player? player = Player.Get(collision.gameObject);
             if (player is null)
+            {
                 return;
-            czsz.InPoint[pointtype].Remove(player);
+            }
+
+            _ = czsz.InPoint[pointtype].Remove(player);
         }
         public void OnTriggerExit(Collider collision)
         {
             Player? player = Player.Get(collision.gameObject);
             if (player is null)
+            {
                 return;
-            czsz.InPoint[pointtype].Remove(player);
+            }
+
+            _ = czsz.InPoint[pointtype].Remove(player);
         }
     }
     public class DiedTriggert : MonoBehaviour
@@ -569,7 +580,10 @@ namespace NS_site27_api.Core
         {
             Player? player = Player.Get(other.gameObject);
             if (player is null)
+            {
                 return;
+            }
+
             player.Kill(DamageType.Falldown);
         }
     }
@@ -592,8 +606,7 @@ namespace NS_site27_api.Core
         {
             ALoadouts = new List<Loadout>
         {
-            new Loadout
-            {
+            new() {
                 Roles = new Dictionary<RoleTypeId, int>
                 {
                     { RoleTypeId.NtfCaptain, 300 }
@@ -611,9 +624,9 @@ namespace NS_site27_api.Core
                 },
                 Effects = new List<EffectData>
                 {
-                    new EffectData { Type = "FogControl", Intensity = 1 },   // ⚠️ Check if FogControl exists!
-                    new EffectData { Type = "Scp207", Intensity = 1 },
-                    new EffectData { Type = "Scp1853", Intensity = 1 }
+                    new() { Type = "FogControl", Intensity = 1 },   // ⚠️ Check if FogControl exists!
+                    new() { Type = "Scp207", Intensity = 1 },
+                    new() { Type = "Scp1853", Intensity = 1 }
                 },
                 InfiniteAmmo = AmmoMode.InfiniteAmmo,
                 ArtificialHealth = new ArtificialHealth
@@ -629,8 +642,7 @@ namespace NS_site27_api.Core
 
             BLoadouts = new List<Loadout>
         {
-            new Loadout
-            {
+            new() {
                 Roles = new Dictionary<RoleTypeId, int>
                 {
                     { RoleTypeId.ClassD, 300 }
@@ -649,9 +661,9 @@ namespace NS_site27_api.Core
                 },
                 Effects = new List<EffectData>
                 {
-                    new EffectData { Type = "FogControl", Intensity = 1 },   // ⚠️ Check if FogControl exists!
-                    new EffectData { Type = "Scp207", Intensity = 1 },
-                    new EffectData { Type = "Scp1853", Intensity = 1 }
+                    new() { Type = "FogControl", Intensity = 1 },   // ⚠️ Check if FogControl exists!
+                    new() { Type = "Scp207", Intensity = 1 },
+                    new() { Type = "Scp1853", Intensity = 1 }
                 },
                 InfiniteAmmo = AmmoMode.InfiniteAmmo,
                 ArtificialHealth = new ArtificialHealth

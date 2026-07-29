@@ -1,27 +1,16 @@
 ﻿using CustomPlayerEffects;
-using Decals;
 using DrawableLine;
-using Exiled.API.Extensions;
 using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Spawn;
 using Exiled.API.Features.Toys;
 using Exiled.Events.EventArgs.Player;
-using Exiled.Events.Patches.Events.Player;
 using Footprinting;
-using Hints;
 using Interactables;
 using Interactables.Interobjects.DoorUtils;
-using InventorySystem;
-using InventorySystem.Items;
-using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Modules;
-using InventorySystem.Items.Firearms.Modules.Misc;
 using InventorySystem.Items.ThrowableProjectiles;
-using LabApi.Events.Arguments.PlayerEvents;
-using LabApi.Events.Arguments.ServerEvents;
-using LabApi.Events.Handlers;
 using MEC;
 using Mirror;
 using NorthwoodLib.Pools;
@@ -29,13 +18,7 @@ using NS_site27_api.Modules.CustomRolePlus;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
-using ProjectMER.Commands.Modifying.Position;
-using RelativePositioning;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Utils.Networking;
 
@@ -67,24 +50,29 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         public void OnChangingRole(ChangingRoleEventArgs ev)
         {
             if (ev.Player == null)
+            {
                 return;
+            }
+
             if (ev.Player.Inventory.UserInventory.ReserveAmmo.ContainsKey(ItemType.Coin))
             {
-                ev.Player.Inventory.UserInventory.ReserveAmmo.Remove(ItemType.Coin);
+                _ = ev.Player.Inventory.UserInventory.ReserveAmmo.Remove(ItemType.Coin);
             }
-            Timing.CallDelayed(0.2f, () =>
+            _ = Timing.CallDelayed(0.2f, () =>
             {
                 if (ev.Player == null)
+                {
                     return;
+                }
+
                 ev.Player.Inventory.UserInventory.ReserveAmmo[ItemType.Coin] = 10;
             });
         }
         public static ushort GetRemainAmmo(Player p)
         {
-            ushort re = 0;
             if (p != null)
             {
-                if (p.Inventory.UserInventory.ReserveAmmo.TryGetValue(ItemType.Coin, out re))
+                if (p.Inventory.UserInventory.ReserveAmmo.TryGetValue(ItemType.Coin, out ushort re))
                 {
                     return re;
                 }
@@ -97,13 +85,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         }
         protected Ray ForwardRay(Player p)
         {
-                Transform playerCameraReference = p.CameraTransform;
-                return new Ray(playerCameraReference.position + playerCameraReference.forward * 0.2f, playerCameraReference.forward);
-            
+            Transform playerCameraReference = p.CameraTransform;
+            return new Ray(playerCameraReference.position + (playerCameraReference.forward * 0.2f), playerCameraReference.forward);
+
         }
-        public void CreateTracer(RaycastHit Info,Player p)
+        public void CreateTracer(RaycastHit Info, Player p)
         {
-            new DrawableLineMessage(1.1f, new Color(1,1,1,0.5f), new Vector3[2] { p.CameraTransform.position - Vector3.up * 0.3f + p.CameraTransform.forward * 0.2f, Info.point }).SendToAuthenticated();
+            new DrawableLineMessage(1.1f, new Color(1, 1, 1, 0.5f), new Vector3[2] { p.CameraTransform.position - (Vector3.up * 0.3f) + (p.CameraTransform.forward * 0.2f), Info.point }).SendToAuthenticated();
         }
         public static float ExplosionRad = 1.2f;
         private const float BaseDamage = 500f;          // 基础伤害
@@ -127,7 +115,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
 
                 // 获取所有可能受影响的碰撞体
                 Collider[] hitColliders = Physics.OverlapSphere(position, radius, HitscanHitregModuleBase.HitregMask);
-                var p  = Primitive.Create(position, null, new Vector3(radius, radius, radius), false);
+                var p = Primitive.Create(position, null, new Vector3(radius, radius, radius), false);
                 p.Collidable = false;
                 p.Color = new Color(1, 1, 1, 0.25f);
                 p.Type = PrimitiveType.Sphere;
@@ -136,7 +124,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 animator.endScale = Vector3.one * radius * 2f;
                 animator.duration = 0.4f;
 
-                Timing.CallDelayed(0.4f, () => { if (p != null) p.Destroy(); });
+                _ = Timing.CallDelayed(0.4f, () => { p?.Destroy(); });
                 // 提前判断是否在服务器端运行（避免循环内重复检查）
                 bool isServer = NetworkServer.active;
 
@@ -156,7 +144,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                             if (!processedDestructibles.Contains(destructible.NetworkId) &&
                                 ExplodeDestructible(destructible, attacker, position, explosionType, radius))
                             {
-                                processedDestructibles.Add(destructible.NetworkId);
+                                _ = processedDestructibles.Add(destructible.NetworkId);
                             }
                         }
                         // 处理门（通过 InteractableCollider）
@@ -192,18 +180,20 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             private float elapsed = 0f;
             private Vector3 startScale;
 
-            void Start()
+            private void Start()
             {
                 startScale = transform.localScale;
             }
 
-            void Update()
+            private void Update()
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 transform.localScale = Vector3.Lerp(startScale, endScale, t);
                 if (t >= 1f)
+                {
                     Destroy(gameObject, 0.05f); // 动画完成后销毁自身
+                }
             }
         }
         /// <summary>
@@ -212,13 +202,19 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         private static void SetHostHitboxes(bool state)
         {
             if (!NetworkServer.active)
+            {
                 return;
+            }
 
             if (!ReferenceHub.TryGetLocalHub(out ReferenceHub localHub))
+            {
                 return;
+            }
 
             if (localHub.roleManager.CurrentRole is not IFpcRole fpcRole)
+            {
                 return;
+            }
 
             HitboxIdentity[] hitboxes = fpcRole.FpcModule.CharacterModelInstance.Hitboxes;
             for (int i = 0; i < hitboxes.Length; i++)
@@ -233,14 +229,18 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         private static void ExplodeRigidbody(Rigidbody rb, Vector3 pos, float radius)
         {
             if (rb.isKinematic)
+            {
                 return;
+            }
 
             // 检测爆炸点与刚体之间是否有遮挡
             if (Physics.Linecast(rb.gameObject.transform.position, pos, ThrownProjectile.HitBlockerMask))
+            {
                 return;
+            }
 
             // 质量影响冲击力（质量越大受力越小）
-            float massFactor = Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius + 1f;
+            float massFactor = (Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius) + 1f;
             float force = 10f / massFactor;
 
             // Unity 的 AddExplosionForce 自带距离衰减
@@ -257,21 +257,27 @@ namespace NS_site27_heavy.heavy.Module.Weapons
 
             // 防止除零 && 超出爆炸半径
             if (magnitude < 0.001f || magnitude > radius)
+            {
                 return false;
+            }
 
             // 遮挡检测（从物体中心到爆炸点）
             if (Physics.Linecast(dest.CenterOfMass, pos, ThrownProjectile.HitBlockerMask))
+            {
                 return false;
+            }
 
             // 伤害随距离线性衰减
-            float distanceFactor = Mathf.Clamp01(1f - magnitude / radius);
+            float distanceFactor = Mathf.Clamp01(1f - (magnitude / radius));
             float damage = BaseDamage * distanceFactor;
 
             if (damage < MinDamage)
+            {
                 return false;
+            }
 
             // 计算冲击方向（带随机上方向）
-            Vector3 impulse = (delta / magnitude) * distanceFactor * 10f + Vector3.up;
+            Vector3 impulse = (delta / magnitude * distanceFactor * 10f) + Vector3.up;
 
             // 尝试造成伤害
             bool damaged = dest.Damage(damage, new ExplosionDamageHandler(attacker, impulse, damage, 50, explosionType), dest.CenterOfMass);
@@ -308,15 +314,17 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         private static void ExplodeDoor(DoorVariant door, Vector3 pos, Footprint attacker, float radius)
         {
             if (door is not IDamageableDoor damageableDoor)
+            {
                 return;
+            }
 
             float distance = Vector3.Distance(door.transform.position, pos);
-            float factor = Mathf.Clamp01(1f - distance / radius);
+            float factor = Mathf.Clamp01(1f - (distance / radius));
             int damage = (int)(DoorBaseDamage * factor);
 
             if (damage > 0)
             {
-                damageableDoor.ServerDamage(damage, DoorDamageType.Grenade, attacker);
+                _ = damageableDoor.ServerDamage(damage, DoorDamageType.Grenade, attacker);
             }
         }
 
@@ -326,15 +334,21 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         private static void TriggerEffect<T>(ReferenceHub hub, float duration, float minimal) where T : StatusEffectBase
         {
             if (duration < minimal)
+            {
                 return;
+            }
 
-            hub.playerEffectsController.EnableEffect<T>(duration, true);
+            _ = hub.playerEffectsController.EnableEffect<T>(duration, true);
         }
         protected override void OnUsed(Player player, Item item)
         {
             base.OnUsed(player, item);
-            if(GetRemainAmmo(player) == 0) return;
-            Ray ray= ForwardRay(player);
+            if (GetRemainAmmo(player) == 0)
+            {
+                return;
+            }
+
+            Ray ray = ForwardRay(player);
             if (!Physics.Raycast(ray, out var raycastHit, 300, HitscanHitregModuleBase.HitregMask))
             {
                 return;

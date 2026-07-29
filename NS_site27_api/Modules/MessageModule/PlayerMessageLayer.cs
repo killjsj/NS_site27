@@ -4,19 +4,14 @@ using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using MEC;
 using NS_site27_api.Core.UI.DisplayKit;
-using NS_site27_api.Modules.Duel;
+using ProjectMER.Commands.Utility;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Utils;
 using Utils.NonAllocLINQ;
-using static RemoteAdmin.Communication.RaPlayerList;
 
 namespace NS_site27_api.Modules.MessageModule
 {
@@ -28,8 +23,11 @@ namespace NS_site27_api.Modules.MessageModule
         {
             Container,
             MsgOutSide,
-            MsgText
+            color,
+            MsgText,
+            title
         }
+
         public override void OnEnable()
         {
             Exiled.Events.Handlers.Player.Left += OnPlayerLeft;
@@ -47,20 +45,21 @@ namespace NS_site27_api.Modules.MessageModule
 
         private void OnPlayerLeft(LeftEventArgs ev)
         {
-            try {
+            try
+            {
                 var player = ev.Player;
                 if (msgs.TryGetValue(player, out var msg))
                 {
                     foreach (var item in msg.ToArray())
                     {
-                        RemoveMsg(player, item.id);
+                        RemoveMsg(player, item, true);
                     }
-                    msgs.Remove(player);
+                    msg.TrimExcess();
+                    _ = msgs.Remove(player);
                 }
                 player.RemoveLayer(this);
-                msgQueues.Remove(player);
-                containers.Remove(player);
-                
+                _ = msgQueues.Remove(player);
+
             }
             catch (Exception e)
             {
@@ -81,7 +80,6 @@ namespace NS_site27_api.Modules.MessageModule
         }
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
-            // start define of Container
             DisplayElement Container = canvas.AddElement();
             Container.BaseElement.name = "Container";
             Container.Position.Position = Position.Absolute;
@@ -90,13 +88,17 @@ namespace NS_site27_api.Modules.MessageModule
             Container.Flex.Direction = FlexDirection.Column;
             Container.Display.Overflow = Overflow.Hidden;
             Container.Flex.Wrap = Wrap.NoWrap;
-            Container.Size.MaxHeight = Length.Percent(48f);
+            Container.Size.MaxHeight = Length.Percent(62f);
             Container.Flex.Shrink = 0f;
 
-            containers[target] = Container;
+
+            canvas.SortOrder = 255;
+
         }
+
         public static DisplayElement CreateMsgNode(DisplayElement Container)
         {
+            // start define of MsgOutSide
             DisplayElement MsgOutSide = Container.AddElement();
             MsgOutSide.BaseElement.name = "MsgOutSide";
             MsgOutSide.Flex.Grow = 0f;
@@ -113,12 +115,32 @@ namespace NS_site27_api.Modules.MessageModule
             MsgOutSide.Size.Width = 220f;
             MsgOutSide.Size.Height = 103f;
             MsgOutSide.Flex.Shrink = 0f;
+            MsgOutSide.Spacing.MarginBottom = 9f;
 
-            /*
-            canvas(UXML - id:0, Root) -> Container(VisualElement - id:1, 1th child of canvas) -> MsgOutSide(VisualElement - id:2, 1th child of Container) -> MsgText(Label - id:3, 1th child of MsgOutSide) 
-            */
+            // start define of color
+            DisplayElement color = MsgOutSide.AddElement();
+            color.BaseElement.name = "color";
+            color.Flex.Grow = 1f;
+            color.Position.Position = Position.Absolute;
+            color.Position.Top = Length.Percent(5f);
+            color.Position.Left = Length.Percent(1.5f);
+            color.Size.Width = Length.Percent(10f);
+            color.Spacing.MarginTop = Length.Percent(0f);
+            color.Spacing.MarginRight = Length.Percent(0f);
+            color.Spacing.MarginBottom = Length.Percent(0f);
+            color.Spacing.MarginLeft = Length.Percent(0f);
+            color.Spacing.PaddingTop = Length.Percent(0f);
+            color.Spacing.PaddingRight = Length.Percent(0f);
+            color.Spacing.PaddingBottom = Length.Percent(0f);
+            color.Spacing.PaddingLeft = Length.Percent(0f);
+            color.Border.TopLeftRadius = Length.Percent(50f);
+            color.Border.TopRightRadius = Length.Percent(50f);
+            color.Border.BottomRightRadius = Length.Percent(50f);
+            color.Border.BottomLeftRadius = Length.Percent(50f);
+            color.Background.Color = new Color(0f, 1f, 0.9411765f, 1f);
+
             // start define of MsgText
-            DisplayText MsgText = MsgOutSide.AddText("Label");
+            DisplayText MsgText = MsgOutSide.AddText("");
             MsgText.BaseElement.name = "MsgText";
             MsgText.Spacing.PaddingTop = 0f;
             MsgText.Spacing.PaddingRight = 0f;
@@ -126,11 +148,19 @@ namespace NS_site27_api.Modules.MessageModule
             MsgText.Spacing.PaddingLeft = 0f;
             MsgText.Text.Color = new Color(0.09019608f, 1f, 0f, 1f);
             MsgText.Position.Position = Position.Absolute;
-            MsgText.Position.Top = Length.Percent(7f);
+            MsgText.Position.Top = Length.Percent(24f);
             MsgText.Position.Bottom = Length.Percent(8f);
             MsgText.Position.Right = Length.Percent(0f);
-            MsgText.Position.Left = Length.Percent(0f);
+            MsgText.Position.Left = Length.Percent(4f);
             MsgText.Text.Wrap = WhiteSpace.Normal;
+
+            // start define of title
+            DisplayText title = MsgOutSide.AddText("");
+            title.BaseElement.name = "title";
+            title.Position.Position = Position.Absolute;
+            title.Position.Left = Length.Percent(13f);
+            title.Text.Color = new Color(0f, 1f, 0.7960784f, 1f);
+
 
             return MsgOutSide;
         }
@@ -143,10 +173,33 @@ namespace NS_site27_api.Modules.MessageModule
                 float t = elapsed / duration;
                 t = 1f - Mathf.Pow(1f - t, 3f);
                 float currentX = Mathf.Lerp(startX, 0f, t);
+                float currentY = Mathf.Lerp(0, 1, t);
                 element.Transform.Translate = new Translate(currentX, 0, 0);
+                element.Transform.Scale = new StyleScale(new Vector3(1, currentY, 1));
                 yield return Timing.WaitForSeconds(0.05f);
             }
             element.Transform.Translate = new Translate(0, 0, 0);
+        }
+        private static IEnumerator<float> SlideOut(Msg msg, Player player, float duration = 0.75f, float endX = 220)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                t = 1f - Mathf.Pow(1f - t, 3f);
+                float currentX = Mathf.Lerp(0, endX, t);
+                float currentY = Mathf.Lerp(1, 0, t);
+                msg.MsgOutSide.Transform.Translate = new Translate(currentX, 0, 0);
+                msg.MsgOutSide.Transform.Scale = new StyleScale(new Vector3(1, currentY, 1));
+                yield return Timing.WaitForSeconds(0.05f);
+            }
+            msg.MsgOutSide.Transform.Translate = new Translate(endX, 0, 0);
+            if (msgs.TryGetValue(player, out var Pmsgs))
+            {
+                msg.MsgOutSide.Remove();
+                Pmsgs.Remove(msg);
+            }
         }
         public bool AddMsg(Player player, MsgArgs arg)
         {
@@ -164,9 +217,9 @@ namespace NS_site27_api.Modules.MessageModule
         }
         public bool CanAddMsg(Player player)
         {
-            if (!msgs.TryGetValue(player, out var msg))
+            if (!msgs.TryGetValue(player, out _))
             {
-                msg = new();
+                List<Msg> msg = new();
                 msgs.Add(player, msg);
                 return true;
             }
@@ -176,50 +229,106 @@ namespace NS_site27_api.Modules.MessageModule
             //}
             return true;
         }
-        public void RemoveMsg(Player player, string id)
+        public void RemoveMsg(Player player, string id, bool noAnim = false)
         {
             if (msgs.TryGetValue(player, out var msg))
             {
                 foreach (var item in msg.Where(x => x.id == id).ToArray())
                 {
                     if (item.animCH.IsRunning)
-                        Timing.KillCoroutines(item.animCH);
-                    item.MsgOutSide.Remove();
-                    msg.Remove(item);
+                    {
+                        _ = Timing.KillCoroutines(item.animCH);
+                    }
+                    var o = msg[msg.IndexOf(item)];
+                    if (o.Removing || item.Removing) return;
+                    msg[msg.IndexOf(item)] = o;
+                    o.Removing = true;
+                    item.Removing = true;
+                    if (noAnim)
+                    {
+                        item.MsgOutSide.Remove();
+                        msg.Remove(item);
+                    }
+                    else
+                    {
+                        o.animCH = Timing.RunCoroutine(SlideOut(item, player));
+                    }
                 }
             }
         }
-        public void RemoveMsg(Player player, Msg msg)
+        public void RemoveMsg(Player player, Msg msg, bool noAnim = false)
         {
+            if (msg.Removing) return;
+            msg.Removing = true;
             if (msgs.TryGetValue(player, out var Pmsgs))
             {
-                    if (msg.animCH.IsRunning)
-                        Timing.KillCoroutines(msg.animCH);
-                msg.MsgOutSide.Remove();
+                if (msg.animCH.IsRunning)
+                {
+                    _ = Timing.KillCoroutines(msg.animCH);
+                }
+                var o = Pmsgs[Pmsgs.IndexOf(msg)];
+                o.Removing = true;
+                msg.Removing = true;
+                Pmsgs[Pmsgs.IndexOf(msg)] = o;
+                if (noAnim)
+                {
+                    msg.MsgOutSide.Remove();
                     Pmsgs.Remove(msg);
-                
+                }
+                else
+                {
+                    o.animCH = Timing.RunCoroutine(SlideOut(msg, player));
+                }
             }
         }
         public static Dictionary<Player, List<Msg>> msgs = new();
-        public static Dictionary<Player, DisplayElement> containers = new();
+        //public static Dictionary<Player, DisplayElement> containers = new();
         private void internalAddMsg(DisplayElement container, Player player, MsgArgs args)
         {
-            Msg m = new Msg();
-            m.id = args.id;
+            Msg m = new()
+            {
+                id = args.id
+            };
             if (msgs.TryGetValue(player, out var existing))
             {
                 var old = existing.FirstOrDefault(m => m.id == args.id);
-                if (!old.Equals(default(Msg)))   // 因为 Msg 是 struct，需要判断是否找到
+                if (old != null)
+                {
                     RemoveMsg(player, old);
+                }
             }
             m.MsgOutSide = CreateMsgNode(container);
+            var re = m.Updater?.Invoke(player);
             foreach (var item in m.MsgOutSide.Children)
             {
-                if (item.BaseElement.name == "MsgText" && item is DisplayText t)
+                if (Enum.TryParse<PlayerMessageArea>(item.BaseElement.name, true, out var result))
                 {
-                    m.MsgText = t;
-                    t.Content = args.Updater?.Invoke(player);
+                    if (item is DisplayText t)
+                    {
+                        switch (result)
+                        {
+                            case PlayerMessageArea.MsgText:
+                                m.MsgText = t;
+                                t.Content = $"[{m.startTime + m.lifetime - Time.time:F0}]" + re.Content;
+                                break;
+                            case PlayerMessageArea.title:
+                                m.MsgTitle = t;
+                                t.Content = re.Title;
+                                break;
+                        }
+                    }
+                    else if(item is DisplayElement e)
+                    {
+                        switch (result)
+                        {
+                            case PlayerMessageArea.color:
+                                m.MsgNoticeCircle = e;
+                                e.Background.Color = re.NoticeCircleColor;
+                                break;
+                        }
+                    }
                     break;
+
                 }
             }
             m.Updater = args.Updater;
@@ -234,45 +343,61 @@ namespace NS_site27_api.Modules.MessageModule
         {
             try
             {
-                if (containers.TryGetValue(player, out var container))
+                foreach (var child in canvas.Children)
                 {
-                    if (msgs.TryGetValue(player, out var msg))
-                    {
-                        // process reqs
-                        while(msg.Count >= 6)
-                        {
-                            RemoveMsg(player, msg[0]);
-                        }
-                        if (msgQueues.TryGetValue(player, out var re))
-                        {
-                            while (msg.Count < 6 && re.TryDequeue(out var arg))
-                            {
-                                internalAddMsg(container, player, arg);
-                            }
-                        }
-                        string res = "";
-                        foreach (var item in msg.ToArray())
-                        {
-                            res = "";
-                            try
-                            {
-                                res = item.Updater?.Invoke(player);
-                                res = $"[{item.startTime + item.lifetime - Time.time:F0}]" + res;
-                                if (res != item.MsgText.Content)
-                                {
-                                    item.MsgText.Content = res;
-                                }
-                                if (Time.time > item.startTime + item.lifetime)
-                                {
-                                    RemoveMsg(player, item);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                Log.Error($"When updatingmsg:{player}'s {item.id} {e}");
-                            }
 
+                    if (child.BaseElement.name == "Container" && child is DisplayElement container)
+                    {
+                        if (msgs.TryGetValue(player, out var msg))
+                        {
+                            // process reqs
+                            while (msg.Count >= 6)
+                            {
+                                RemoveMsg(player, msg[0]);
+                            }
+                            if (msgQueues.TryGetValue(player, out var re))
+                            {
+                                while (msg.Count < 6 && re.TryDequeue(out var arg))
+                                {
+                                    internalAddMsg(container, player, arg);
+                                }
+                            }
+                            string res = "";
+                            for (int i = msg.Count - 1; i >= 0; i--)
+                            {
+                                var item = msg[i];
+                                res = "";
+                                try
+                                {
+                                    var msgUpdateResult = item.Updater?.Invoke(player);
+                                    res = $"[{item.startTime + item.lifetime - Time.time:F0}]" + msgUpdateResult.Content;
+                                    if (res != item.MsgText.Content)
+                                    {
+                                        item.MsgText.Content = res;
+                                    }
+                                    res = msgUpdateResult.Title;
+                                    if (res != item.MsgTitle.Content)
+                                    {
+                                        item.MsgTitle.Content = res;
+                                    }
+                                    var resC = msgUpdateResult.NoticeCircleColor;
+                                    if (resC != item.MsgNoticeCircle.Background.Color)
+                                    {
+                                        item.MsgNoticeCircle.Background.Color = resC;
+                                    }
+                                    if (Time.time > item.startTime + item.lifetime)
+                                    {
+                                        RemoveMsg(player, item);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    Log.Error($"When updatingmsg:{player}'s {item.id} {e}");
+                                }
+
+                            }
                         }
+                        break;
                     }
                 }
             }
@@ -284,33 +409,97 @@ namespace NS_site27_api.Modules.MessageModule
     }
     public static class PlayerMessageHelper
     {
-        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter)
+        public static void AddHint(this Player player, string id, float time, Func<Player, MsgUpdateResult> getter)
         {
-            if (player == null) return;
-            if (PlayerMessageLayer.Instance == null) return;
-            MsgArgs args = new MsgArgs()
+            if (player == null)
+            {
+                return;
+            }
+
+            if (PlayerMessageLayer.Instance == null)
+            {
+                return;
+            }
+
+            MsgArgs args = new()
             {
                 Updater = getter,
                 lifetime = time,
                 id = id,
             };
-            PlayerMessageLayer.Instance.AddMsg(player, args);
+            _ = PlayerMessageLayer.Instance.AddMsg(player, args);
+        }
+        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            if (PlayerMessageLayer.Instance == null)
+            {
+                return;
+            }
+
+            MsgArgs args = new()
+            {
+                Updater = x => new MsgUpdateResult() { Content = getter(x) },
+                lifetime = time,
+                id = id,
+            };
+            _ = PlayerMessageLayer.Instance.AddMsg(player, args);
+        }
+        public static void AddHint(this Player player, string id, float time,string str)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            if (PlayerMessageLayer.Instance == null)
+            {
+                return;
+            }
+
+            MsgArgs args = new()
+            {
+                Updater = x => new MsgUpdateResult() { Content = str },
+                lifetime = time,
+                id = id,
+            };
+            _ = PlayerMessageLayer.Instance.AddMsg(player, args);
         }
         public static void RemoveHint(this Player player, string id)
         {
-            if (player == null) return;
-            if (PlayerMessageLayer.Instance == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
+            if (PlayerMessageLayer.Instance == null)
+            {
+                return;
+            }
+
             PlayerMessageLayer.Instance.RemoveMsg(player, id);
         }
     }
-    public struct Msg
+    public class MsgUpdateResult
+    {
+        public Color NoticeCircleColor = Color.green;
+        public string Title = "Title";
+        public string Content = "";
+    } 
+    public class Msg
     {
         public string id;
-        public Func<Player, string> Updater;
+        public Func<Player, MsgUpdateResult> Updater;
         public float startTime;
         public float lifetime;
         public DisplayElement MsgOutSide;
         public DisplayText MsgText;
+        public DisplayText MsgTitle;
+        public DisplayElement MsgNoticeCircle;
         public CoroutineHandle animCH;
         public override bool Equals(object obj)
         {
@@ -320,11 +509,12 @@ namespace NS_site27_api.Modules.MessageModule
         {
             return id.GetHashCode();
         }
+        public bool Removing;
     }
     public struct MsgArgs
     {
         public string id;
-        public Func<Player, string> Updater;
+        public Func<Player, MsgUpdateResult> Updater;
         public float lifetime;
         public override bool Equals(object obj)
         {
@@ -351,7 +541,7 @@ namespace NS_site27_api.Modules.MessageModule
             if (PlayerMessageLayer.Instance == null) { response = "PlayerMessageLayer.Instance == null"; return false; }
             if (arguments.Count < 3) { response = $"用法: {Description}"; return false; }
 
-            string[] na; var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out na);
+            var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out string[] na);
             if (list == null || list.Count == 0) { response = "目标无效"; return false; }
             var time = float.Parse(na.First());
             string message = string.Join(" ", na.Skip(1).Take(na.Length - 1));
@@ -361,9 +551,13 @@ namespace NS_site27_api.Modules.MessageModule
             {
                 try
                 {
-                    Player.Get(target).AddHint($"SendPrivateTip_{player.Id}_{target.PlayerId}_{Time.time:F1}", time, x => $"{player.Nickname}发送消息:{message}");
+                    Player.Get(target).AddHint($"SendPrivateTip_{player.Id}_{target.PlayerId}_{Time.time:F1}", time, x =>
+                    {
+                        return new MsgUpdateResult() { Content = $"{player.Nickname}发送消息:{message}", NoticeCircleColor = Color.green, Title = "AdminMessage" };
+                    });
                     su++;
-                }catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     er++;
                     Log.Error(e);

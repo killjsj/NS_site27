@@ -4,7 +4,6 @@ using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Utils;
 
 namespace NS_site27_api.Modules.BanSystem
@@ -33,8 +32,7 @@ namespace NS_site27_api.Modules.BanSystem
                 return false;
             }
 
-            string[] newargs;
-            var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
+            var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out string[] newargs);
             if (targets == null || targets.Count == 0)
             {
                 response = "Player not found.";
@@ -53,12 +51,15 @@ namespace NS_site27_api.Modules.BanSystem
             foreach (var target in targets)
             {
                 var player = Player.Get(target);
-                if (player == null) continue;
+                if (player == null)
+                {
+                    continue;
+                }
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
                 _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
                 //player.Ban((uint)(duration * 60), reason);
-                player.Kick(reason,runner);
+                player.Kick(reason, runner);
             }
 
             response = $"Banned {targets.Count} player(s).";
@@ -86,17 +87,9 @@ namespace NS_site27_api.Modules.BanSystem
                     response = "Database not connected.";
                     return false;
                 }
-                string[] newargs;
-                var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
-                string userId = "";
-                if (targets == null || targets.Count == 0)
-                {
-                    userId = arguments.At(0);
-                }
-                else
-                {
-                    userId = targets[0].authManager.UserId;
-                }
+
+                var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out _);
+                string userId = targets == null || targets.Count == 0 ? arguments.At(0) : targets[0].authManager.UserId;
                 var bans = SqlQueryAllBan(sql, userId);
 
                 if (bans.Count == 0)
@@ -106,9 +99,9 @@ namespace NS_site27_api.Modules.BanSystem
                 }
 
                 response = $"Ban records for {userId}:\n";
-                foreach (var i in bans)
+                foreach (var (issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port) in bans)
                 {
-                    response += $"- {i.name} banned by {i.issuer_name} ({i.start_time:yyyy-MM-dd} to {i.end_time:yyyy-MM-dd}): {i.reason}\n";
+                    response += $"- {name} banned by {issuer_name} ({start_time:yyyy-MM-dd} to {end_time:yyyy-MM-dd}): {reason}\n";
                 }
                 return true;
             }

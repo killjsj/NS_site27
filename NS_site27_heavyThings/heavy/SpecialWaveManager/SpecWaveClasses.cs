@@ -1,13 +1,9 @@
 ﻿using Exiled.API.Features;
-using NS_site27_heavy.Core;
 using PlayerRoles;
 using Respawning.Config;
 using Respawning.Waves;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NS_site27_heavy.heavy.SpecialWaveManager
 {
@@ -22,7 +18,11 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
 
         public abstract string WaveName { get; }
         public virtual int MaxSpawnedOnce => 999;
-        public virtual string GetWaitingSpawningUIText() => "";
+        public virtual string GetWaitingSpawningUIText()
+        {
+            return "";
+        }
+
         public virtual WaveUIPosition WaveUIPosition { get; set; } = WaveUIPosition.NeverDisplay;
         public bool IsEnabled { get; set; } = true;
         public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
@@ -38,24 +38,24 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
     }
     public interface ITiming
     {
-        public float SpawnTotalTime { get; set; }
-        public float LastSpawnTime { get; set; }
+        float SpawnTotalTime { get; set; }
+        float LastSpawnTime { get; set; }
     }
     public interface IAnimWave
     {
-        public float GetPlayedTime();
-        public string GetSpawingUIText();
-        public bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone);
+        float GetPlayedTime();
+        string GetSpawingUIText();
+        bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone);
     }
 
     public interface INeedInitWave
     {
-        public void Init();
-        public void Deinit();
+        void Init();
+        void Deinit();
     }
     public interface ICountedWave
     {
-        public int TotalCount { get; }
-        public int RemainCount { set; get; }
+        int TotalCount { get; }
+        int RemainCount { set; get; }
     }
 }

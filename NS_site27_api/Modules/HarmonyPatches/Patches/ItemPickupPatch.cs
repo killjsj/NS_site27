@@ -10,9 +10,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         [HarmonyPrefix]
         public static bool Prefix(ItemPickupBase __instance)
         {
-            if (__instance == null) return false;
-            if (__instance.GetInstanceID() == 0) return false;
-            return true;
+            return __instance != null && __instance.GetInstanceID() != 0;
         }
     }
 }

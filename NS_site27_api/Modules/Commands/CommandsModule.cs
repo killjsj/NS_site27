@@ -1,11 +1,12 @@
 using CommandSystem;
 using Exiled.API.Features;
 using NS_site27_api.Core;
+using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exiled.API.Features;
+using UnityEngine;
 namespace NS_site27_api.Modules.Commands
 {
     public class CommandsConfig : ModuleConfigBase
@@ -66,8 +67,8 @@ namespace NS_site27_api.Modules.Commands
             {
                 if (scp.Role.Type == target)
                 {
-                    scp.Broadcast(new Exiled.API.Features.Broadcast(
-                        $"<size=29><color=yellow>{player.DisplayNickname} wants to swap SCP with you\nConsole: .ScpArgee to accept</color></size>", 10));
+                    scp.AddHint("SwapScp", 10f, x => new MsgUpdateResult() { Content = $"<size=29><color=yellow>{player.DisplayNickname}想要与你交换SCP,控制台: .ScpArgee 同意</color></size>", Title = "SCP交换", NoticeCircleColor = Color.green });
+
                 }
             }
 
@@ -127,14 +128,14 @@ namespace NS_site27_api.Modules.Commands
                 if (req.From != null)
                 {
                     SwapRoles(req.From, player);
-                    CommandsModule.ScpsChangeRequests.RemoveAll(r => Equals(r, req));
+                    _ = CommandsModule.ScpsChangeRequests.RemoveAll(r => Equals(r, req));
                 }
             }
             else
             {
                 var req = waitForChange[0];
                 SwapRoles(req.From, player);
-                CommandsModule.ScpsChangeRequests.RemoveAll(r => Equals(r, req));
+                _ = CommandsModule.ScpsChangeRequests.RemoveAll(r => Equals(r, req));
             }
 
             response = "Success.";
@@ -201,7 +202,7 @@ namespace NS_site27_api.Modules.Commands
     public class CommandsModule : ModuleBase<CommandsConfig>
     {
         public override string ModuleName => "Commands";
-        public static List<ScpChangeRequest> ScpsChangeRequests = new List<ScpChangeRequest>();
+        public static List<ScpChangeRequest> ScpsChangeRequests = new();
 
         public override void OnEnable()
         {

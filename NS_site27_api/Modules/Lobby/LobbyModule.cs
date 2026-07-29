@@ -4,12 +4,9 @@ using Exiled.Events.EventArgs.Player;
 using GameCore;
 using MEC;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
+using NS_site27_api.Core.UI.DisplayKit;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace NS_site27_api.Modules.Lobby
@@ -34,18 +31,23 @@ namespace NS_site27_api.Modules.Lobby
         public void Verified(VerifiedEventArgs ev)
         {
             ev.Player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Tutorial, PlayerRoles.RoleChangeReason.None, PlayerRoles.RoleSpawnFlags.All);
+            ev.Player.AddLayer("PlayerCountLayer");
         }
         public CoroutineHandle handle;
         public void RoundStarted()
         {
-            Timing.KillCoroutines(handle);
+            _ = Timing.KillCoroutines(handle);
+            foreach (var item in Player.Enumerable)
+            {
+                item.RemoveLayer("PlayerCountLayer");
+            }
         }
         public void WaitingForPlayers()
         {
             GameObject.Find("StartRound").transform.localScale = Vector3.zero;
             handle = Timing.RunCoroutine(PlayerRefreshLoop());
         }
-        public static string ShowingString ="";
+        public static string ShowingString = "";
         private IEnumerator<float> PlayerRefreshLoop()
         {
             while (Round.IsLobby && RoundStart.singleton.Timer != -1)
@@ -58,7 +60,7 @@ namespace NS_site27_api.Modules.Lobby
                         re += "<color=yellow>大厅锁定 ";
 
                     }
-                    else if(RoundStart.singleton.Timer == -2)
+                    else if (RoundStart.singleton.Timer == -2)
                     {
                         re += "<color=red>玩家数量不足! ";
                     }

@@ -1,14 +1,10 @@
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Server;
-using GameCore;
 using LabApi.Events.Arguments.ServerEvents;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
-using ProjectMER.Commands.Utility;
 using Respawning.Waves;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace NS_site27_api.Modules.EventHandle.Handlers
@@ -83,16 +79,19 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         public static void OnRespawningTeam(RespawningTeamEventArgs ev)
         {
             //BUG: Mini-wave force spawn may cause unexpected wave composition
-            if (!ev.Wave.IsMiniWave) return;
+            if (!ev.Wave.IsMiniWave)
+            {
+                return;
+            }
 
             ev.IsAllowed = false;
             switch (ev.Wave.Faction)
             {
                 case Faction.FoundationStaff:
-                    WaveSpawner.SpawnWave(new NtfSpawnWave());
+                    _ = WaveSpawner.SpawnWave(new NtfSpawnWave());
                     break;
                 case Faction.FoundationEnemy:
-                    WaveSpawner.SpawnWave(new ChaosSpawnWave());
+                    _ = WaveSpawner.SpawnWave(new ChaosSpawnWave());
                     break;
             }
             ev.Wave.Timer.SetTime(0);
@@ -101,16 +100,22 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         public static void OnRoundEnded(Exiled.Events.EventArgs.Server.RoundEndedEventArgs ev)
         {
             var module = CorePlugin.Modules.OfType<ItemCleanerModule>().FirstOrDefault();
-            if (module == null) return;
+            if (module == null)
+            {
+                return;
+            }
 
             var cfg = module.GetConfig();
-            if (!cfg.RoundEndFF) return;
+            if (!cfg.RoundEndFF)
+            {
+                return;
+            }
 
             ServerConsole.FriendlyFire = true;
             ServerConfigSynchronizer.RefreshAllConfigs();
             foreach (var player in Player.Enumerable)
             {
-                player.AddHint("RoundEndff",2,x=> cfg.RoundEndFFText);
+                player.AddHint("RoundEndff", 2, x => new MsgUpdateResult() { Content = cfg.RoundEndFFText });
             }
         }
 

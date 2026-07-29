@@ -1,12 +1,6 @@
-﻿using Exiled.API.Features;
-using Exiled.Events.EventArgs.Player;
+﻿using Exiled.Events.EventArgs.Player;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.Admin
 {
@@ -33,10 +27,10 @@ namespace NS_site27_api.Modules.Admin
         {
             if (ev.Player.RemoteAdminAccess && ev.Type == LabApi.Features.Enums.CommandType.RemoteAdmin)
             {
-                var group = ev.Player.Group;
+                _ = ev.Player.Group;
                 if (AdminAssignModule.CachedGroups.ContainsKey(ev.Player))
                 {
-                    group = AdminAssignModule.CachedGroups[ev.Player];
+                    _ = AdminAssignModule.CachedGroups[ev.Player];
                 }
                 _ = sql?.LogAdminPermissionAsync(ev.Player.UserId, ev.Player.DisplayNickname, Exiled.API.Features.Server.Port, ev.Query, ev.Response, group: ev.Player.Group.Name);
             }

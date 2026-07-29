@@ -1,10 +1,8 @@
 using Exiled.API.Features;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Modules.MySQL;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.PlayerManagement
@@ -58,14 +56,18 @@ namespace NS_site27_api.Modules.PlayerManagement
     {
         public static MySQLConnect SQL => Plugin.Instance?.connect;
         public static double GlobalMultiplier = 1;
-        public static Dictionary<Player, int> PointCache = new Dictionary<Player, int>();
-        public static Dictionary<Player, Stopwatch> TodayTimers = new Dictionary<Player, Stopwatch>();
-        public static Dictionary<Player, Stopwatch> ServerTimers = new Dictionary<Player, Stopwatch>();
-        public static Dictionary<Player, TimeSpan> TodayTimeCache = new Dictionary<Player, TimeSpan>();
+        public static Dictionary<Player, int> PointCache = new();
+        public static Dictionary<Player, Stopwatch> TodayTimers = new();
+        public static Dictionary<Player, Stopwatch> ServerTimers = new();
+        public static Dictionary<Player, TimeSpan> TodayTimeCache = new();
 
         public static TimeSpan GetTodayTime(Player player)
         {
-            if (player == null) return TimeSpan.Zero;
+            if (player == null)
+            {
+                return TimeSpan.Zero;
+            }
+
             if (TodayTimers.TryGetValue(player, out var sw))
             {
                 var cached = TodayTimeCache.TryGetValue(player, out var ts) ? ts : TimeSpan.Zero;
@@ -79,15 +81,21 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public static TimeSpan GetAllTime(Player player)
         {
-            if (player == null) return TimeSpan.Zero;
-            return GetServerTime(player);
+            return player == null ? TimeSpan.Zero : GetServerTime(player);
         }
 
         public static TimeSpan GetServerTime(Player player)
         {
-            if (player == null) return TimeSpan.Zero;
+            if (player == null)
+            {
+                return TimeSpan.Zero;
+            }
+
             if (ServerTimers.TryGetValue(player, out var sw))
+            {
                 return sw.Elapsed;
+            }
+
             var t = Stopwatch.StartNew();
             ServerTimers[player] = t;
             return t.Elapsed;
@@ -95,29 +103,59 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public static void StopServerTime(Player player)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             if (ServerTimers.TryGetValue(player, out var sw))
+            {
                 sw.Stop();
+            }
         }
 
-        public async static Task<int> GetPoint(Player player)
+        public static async Task<int> GetPoint(Player player)
         {
-            if (player == null) return 0;
-            if (PointCache.TryGetValue(player, out var p)) return p;
+            if (player == null)
+            {
+                return 0;
+            }
+
+            if (PointCache.TryGetValue(player, out var p))
+            {
+                return p;
+            }
+
             var sql = SQL;
-            if (sql == null) return 0;
-            var user = await sql.QueryUserAsync(player.UserId);
-            if (user.today_duration.HasValue) TodayTimeCache[player] = user.today_duration.Value;
-            PointCache[player] = user.point;
+            if (sql == null)
+            {
+                return 0;
+            }
+
+            var (_, _, _, _, point, _, _, _, today_duration) = await sql.QueryUserAsync(player.UserId);
+            if (today_duration.HasValue)
+            {
+                TodayTimeCache[player] = today_duration.Value;
+            }
+
+            PointCache[player] = point;
             return 0;
         }
 
         public static async Task AddPoint(Player player, int points, AddPointReason reason)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
             int cur = atkStats.Points + points;
-            if (cur < 0) cur = 0;
+            if (cur < 0)
+            {
+                cur = 0;
+            }
+
             PointCache[player] = cur;
             atkStats.Points = cur;
             _ = SQL?.UpdateAsync(player.UserId, point: cur);
@@ -125,46 +163,82 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public static async Task AddDeath(Player player, int count = 1)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
             int cur = atkStats.Deaths + count;
-            if (cur < 0) cur = 0;
+            if (cur < 0)
+            {
+                cur = 0;
+            }
+
             PointCache[player] = cur;
             atkStats.Deaths = cur;
             var sql = SQL;
-            if (sql == null) return; 
-            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
-            SQL?.UpdatePlayerStatAsync(player.UserId, TotalDeaths: cr.TotalDeaths + count);
-            
+            if (sql == null)
+            {
+                return;
+            }
+
+            var (_, TotalDeaths, _) = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            _ = (SQL?.UpdatePlayerStatAsync(player.UserId, TotalDeaths: TotalDeaths + count));
+
         }
 
         public static async Task AddKills(Player player, int count = 1)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
             int cur = atkStats.Kills + count;
-            if (cur < 0) cur = 0;
+            if (cur < 0)
+            {
+                cur = 0;
+            }
+
             PointCache[player] = cur;
             atkStats.Kills = cur;
             var sql = SQL;
-            if (sql == null) return;
-            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
-            SQL?.UpdatePlayerStatAsync(player.UserId, TotalKills: cr.TotalKills + count);
+            if (sql == null)
+            {
+                return;
+            }
+
+            var (TotalKills, _, _) = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            _ = (SQL?.UpdatePlayerStatAsync(player.UserId, TotalKills: TotalKills + count));
 
         }
 
         public static async Task AddEscape(Player player, int count = 1)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             var atkStats = await PlayerManagementModule.GetOrCreateStats(player);
             int cur = atkStats.Escapes + count;
-            if (cur < 0) cur = 0;
+            if (cur < 0)
+            {
+                cur = 0;
+            }
+
             PointCache[player] = cur;
             atkStats.Escapes = cur;
             var sql = SQL;
-            if (sql == null) return;
-            var cr = await SQL?.QueryPlayerStatsAsync(player.UserId);
-            SQL?.UpdatePlayerStatAsync(player.UserId, TotalEscapes: cr.TotalEscapes + count);
+            if (sql == null)
+            {
+                return;
+            }
+
+            var (_, _, TotalEscapes) = await SQL?.QueryPlayerStatsAsync(player.UserId);
+            _ = (SQL?.UpdatePlayerStatAsync(player.UserId, TotalEscapes: TotalEscapes + count));
 
         }
     }

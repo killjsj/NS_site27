@@ -1,10 +1,10 @@
 using CommandSystem;
 using Exiled.API.Features;
 using NS_site27_api.Modules.Voting;
+using System;
 
 namespace NS_site27_api.Modules.Commands
 {
-    using System;
     [CommandHandler(typeof(ClientCommandHandler))]
     public class VoteYesCommand : ICommand
     {

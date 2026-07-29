@@ -1,6 +1,5 @@
 using Exiled.API.Features;
 using MEC;
-using NS_site27_api.Core;
 using System;
 using System.Collections.Generic;
 
@@ -20,13 +19,16 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         public static void Stop()
         {
             _stop = true;
-            Timing.KillCoroutines(_handle);
+            _ = Timing.KillCoroutines(_handle);
         }
 
         private static IEnumerator<float> Broadcaster()
         {
             var module = ItemCleanerModule.Ins;
-            if (module == null) yield break;
+            if (module == null)
+            {
+                yield break;
+            }
 
             int counter = 0;
             int index = 0;

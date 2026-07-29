@@ -1,18 +1,13 @@
 ﻿using Exiled.API.Features;
-using GameCore;
 using MEC;
-using Mirror;
 using NS_site27_api.Modules.PlayerManagement;
 using NS_site27_heavy.Core;
-using ProjectMER.Commands.Map;
-using Respawning;
 using Respawning.Waves;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace NS_site27_heavy.heavy.SpecialWaveManager
@@ -59,7 +54,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 {
                     var obj = (SpecialWave)Activator.CreateInstance(type);
                     RegWaves.Add(obj);
-                    if(obj is INeedInitWave i)
+                    if (obj is INeedInitWave i)
                     {
                         i.Init();
                     }
@@ -82,17 +77,21 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         }
         private void PlayerHUDManager_BuildSpawnUIEvent(PlayerManagerDisplayKitHUD.UILocate locate, ref StringBuilder AppendString)
         {
-            if(!Round.IsStarted) return;
+            if (!Round.IsStarted)
+            {
+                return;
+            }
+
             bool isSpawning = false;
             WaveUIPosition waveUIPosition = WaveUIPosition.None;
             switch (locate)
             {
                 case PlayerManagerDisplayKitHUD.UILocate.Left:
                     waveUIPosition = WaveUIPosition.Left;
-                    AppendString.Append("<align=left><size=25>");
+                    _ = AppendString.Append("<align=left><size=25>");
                     break;
                 case PlayerManagerDisplayKitHUD.UILocate.Right:
-                    AppendString.Append("<align=right><size=25>");
+                    _ = AppendString.Append("<align=right><size=25>");
                     waveUIPosition = WaveUIPosition.Right;
                     break;
                 case PlayerManagerDisplayKitHUD.UILocate.Middle:
@@ -101,14 +100,14 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 default:
                     break;
             }
-            if(isSpawning)
+            if (isSpawning)
             {
-                if(CurrentWave !=null && CurrentWave is IAnimWave anim && CurrentWave.IsEnabled)
+                if (CurrentWave != null && CurrentWave is IAnimWave anim && CurrentWave.IsEnabled)
                 {
                     var r = anim.GetSpawingUIText();
                     if (!string.IsNullOrEmpty(r))
                     {
-                        AppendString.AppendLine(r);
+                        _ = AppendString.AppendLine(r);
                     }
                 }
             }
@@ -119,14 +118,14 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                     if (item.WaveUIPosition == waveUIPosition && item.IsEnabled)
                     {
                         var r = item.GetWaitingSpawningUIText();
-                        if(!string.IsNullOrEmpty(r))
+                        if (!string.IsNullOrEmpty(r))
                         {
-                            AppendString.AppendLine(r);
+                            _ = AppendString.AppendLine(r);
                         }
                     }
                 }
             }
-            AppendString.Append("</size></align>");
+            _ = AppendString.Append("</size></align>");
 
         }
 
@@ -138,7 +137,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         {
             if (loop.IsRunning)
             {
-                Timing.KillCoroutines(loop);
+                _ = Timing.KillCoroutines(loop);
             }
             foreach (var item in RegWaves)
             {
@@ -153,12 +152,12 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 foreach (var player in WaitingToSpawn)
                 {
                     roleAssignments.Add(player.ReferenceHub, PlayerRoles.RoleTypeId.CustomRole);
-                } 
+                }
                 var LabEvent = new LabApi.Events.Arguments.ServerEvents.WaveRespawningEventArgs(item, roleAssignments);
                 LabApi.Events.Handlers.ServerEvents.OnWaveRespawning(LabEvent);
                 if (LabEvent.IsAllowed)
                 {
-                    WaitingToSpawn = LabEvent.SpawningPlayers.Select(x=>Player.Get(x)).ToList();
+                    WaitingToSpawn = LabEvent.SpawningPlayers.Select(Player.Get).ToList();
                     {
                         var (spawnSuccess, spawnedPlayers) = item.SpawnPlayers(WaitingToSpawn);
                         if (spawnSuccess)
@@ -187,7 +186,8 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             catch (Exception e)
             {
                 Log.Error($"[SWM] Failed to spawn players for wave {item.GetType().Name} with Exception:{e}");
-            } finally
+            }
+            finally
             {
                 IsInAnim = false;
                 CurrentWave = null;
@@ -223,7 +223,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                                 var (success, output) = item.CheckWaveConditions();
                                 if (success)
                                 {
-                                    StartWave(item);
+                                    _ = StartWave(item);
                                 }
                             }
                         }
@@ -250,17 +250,20 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public static bool StartWave(SpecialWave wave)
         {
             if (wave == null || !CanStartSpawn || !wave.IsEnabled)
+            {
                 return false;
+            }
+
             Log.Info($"[SWM] spawning wave {wave.GetType().Name}");
             CurrentWave = wave;
             IsInAnim = true;
             try
             {
-                var p = WaveSpawner.GetAvailablePlayers(PlayerRoles.Team.OtherAlive, wave.MaxSpawnedOnce).Select(x=>Player.Get(x)).ToList();
+                var p = WaveSpawner.GetAvailablePlayers(PlayerRoles.Team.OtherAlive, wave.MaxSpawnedOnce).Select(Player.Get).ToList();
                 if (wave is IAnimWave animWave)
                 {
                     Log.Info($"[SWM] spawning wave {wave.GetType().Name} - Anim");
-                    var started = animWave.TryStartAnimation(p,OnAnimDone);
+                    var started = animWave.TryStartAnimation(p, OnAnimDone);
                     if (!started)
                     {
                         IsInAnim = false;
@@ -268,7 +271,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                     return started;
                 }
 
-                OnAnimDone(wave,p);
+                OnAnimDone(wave, p);
                 return true;
             }
             catch (Exception ex)
@@ -276,11 +279,12 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                 IsInAnim = false;
                 Log.Error($"[SWM] Failed to start wave {wave.GetType().Name} with Exception:{ex}");
                 return false;
-            }finally
+            }
+            finally
             {
                 foreach (var item in RegWaves)
                 {
-                    if(item is ITiming timing && item != wave)
+                    if (item is ITiming timing && item != wave)
                     {
                         timing.LastSpawnTime = Time.time;
                     }

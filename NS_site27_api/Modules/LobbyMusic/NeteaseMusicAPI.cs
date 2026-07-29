@@ -1,18 +1,11 @@
-﻿using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
-using Newtonsoft.Json;
-using OggVorbisEncoder;
-using OggVorbisEncoder.Setup;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Unity.IO.LowLevel.Unsafe;
 using Encoding = System.Text.Encoding;
 
 namespace NeteaseMusicAPI
@@ -46,7 +39,7 @@ namespace NeteaseMusicAPI
         public static readonly string QR_LOGIN_API = "https://interface3.music.163.com/eapi/login/qrcode/client/login";
 
         // 默认配置
-        public static readonly Dictionary<string, string> DEFAULT_CONFIG = new Dictionary<string, string>
+        public static readonly Dictionary<string, string> DEFAULT_CONFIG = new()
         {
             {"os", "pc"},
             {"appver", ""},
@@ -54,7 +47,7 @@ namespace NeteaseMusicAPI
             {"deviceId", "pyncm!"}
         };
 
-        public static readonly Dictionary<string, string> DEFAULT_COOKIES = new Dictionary<string, string>
+        public static readonly Dictionary<string, string> DEFAULT_COOKIES = new()
         {
             {"os", "pc"},
             {"appver", ""},
@@ -67,20 +60,18 @@ namespace NeteaseMusicAPI
     {
         public static string HexDigest(byte[] data)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach (byte b in data)
             {
-                sb.Append(b.ToString("x2"));
+                _ = sb.Append(b.ToString("x2"));
             }
             return sb.ToString();
         }
 
         public static byte[] HashDigest(string text)
         {
-            using (var md5 = MD5.Create())
-            {
-                return md5.ComputeHash(Encoding.UTF8.GetBytes(text));
-            }
+            using var md5 = MD5.Create();
+            return md5.ComputeHash(Encoding.UTF8.GetBytes(text));
         }
 
         public static string HashHexDigest(string text)
@@ -102,17 +93,13 @@ namespace NeteaseMusicAPI
 
         private static byte[] AESEncryptECB(byte[] toEncrypt, byte[] key)
         {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.Mode = CipherMode.ECB;
-                aes.Padding = PaddingMode.PKCS7;
+            using Aes aes = Aes.Create();
+            aes.Key = key;
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.PKCS7;
 
-                using (ICryptoTransform encryptor = aes.CreateEncryptor())
-                {
-                    return encryptor.TransformFinalBlock(toEncrypt, 0, toEncrypt.Length);
-                }
-            }
+            using ICryptoTransform encryptor = aes.CreateEncryptor();
+            return encryptor.TransformFinalBlock(toEncrypt, 0, toEncrypt.Length);
         }
     }
 
@@ -252,7 +239,7 @@ namespace NeteaseMusicAPI
     }
     public class NeteaseAPI
     {
-        private HttpClient httpClient;
+        private readonly HttpClient httpClient;
 
         public NeteaseAPI()
         {
@@ -265,8 +252,10 @@ namespace NeteaseMusicAPI
         {
             try
             {
-                var config = new Dictionary<string, string>(APIConstants.DEFAULT_CONFIG);
-                config["requestId"] = new Random().Next(20000000, 30000000).ToString();
+                var config = new Dictionary<string, string>(APIConstants.DEFAULT_CONFIG)
+                {
+                    ["requestId"] = new Random().Next(20000000, 30000000).ToString()
+                };
 
                 var payload = new Dictionary<string, object>
                 {
@@ -295,19 +284,14 @@ namespace NeteaseMusicAPI
                 }
 
                 string cookieHeader = string.Join("; ", requestCookies.Select(c => $"{c.Key}={c.Value}"));
-                httpClient.DefaultRequestHeaders.Remove("Cookie");
+                _ = httpClient.DefaultRequestHeaders.Remove("Cookie");
                 httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
                 HttpResponseMessage response = await httpClient.PostAsync(APIConstants.SONG_URL_V1, formContent);
                 string responseText = await response.Content.ReadAsStringAsync();
 
                 var result = JsonConvert.DeserializeObject<SongUrlResponse>(responseText);
-                if (result.code != 200)
-                {
-                    throw new APIException($"获取歌曲URL失败: {result.code}");
-                }
-
-                return new Result<SongUrlResponse>(result);
+                return result.code != 200 ? throw new APIException($"获取歌曲URL失败: {result.code}") : new Result<SongUrlResponse>(result);
             }
             catch (Exception e)
             {
@@ -332,12 +316,7 @@ namespace NeteaseMusicAPI
                 string responseText = await response.Content.ReadAsStringAsync();
 
                 var result = JsonConvert.DeserializeObject<SongDetailResponse>(responseText);
-                if (result.code != 200)
-                {
-                    throw new APIException($"获取歌曲详情失败: 未知错误");
-                }
-
-                return new Result<SongDetailResponse>(result);
+                return result.code != 200 ? throw new APIException($"获取歌曲详情失败: 未知错误") : new Result<SongDetailResponse>(result);
             }
             catch (Exception e)
             {
@@ -371,19 +350,14 @@ namespace NeteaseMusicAPI
                 }
 
                 string cookieHeader = string.Join("; ", requestCookies.Select(c => $"{c.Key}={c.Value}"));
-                httpClient.DefaultRequestHeaders.Remove("Cookie");
+                _ = httpClient.DefaultRequestHeaders.Remove("Cookie");
                 httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
                 HttpResponseMessage response = await httpClient.PostAsync(APIConstants.LYRIC_API, formContent);
                 string responseText = await response.Content.ReadAsStringAsync();
 
                 var result = JsonConvert.DeserializeObject<LyricResponse>(responseText);
-                if (result.code != 200)
-                {
-                    throw new APIException($"获取歌词失败: 未知错误");
-                }
-
-                return result;
+                return result.code != 200 ? throw new APIException($"获取歌词失败: 未知错误") : result;
             }
             catch (Exception e)
             {
@@ -411,7 +385,7 @@ namespace NeteaseMusicAPI
                 }
 
                 string cookieHeader = string.Join("; ", requestCookies.Select(c => $"{c.Key}={c.Value}"));
-                httpClient.DefaultRequestHeaders.Remove("Cookie");
+                _ = httpClient.DefaultRequestHeaders.Remove("Cookie");
                 httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
                 HttpResponseMessage response = await httpClient.PostAsync(APIConstants.SEARCH_API, formContent);
@@ -451,7 +425,9 @@ namespace NeteaseMusicAPI
         public string GetPicUrl(long? picId, int size = 300)
         {
             if (!picId.HasValue)
+            {
                 return "";
+            }
 
             string encId = NetEaseEncryptId(picId.Value.ToString());
             return $"https://p3.music.126.net/{encId}/{picId}.jpg?param={size}y{size}";
@@ -467,14 +443,12 @@ namespace NeteaseMusicAPI
                 songId[i] = (char)(songId[i] ^ magic[i % magic.Length]);
             }
 
-            string m = new string(songId);
-            using (var md5 = MD5.Create())
-            {
-                byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(m));
-                string result = Convert.ToBase64String(hash);
-                result = result.Replace('/', '_').Replace('+', '-');
-                return result;
-            }
+            string m = new(songId);
+            using var md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(m));
+            string result = Convert.ToBase64String(hash);
+            result = result.Replace('/', '_').Replace('+', '-');
+            return result;
         }
 
     }

@@ -1,31 +1,15 @@
-using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Items;
-using Exiled.API.Features.Roles;
-using Exiled.Events.Commands.PluginManager;
 using Exiled.Events.EventArgs.Map;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Scp914;
 using Exiled.Events.EventArgs.Warhead;
-using Exiled.Events.Handlers;
 using MEC;
-using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Core.UI.DisplayKit;
-using NS_site27_api.Extensions;
-using NS_site27_api.Modules.Chat;
-using Org.BouncyCastle.Asn1.Crmf;
-using Org.BouncyCastle.Crypto.Prng.Drbg;
 using PlayerRoles;
-using Respawning;
-using Respawning.Waves;
 using Scp914;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 using Log = Exiled.API.Features.Log;
 using MapHandlers = Exiled.Events.Handlers.Map;
@@ -39,16 +23,16 @@ namespace NS_site27_api.Modules.PlayerManagement
     {
         public static int doc, ntf, gruad, chaos, dd;
         public static int ntfWave, ChaosCount;
-        public static Stopwatch WaveCalc = new Stopwatch();
+        public static Stopwatch WaveCalc = new();
 
-        public static List<ScoreChange> ScoreQueue = new List<ScoreChange>();
-        public static Queue<(Player p, Scp914KnobSetting knob, bool act)> Scp914q = new Queue<(Player, Scp914KnobSetting, bool)>();
+        public static List<ScoreChange> ScoreQueue = new();
+        public static Queue<(Player p, Scp914KnobSetting knob, bool act)> Scp914q = new();
 
         public struct ScoreChange { public Player Player; public int Amount; public string Reason; public float Time; }
         public struct ElevatorInteractInfo { public Vector3 InteractAt; public Player Interactor; public float InteractTime; }
         public struct NukeInteractInfo { public Player Interactor; public float InteractTime; public bool acted; }
-        public static List<ElevatorInteractInfo> ElevatorInteractions = new List<ElevatorInteractInfo>();
-        public static List<NukeInteractInfo> NukeInteractions = new List<NukeInteractInfo>();
+        public static List<ElevatorInteractInfo> ElevatorInteractions = new();
+        public static List<NukeInteractInfo> NukeInteractions = new();
 
 
 
@@ -95,7 +79,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             {
                 RemoveScp(ev.Player);
             }
-            Timing.CallDelayed(0.2f, () =>
+            _ = Timing.CallDelayed(0.2f, () =>
             {
                 if (IsScpRole(ev.Player.Role))
                 {
@@ -112,35 +96,39 @@ namespace NS_site27_api.Modules.PlayerManagement
 
             });
         }
-        static bool IsScpRole(RoleTypeId role)
+        private static bool IsScpRole(RoleTypeId role)
         {
-            return role == RoleTypeId.Scp173 || role == RoleTypeId.Scp106 || role == RoleTypeId.Scp049 ||
-                   role == RoleTypeId.Scp079 || role == RoleTypeId.Scp096 || role == RoleTypeId.Scp0492 ||
-                   role == RoleTypeId.Scp939 || role == RoleTypeId.Scp3114;
+            return role is RoleTypeId.Scp173 or RoleTypeId.Scp106 or RoleTypeId.Scp049 or
+                   RoleTypeId.Scp079 or RoleTypeId.Scp096 or RoleTypeId.Scp0492 or
+                   RoleTypeId.Scp939 or RoleTypeId.Scp3114;
         }
 
         public static void RegisterPlayer(Player player)
         {
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             player.AddLayer("PlayerManager");
         }
 
 
 
-        public static HashSet<Player> Scp = new HashSet<Player>();
+        public static HashSet<Player> Scp = new();
         public static Hint shower;
-        static CoroutineHandle refresher;
-        static void WaitingForPlayers()
+        private static CoroutineHandle refresher;
+        private static void WaitingForPlayers()
         {
             UpdateTip();
             Scp.Clear();
             if (refresher.IsRunning)
             {
-                Timing.KillCoroutines(refresher);
+                _ = Timing.KillCoroutines(refresher);
             }
             refresher = Timing.RunCoroutine(Refresher());
         }
-        static void Died(DiedEventArgs ev)
+        private static void Died(DiedEventArgs ev)
         {
             if (Scp.Contains(ev.Player))
             {
@@ -149,7 +137,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerManagerDisplayKitHUD.ClearCacheForPlayer(ev.Player);
         }
 
-        static void Left(LeftEventArgs ev)
+        private static void Left(LeftEventArgs ev)
         {
             if (Scp.Contains(ev.Player))
             {
@@ -160,14 +148,22 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         private static void AddScp(Player player, RoleTypeId role)
         {
-            if (Scp.Contains(player)) return;
-            Scp.Add(player);
+            if (Scp.Contains(player))
+            {
+                return;
+            }
+
+            _ = Scp.Add(player);
         }
 
         private static void RemoveScp(Player player)
         {
-            if (!Scp.Contains(player)) return;
-            Scp.Remove(player);
+            if (!Scp.Contains(player))
+            {
+                return;
+            }
+
+            _ = Scp.Remove(player);
         }
         public static IEnumerator<float> Refresher()
         {
@@ -178,7 +174,13 @@ namespace NS_site27_api.Modules.PlayerManagement
                     if (Scp914q.Count != 0)
                     {
                         int max = 6;
-                        if (Scp914q.Count > max) { while (Scp914q.Count > max) Scp914q.Dequeue(); }
+                        if (Scp914q.Count > max)
+                        {
+                            while (Scp914q.Count > max)
+                            {
+                                _ = Scp914q.Dequeue();
+                            }
+                        }
 
                         string t = "";
                         while (Scp914q.TryDequeue(out var k))
@@ -223,7 +225,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.IsAllowed && ev.Lift != null && ev.Player != null && ev.Lift.Status == Interactables.Interobjects.ElevatorChamber.ElevatorSequence.Ready)
             {
-                ElevatorInteractions.RemoveAll(x => x.Interactor == ev.Player && (Time.time - x.InteractTime) < 0.3f);
+                _ = ElevatorInteractions.RemoveAll(x => x.Interactor == ev.Player && (Time.time - x.InteractTime) < 0.3f);
                 ElevatorInteractions.Add(new ElevatorInteractInfo { InteractAt = ev.Player.Position, Interactor = ev.Player, InteractTime = Time.time });
             }
         }

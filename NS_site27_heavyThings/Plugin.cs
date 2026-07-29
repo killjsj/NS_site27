@@ -1,20 +1,16 @@
-using NS_site27_api.Core.UI;
 using CommandSystem;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Core.UserSettings;
 using Exiled.CustomItems.API.Features;
+using Exiled.CustomRoles.API.Features;
 using HarmonyLib;
 using NS_site27_heavy.Core;
 using NS_site27_heavy.heavy.SpecialWaveManager;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Player = Exiled.API.Features.Player;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
 using ServerHandlers = Exiled.Events.Handlers.Server;
-using Exiled.CustomRoles.API.Features;
 
 
 namespace NS_site27_heavy
@@ -38,12 +34,12 @@ namespace NS_site27_heavy
             HeavyCorePlugin.Harmony.PatchAll();
 
             DiscoverAndLoadModules();
-            CustomRole.RegisterRoles(false);
+            _ = CustomRole.RegisterRoles(false);
 
             ServerHandlers.WaitingForPlayers += OnWaitingForPlayers;
             ServerHandlers.RestartingRound += OnRestartingRound;
             PlayerHandlers.Left += OnPlayerLeft;
-            CustomItem.RegisterItems();
+            _ = CustomItem.RegisterItems();
 
             Log.Info($"NS_site27 heavy plugin enabled with {HeavyCorePlugin.Modules.Count} modules.");
             base.OnEnabled();
@@ -79,7 +75,11 @@ namespace NS_site27_heavy
             {
                 try
                 {
-                    if (!module.IsEnabled) continue;
+                    if (!module.IsEnabled)
+                    {
+                        continue;
+                    }
+
                     module.OnDisable();
                     module.OnEnable();
                 }
@@ -100,11 +100,15 @@ namespace NS_site27_heavy
                 try
                 {
 
-                        var obj = (IModule)Activator.CreateInstance(type);
-                        if (!obj.IsEnabled) continue;
-                        obj.OnEnable();
-                        HeavyCorePlugin.Modules.Add(obj);
-                    
+                    var obj = (IModule)Activator.CreateInstance(type);
+                    if (!obj.IsEnabled)
+                    {
+                        continue;
+                    }
+
+                    obj.OnEnable();
+                    HeavyCorePlugin.Modules.Add(obj);
+
                     Log.Info($"Module '{obj.ModuleName}' loaded.");
                 }
                 catch (Exception ex)
@@ -126,7 +130,6 @@ namespace NS_site27_heavy
 
         private void OnPlayerLeft(Exiled.Events.EventArgs.Player.LeftEventArgs ev)
         {
-            ev.Player.CleanupPlayer();
         }
     }
 

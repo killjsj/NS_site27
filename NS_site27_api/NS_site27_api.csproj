@@ -272,12 +272,15 @@
     <Compile Include="Modules\Admin\AdminAssignModule.cs" />
     <Compile Include="Modules\badge\BadgeAssignModule.cs" />
     <Compile Include="Modules\BanSystem\BanVeriferAndRAQuery.cs" />
+    <Compile Include="Modules\Chat\ChatLayer.cs" />
     <Compile Include="Modules\CustomRolePlus\CustomRolePlus.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\CommandProcessorPatch.cs" />
     <Compile Include="Modules\HarmonyPatches\Patches\RefHubPatch.cs" />
     <Compile Include="Modules\ItemCleaner\ItemCleanerModule.cs" />
     <Compile Include="Modules\LobbyMusic\NeteaseMusicAPI.cs" />
+    <Compile Include="Modules\Lobby\LobbyLayer.cs" />
     <Compile Include="Modules\Lobby\LobbyModule.cs" />
+    <Compile Include="Modules\LobbyMusic\lyDisplay.cs" />
     <Compile Include="Modules\MessageModule\PlayerMessageLayer.cs" />
     <Compile Include="Modules\PlayerManagement\PlayerManagerDisplayKitHUD.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />

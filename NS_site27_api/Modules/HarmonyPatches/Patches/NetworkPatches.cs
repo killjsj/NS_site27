@@ -55,7 +55,9 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             foreach (var hub in ReferenceHub.AllHubs)
             {
                 if (allowedState == hub.Mode || allowedState2 == hub.Mode || allowedState3 == hub.Mode)
+                {
                     num++;
+                }
             }
             __result = num;
             return false;

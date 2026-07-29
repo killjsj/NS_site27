@@ -3,18 +3,9 @@ using CustomRendering;
 using DrawableLine;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Core.UserSettings;
 using Exiled.API.Features.Doors;
-using Exiled.API.Features.Roles;
-using MEC;
 using NS_site27_api.Modules.Abilities;
 using PlayerRoles.Subroutines;
-using ProjectMER.Features.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Utils.Networking;
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
@@ -30,7 +21,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override int id => 106;
         public override double Time => 120;
         public override float WaitForDoneTime => 7;
-        public static readonly CachedLayerMask HitregMask = new CachedLayerMask(new string[]
+        public static readonly CachedLayerMask HitregMask = new(new string[]
 {
             "Default",
             "Hitbox",
@@ -40,7 +31,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 });
         public override bool OnTrigger()
         {
-            var r = new Ray(player.CameraTransform.position + player.CameraTransform.forward * 0.8f, player.CameraTransform.forward);
+            var r = new Ray(player.CameraTransform.position + (player.CameraTransform.forward * 0.8f), player.CameraTransform.forward);
             if (Physics.Raycast(r, out var raycast, 45, HitregMask.Mask))
             {
                 var o = Room.Get(raycast.point);
@@ -50,12 +41,15 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                     foreach (var item in o.Players)
                     {
                         item.EnableEffect(EffectType.Decontaminating, 7f);
-                        item.EnableEffect<FogControl>(7f);
+                        _ = item.EnableEffect<FogControl>(7f);
 
                         item.GetEffect<FogControl>().SetFogType(FogType.Decontamination);
                     }
                 }
-                else return false;
+                else
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -79,7 +73,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override int id => 104;
         public override double Time => 75;
         public override float WaitForDoneTime => 12;
-        public static readonly CachedLayerMask HitregMask = new CachedLayerMask(new string[]
+        public static readonly CachedLayerMask HitregMask = new(new string[]
 {
             "Default",
             "Hitbox",
@@ -89,26 +83,26 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 });
         public override bool OnTrigger()
         {
-            var r = new Ray(player.CameraTransform.position + player.CameraTransform.forward * 0.8f, player.CameraTransform.forward);
+            var r = new Ray(player.CameraTransform.position + (player.CameraTransform.forward * 0.8f), player.CameraTransform.forward);
             if (Physics.Raycast(r, out var raycast, 45, HitregMask.Mask))
             {
                 var o = Room.Get(raycast.point);
                 if (o && o.Type != RoomType.Surface)
                 {
                     o.Blackout(12);
-            return true;
+                    return true;
                 }
                 else
                 {
-                    var d = Door.GetClosest(raycast.point,out float distance);
+                    var d = Door.GetClosest(raycast.point, out float distance);
                     if (d != null && distance <= 3f)
                     {
-                        d.Lock(12f,DoorLockType.Regular079);
-            return true;
+                        d.Lock(12f, DoorLockType.Regular079);
+                        return true;
                     }
                 }
             }
-                return false;
+            return false;
         }
         internal DebuggersAbility2(Player player) : base(player)
         {
@@ -130,7 +124,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public override int id => 102;
         public override double Time => 3;
-        public static readonly CachedLayerMask HitregMask = new CachedLayerMask(new string[]
+        public static readonly CachedLayerMask HitregMask = new(new string[]
 {
             "Default",
             "Hitbox",
@@ -141,7 +135,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public override bool OnTrigger()
         {
-            var r = new Ray(player.CameraTransform.position + player.CameraTransform.forward * 0.8f, player.CameraTransform.forward);
+            var r = new Ray(player.CameraTransform.position + (player.CameraTransform.forward * 0.8f), player.CameraTransform.forward);
             if (Physics.Raycast(r, out var raycast, 45, HitregMask.Mask))
             {
                 if (raycast.collider.TryGetComponent<IDestructible>(out var destructible))
@@ -154,22 +148,19 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                         {
                             return false;
                         }
-                        var position = p.Position;
-                        p.Position = player.Position;
-                        player.Position = position;
-
+                        (player.Position, p.Position) = (p.Position, player.Position);
                         return true;
                     }
                     else
                     {
-                        player.Position = raycast.point + raycast.normal * 0.3f;
+                        player.Position = raycast.point + (raycast.normal * 0.3f);
                         return true;
                     }
 
                 }
                 else
                 {
-                    player.Position = raycast.point + raycast.normal * 0.3f;
+                    player.Position = raycast.point + (raycast.normal * 0.3f);
                     return true;
                 }
             }
@@ -220,7 +211,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                     {
                         if (HitboxIdentity.IsEnemy(player.ReferenceHub, p.ReferenceHub))
                         {
-                            new DrawableLineMessage(0.7f, Color.red * new Color(1, 1, 1, 1-(Vector3.Distance(player.Position, p.Position) / 150 )+ 0.01f), new Vector3[2] { p.CameraTransform.position + 0.2f * Vector3.down, player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
+                            new DrawableLineMessage(0.7f, Color.red * new Color(1, 1, 1, 1 - (Vector3.Distance(player.Position, p.Position) / 150) + 0.01f), new Vector3[2] { p.CameraTransform.position + (0.2f * Vector3.down), player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
                         }
                     }
                 }
@@ -296,7 +287,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                 {
                     //if (HitboxIdentity.IsEnemy(player.ReferenceHub, p.ReferenceHub))
                     {
-                        new DrawableLineMessage(0.5f, Color.yellow * new Color(1, 1, 1, 1 - (Vector3.Distance(player.Position, p.Position) / 150) + 0.01f), new Vector3[2] { p.CameraTransform.position + 0.2f * Vector3.down, player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
+                        new DrawableLineMessage(0.5f, Color.yellow * new Color(1, 1, 1, 1 - (Vector3.Distance(player.Position, p.Position) / 150) + 0.01f), new Vector3[2] { p.CameraTransform.position + (0.2f * Vector3.down), player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
                     }
                 }
             }

@@ -1,20 +1,18 @@
-using Exiled.API.Features;
+using Exiled.API.Features.Items;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Scp914;
+using Interactables.Interobjects.DoorUtils;
+using InventorySystem;
 using InventorySystem.Items.Keycards;
 using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using Exiled.API.Features.Items;
 using Player = Exiled.API.Features.Player;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
 using Scp914Handlers = Exiled.Events.Handlers.Scp914;
-using InventorySystem;
-using Interactables.Interobjects.DoorUtils;
 namespace NS_site27_api.Modules._Keycard
 {
     public class KeycardConfig : ModuleConfigBase
@@ -29,13 +27,13 @@ namespace NS_site27_api.Modules._Keycard
 
 
         internal Dictionary<string, List<(bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll)>> _cachedCards
-            = new Dictionary<string, List<(bool, string, string, string, string, string, string, int?, bool)>>();
+            = new();
 
-        internal Dictionary<ushort, ItemType> _cachedCardTypes = new Dictionary<ushort, ItemType>();
+        internal Dictionary<ushort, ItemType> _cachedCardTypes = new();
 
         public override void OnEnable()
         {
-            
+
 
             PlayerHandlers.Verified += OnVerified;
             PlayerHandlers.ChangedItem += OnChangedItem;
@@ -64,20 +62,32 @@ namespace NS_site27_api.Modules._Keycard
         private void OnChangedItem(ChangedItemEventArgs ev)
         {
             if (ev.Item == null || !ev.Item.IsKeycard || _cachedCardTypes.ContainsKey(ev.Item.Serial))
+            {
                 return;
+            }
 
             if (!_cachedCards.TryGetValue(ev.Player.UserId, out var cards))
+            {
                 return;
+            }
 
-            var keycard = ev.Item as Keycard;
-            if (keycard == null) return;
+            if (ev.Item is not Keycard keycard)
+            {
+                return;
+            }
 
             foreach (var card in cards)
             {
-                if (!card.enable) continue;
+                if (!card.enable)
+                {
+                    continue;
+                }
 
                 string targetCard = ResolveTargetCard(card.applyToAll, card.card, keycard);
-                if (string.IsNullOrEmpty(targetCard)) continue;
+                if (string.IsNullOrEmpty(targetCard))
+                {
+                    continue;
+                }
 
                 if (card.applyToAll || targetCard == card.card)
                 {
@@ -89,33 +99,42 @@ namespace NS_site27_api.Modules._Keycard
 
         private string ResolveTargetCard(bool applyToAll, string card, Keycard keycard)
         {
-            if (applyToAll) return card;
-
-            return keycard.Identifier.TypeId switch
-            {
-                ItemType.KeycardJanitor => "KeycardCustomSite02",
-                ItemType.KeycardContainmentEngineer => "KeycardCustomSite02",
-                ItemType.KeycardScientist => "KeycardCustomSite02",
-                ItemType.KeycardResearchCoordinator => "KeycardCustomSite02",
-                ItemType.KeycardGuard => "KeycardCustomMetalCase",
-                ItemType.KeycardMTFCaptain => "KeycardCustomTaskForce",
-                ItemType.KeycardMTFPrivate => "KeycardCustomTaskForce",
-                ItemType.KeycardMTFOperative => "KeycardCustomTaskForce",
-                ItemType.KeycardFacilityManager => "KeycardCustomManagement",
-                ItemType.KeycardZoneManager => "KeycardCustomManagement",
-                ItemType.KeycardO5 => "KeycardCustomManagement",
-                _ => null,
-            };
+            return applyToAll
+                ? card
+                : keycard.Identifier.TypeId switch
+                {
+                    ItemType.KeycardJanitor => "KeycardCustomSite02",
+                    ItemType.KeycardContainmentEngineer => "KeycardCustomSite02",
+                    ItemType.KeycardScientist => "KeycardCustomSite02",
+                    ItemType.KeycardResearchCoordinator => "KeycardCustomSite02",
+                    ItemType.KeycardGuard => "KeycardCustomMetalCase",
+                    ItemType.KeycardMTFCaptain => "KeycardCustomTaskForce",
+                    ItemType.KeycardMTFPrivate => "KeycardCustomTaskForce",
+                    ItemType.KeycardMTFOperative => "KeycardCustomTaskForce",
+                    ItemType.KeycardFacilityManager => "KeycardCustomManagement",
+                    ItemType.KeycardZoneManager => "KeycardCustomManagement",
+                    ItemType.KeycardO5 => "KeycardCustomManagement",
+                    _ => null,
+                };
         }
 
         private void ApplyCustomKeycard(Keycard keycard, Player player, (bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll) card, string targetCard)
         {
-            if (!Enum.TryParse<ItemType>(targetCard, out var targetType)) return;
-            if (!targetType.TryGetTemplate(out KeycardItem template) || !template.Customizable) return;
+            if (!Enum.TryParse<ItemType>(targetCard, out var targetType))
+            {
+                return;
+            }
 
-            Color color;
-            ColorUtility.TryParseHtmlString(card.color, out color);
-            if (color == default) color = Color.cyan;
+            if (!targetType.TryGetTemplate(out KeycardItem template) || !template.Customizable)
+            {
+                return;
+            }
+
+            _ = ColorUtility.TryParseHtmlString(card.color, out Color color);
+            if (color == default)
+            {
+                color = Color.cyan;
+            }
 
             string displayText = card.text?.Replace(" ", "_") ?? "Default_Text";
             string holderName = card.holder?.Replace(" ", "_") ?? "Unknown_Holder";
@@ -140,7 +159,7 @@ namespace NS_site27_api.Modules._Keycard
                             serialDetail.SetArguments(new ArraySegment<object>(new object[] { holderName }));
                             break;
                         case CustomWearDetail wearDetail:
-                            wearDetail.SetArguments(new ArraySegment<object>(new object[] { (byte)(card.rank.GetValueOrDefault(2)) }));
+                            wearDetail.SetArguments(new ArraySegment<object>(new object[] { (byte)card.rank.GetValueOrDefault(2) }));
                             break;
                         case CustomTintDetail tintDetail:
                             tintDetail.SetArguments(new ArraySegment<object>(new object[] { color }));
@@ -157,17 +176,17 @@ namespace NS_site27_api.Modules._Keycard
                 }
             }
 
-            Timing.CallDelayed(0.1f, () =>
+            _ = Timing.CallDelayed(0.1f, () =>
             {
                 var origType = keycard.Identifier.TypeId;
-                player.RemoveItem(keycard);
-                player.AddItem(targetType);
+                _ = player.RemoveItem(keycard);
+                _ = player.AddItem(targetType);
                 var current = player.CurrentItem;
                 if (current != null)
                 {
                     _cachedCardTypes[current.Serial] = origType;
                 }
-                
+
             });
         }
 

@@ -1,13 +1,9 @@
 ﻿using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
-using Exiled.Permissions.Features;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NS_site27_api.Modules.Admin
 {
@@ -19,7 +15,7 @@ namespace NS_site27_api.Modules.Admin
     {
         public static MySQLConnect sql => Plugin.Instance?.connect;
         public override string ModuleName => "AdminAssignModule";
-        public static Dictionary<Player,UserGroup> CachedGroups = new();
+        public static Dictionary<Player, UserGroup> CachedGroups = new();
         public override void OnDisable()
         {
             Exiled.Events.Handlers.Player.Verified -= Player_Verified;
@@ -34,7 +30,11 @@ namespace NS_site27_api.Modules.Admin
         {
             try
             {
-                if (sql == null) return;
+                if (sql == null)
+                {
+                    return;
+                }
+
                 var PA = await sql.QueryAdminAsync(userid: ev.Player.UserId);
                 (string player_name, string port, string permissions, DateTime expiration_date, bool is_permanent, string notes)? target = null;
                 if (PA != null)

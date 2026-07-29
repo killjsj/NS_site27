@@ -5,10 +5,6 @@ using NS_site27_api.Modules.MySQL;
 using NS_site27_api.Modules.PlayerManagement;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace NS_site27_api.Modules.Badge
 {
@@ -35,21 +31,25 @@ namespace NS_site27_api.Modules.Badge
         {
             try
             {
-                if (sql == null) return;
+                if (sql == null)
+                {
+                    return;
+                }
+
                 var PB = await sql.QueryBadgeAsync(userid: ev.Player.UserId);
                 if (PB != null)
                 {
                     if (PB.Count > 0)
                     {
- 
-                        foreach (var item in PB)
+
+                        foreach (var (player_name, badge, color, expiration_date, is_permanent, notes) in PB)
                         {
-                            if (item.is_permanent || item.expiration_date <= DateTime.Now)
+                            if (is_permanent || expiration_date <= DateTime.Now)
                             {
-                                var text = item.badge;
-                                List<string> colors = new List<string>();
-                                item.color.Split(',').ForEach(c => colors.Add(c));
-                                PlayerStateManager.badges[ev.Player.UserId] = (item.player_name, text, colors, item.expiration_date, item.is_permanent, item.notes);
+                                var text = badge;
+                                List<string> colors = new();
+                                color.Split(',').ForEach(colors.Add);
+                                PlayerStateManager.badges[ev.Player.UserId] = (player_name, text, colors, expiration_date, is_permanent, notes);
                                 break;
                             }
                         }

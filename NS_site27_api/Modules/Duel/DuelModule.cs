@@ -3,14 +3,12 @@ using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using MEC;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
-using RemoteAdmin;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using UnityEngine;
 using Utils;
 using Player = Exiled.API.Features.Player;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
@@ -39,15 +37,18 @@ namespace NS_site27_api.Modules.Duel
     {
         public static CurrentBattle ActiveBattle;
         public static bool IsBattling, TempFlag;
-        public static List<BattleReq> BattleReqs = new List<BattleReq>();
-        public static List<BattleReq> WaitingBattleReqs = new List<BattleReq>();
-        public static Dictionary<string, string> PlayerBadges = new Dictionary<string, string>();
-        public static List<CoroutineHandle> BadgeCoroutines = new List<CoroutineHandle>();
-        public static List<CoroutineHandle> BattleCoroutines = new List<CoroutineHandle>();
+        public static List<BattleReq> BattleReqs = new();
+        public static List<BattleReq> WaitingBattleReqs = new();
+        public static Dictionary<string, string> PlayerBadges = new();
+        public static List<CoroutineHandle> BadgeCoroutines = new();
+        public static List<CoroutineHandle> BattleCoroutines = new();
 
         private const string REQUEST_KEY = "FlightRequest";
 
-        private static void Bc(Player p, string msg, ushort dur) => p?.Broadcast(new Exiled.API.Features.Broadcast(msg, dur, true, default), true);
+        private static void Bc(Player p, string msg, ushort dur)
+        {
+            p.AddHint("DuelModule", dur, x => new MsgUpdateResult() { Content = msg, Title = "决斗", NoticeCircleColor = Color.green });
+        }
 
         public static IEnumerator<float> BattleLoop()
         {
@@ -75,9 +76,17 @@ namespace NS_site27_api.Modules.Duel
 
         public static void Cleanup()
         {
-            foreach (var h in BadgeCoroutines) Timing.KillCoroutines(h);
+            foreach (var h in BadgeCoroutines)
+            {
+                _ = Timing.KillCoroutines(h);
+            }
+
             BadgeCoroutines.Clear();
-            foreach (var h in BattleCoroutines) Timing.KillCoroutines(h);
+            foreach (var h in BattleCoroutines)
+            {
+                _ = Timing.KillCoroutines(h);
+            }
+
             BattleCoroutines.Clear();
             BattleReqs.Clear(); WaitingBattleReqs.Clear();
             ActiveBattle = new CurrentBattle(); PlayerBadges.Clear();
@@ -112,7 +121,7 @@ namespace NS_site27_api.Modules.Duel
         {
             from.Role.Set(RoleTypeId.Tutorial);
             to.Role.Set(RoleTypeId.Tutorial);
-            Timing.CallDelayed(0.1f, () =>
+            _ = Timing.CallDelayed(0.1f, () =>
             {
                 IsBattling = true;
                 int hp = type == BattleType.Gun ? 500 : 300;
@@ -121,10 +130,10 @@ namespace NS_site27_api.Modules.Duel
                 to.SetFriendlyFire(RoleTypeId.Tutorial, 1);
                 switch (type)
                 {
-                    case BattleType.JailBird: for (int i = 0; i < 3; i++) { from.AddItem(ItemType.Jailbird); to.AddItem(ItemType.Jailbird); } break;
-                    case BattleType.Gun: from.AddItem(ItemType.GunE11SR); from.AddItem(ItemType.Ammo556x45); from.AddItem(ItemType.Ammo556x45); from.AddItem(ItemType.Ammo556x45); to.AddItem(ItemType.GunE11SR); to.AddItem(ItemType.Ammo556x45); to.AddItem(ItemType.Ammo556x45); to.AddItem(ItemType.Ammo556x45); break;
+                    case BattleType.JailBird: for (int i = 0; i < 3; i++) { _ = from.AddItem(ItemType.Jailbird); _ = to.AddItem(ItemType.Jailbird); } break;
+                    case BattleType.Gun: _ = from.AddItem(ItemType.GunE11SR); _ = from.AddItem(ItemType.Ammo556x45); _ = from.AddItem(ItemType.Ammo556x45); _ = from.AddItem(ItemType.Ammo556x45); _ = to.AddItem(ItemType.GunE11SR); _ = to.AddItem(ItemType.Ammo556x45); _ = to.AddItem(ItemType.Ammo556x45); _ = to.AddItem(ItemType.Ammo556x45); break;
                 }
-                from.AddItem(ItemType.Medkit); to.AddItem(ItemType.Medkit);
+                _ = from.AddItem(ItemType.Medkit); _ = to.AddItem(ItemType.Medkit);
             });
         }
 
@@ -139,19 +148,22 @@ namespace NS_site27_api.Modules.Duel
             ActiveBattle = new CurrentBattle(); IsBattling = TempFlag = false;
             try { winner.ClearItems(); loser.ClearItems(); } catch { }
             try { winner.Role.Set(RoleTypeId.Spectator); loser.Role.Set(RoleTypeId.Spectator); } catch { }
-            try { winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); loser.TryRemoveFriendlyFire(RoleTypeId.Tutorial); } catch { }
+            try { _ = winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); _ = loser.TryRemoveFriendlyFire(RoleTypeId.Tutorial); } catch { }
             BadgeCoroutines.Add(Timing.RunCoroutine(BadgeShowLoop(loser)));
         }
 
         public static string DuelBadgeGen(Player winner, bool html = true)
         {
-            if (winner == null) return "猫娘喵";
-            return html ? $"<color=yellow>我是{winner.Nickname}的猫娘喵</color>" : $"我是{winner.Nickname}的猫娘喵";
+            return winner == null ? "猫娘喵" : html ? $"<color=yellow>我是{winner.Nickname}的猫娘喵</color>" : $"我是{winner.Nickname}的猫娘喵";
         }
 
         public static IEnumerator<float> BadgeShowLoop(Player player)
         {
-            if (player == null) yield break;
+            if (player == null)
+            {
+                yield break;
+            }
+
             if (PlayerBadges.TryGetValue(player.UserId, out string badgeText))
             {
                 try { player.ReferenceHub.serverRoles.SetText(badgeText); player.ReferenceHub.serverRoles.Network_myText = badgeText; player.ReferenceHub.serverRoles.SetColor("yellow"); player.ReferenceHub.serverRoles.Network_myColor = "yellow"; } catch { }
@@ -176,7 +188,11 @@ namespace NS_site27_api.Modules.Duel
 
         public static void OnDied(DyingEventArgs ev)
         {
-            if (!IsBattling || ev.Player == null || ev.Attacker == null) return;
+            if (!IsBattling || ev.Player == null || ev.Attacker == null)
+            {
+                return;
+            }
+
             if (ev.Player == ActiveBattle.From || ev.Player == ActiveBattle.To)
             {
                 Player winner = ev.Attacker, loser = ev.Player;
@@ -187,7 +203,11 @@ namespace NS_site27_api.Modules.Duel
 
         public static void OnLeft(LeftEventArgs ev)
         {
-            if (!IsBattling || ev.Player == null) return;
+            if (!IsBattling || ev.Player == null)
+            {
+                return;
+            }
+
             if (ev.Player == ActiveBattle.From || ev.Player == ActiveBattle.To)
             {
                 Player loser = ev.Player, winner = loser == ActiveBattle.From ? ActiveBattle.To : ActiveBattle.From;
@@ -196,20 +216,24 @@ namespace NS_site27_api.Modules.Duel
                 Bc(winner, $"<size=27>赢了{loser.DisplayNickname}!对方将获得称号{badge}</size>", 10);
                 PlayerBadges[loser.UserId] = DuelBadgeGen(winner, false);
                 ActiveBattle = new CurrentBattle(); IsBattling = TempFlag = false;
-                try { winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); winner.Role.Set(RoleTypeId.Spectator); } catch { }
+                try { _ = winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); winner.Role.Set(RoleTypeId.Spectator); } catch { }
             }
         }
 
         public static void OnChangingRole(ChangingRoleEventArgs ev)
         {
-            if (!IsBattling || ev.Player == null) return;
+            if (!IsBattling || ev.Player == null)
+            {
+                return;
+            }
+
             if (ev.Player == ActiveBattle.From || ev.Player == ActiveBattle.To)
             {
                 Player loser = ev.Player, winner = loser == ActiveBattle.From ? ActiveBattle.To : ActiveBattle.From;
                 Bc(winner, $"<size=27>{loser.DisplayNickname}切换角色,决斗取消</size>", 5);
                 Bc(loser, "<size=27>你切换了角色,决斗取消</size>", 5);
                 ActiveBattle = new CurrentBattle(); IsBattling = TempFlag = false;
-                try { winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); loser.TryRemoveFriendlyFire(RoleTypeId.Tutorial); } catch { }
+                try { _ = winner.TryRemoveFriendlyFire(RoleTypeId.Tutorial); _ = loser.TryRemoveFriendlyFire(RoleTypeId.Tutorial); } catch { }
                 try { winner.Role.Set(RoleTypeId.Spectator); loser.Role.Set(RoleTypeId.Spectator); } catch { }
             }
         }
@@ -217,7 +241,9 @@ namespace NS_site27_api.Modules.Duel
         public static void OnVerify(VerifiedEventArgs ev)
         {
             if (ev.Player != null && PlayerBadges.ContainsKey(ev.Player.UserId))
+            {
                 BadgeCoroutines.Add(Timing.RunCoroutine(BadgeShowLoop(ev.Player)));
+            }
         }
     }
 
@@ -226,7 +252,7 @@ namespace NS_site27_api.Modules.Duel
         public override string ModuleName => "Duel";
         public override void OnEnable()
         {
-            
+
             PlayerHandlers.Dying += DuelManager.OnDied;
             PlayerHandlers.Left += DuelManager.OnLeft;
             PlayerHandlers.ChangingRole += DuelManager.OnChangingRole;
@@ -259,17 +285,20 @@ namespace NS_site27_api.Modules.Duel
             if (DuelManager.PlayerBadges.ContainsKey(player.UserId)) { response = "你已经是猫娘了喵"; return false; }
             if (arguments.Count < 1) { response = "用法: startBattle <目标> [0|1]"; return false; }
 
-            string[] na; var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out na);
+            var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out string[] na);
             if (list == null || list.Count == 0) { response = "目标无效"; return false; }
             var target = Player.Get(list[0]);
             if (target == null || target.IsAlive || target == player || DuelManager.PlayerBadges.ContainsKey(target.UserId)) { response = "目标无效/活着/自己"; return false; }
 
             var bt = BattleType.JailBird;
-            if (arguments.Count > 1 && (arguments.At(1) == "1" || arguments.At(1).ToLower() == "gun")) bt = BattleType.Gun;
+            if (arguments.Count > 1 && (arguments.At(1) == "1" || arguments.At(1).ToLower() == "gun"))
+            {
+                bt = BattleType.Gun;
+            }
 
             //BUG: possible duplicate request
             DuelManager.BattleReqs.Add(new BattleReq { From = player, FromBackup = player.UserId, To = target, ToBackup = target.UserId, Type = bt, stopwatch = Stopwatch.StartNew() });
-            target.AddHint("FlightRequest", 10f,x=>$"<size=27>{player.Nickname}发起决斗!类型:{bt}\n.acceptBattle .refuseBattle</size>");
+            target.AddHint("FlightRequest", 10f, x => new MsgUpdateResult() { Content = $"<size=27>{player.Nickname}发起决斗!类型:{bt}\n.acceptBattle .refuseBattle</size>", Title = "决斗", NoticeCircleColor = Color.green });
             response = $"已发送,类型:{bt}"; return true;
         }
     }
@@ -285,10 +314,13 @@ namespace NS_site27_api.Modules.Duel
 
             BattleReq found = default; bool ok = false;
             for (int i = 0; i < DuelManager.BattleReqs.Count; i++)
+            {
                 if (DuelManager.BattleReqs[i].To == player || DuelManager.BattleReqs[i].ToBackup == player.UserId) { found = DuelManager.BattleReqs[i]; ok = true; break; }
+            }
+
             if (!ok) { response = "无人找你决斗"; return false; }
-            if (player.IsAlive) { response = "你还活着"; DuelManager.BattleReqs.Remove(found); return false; }
-            DuelManager.BattleReqs.Remove(found); DuelManager.WaitingBattleReqs.Add(found);
+            if (player.IsAlive) { response = "你还活着"; _ = DuelManager.BattleReqs.Remove(found); return false; }
+            _ = DuelManager.BattleReqs.Remove(found); DuelManager.WaitingBattleReqs.Add(found);
             response = "成功"; return true;
         }
     }
@@ -307,10 +339,10 @@ namespace NS_site27_api.Modules.Duel
                 {
                     var from = DuelManager.BattleReqs[i].From;
                     from?.RemoveHint("FlightRequest");
-                    from?.Broadcast(new Exiled.API.Features.Broadcast($"<size=27>{player.DisplayNickname}拒绝了你的决斗</size>", 3, true, default), true);
+                    from?.AddHint("FlightRequest", 3f, x => new MsgUpdateResult() { Content = $"<size=27>{player.DisplayNickname}拒绝了你的决斗</size>", Title = "决斗", NoticeCircleColor = Color.green });
                 }
             }
-            DuelManager.BattleReqs.RemoveAll(x => x.To == player || x.ToBackup == player.UserId);
+            _ = DuelManager.BattleReqs.RemoveAll(x => x.To == player || x.ToBackup == player.UserId);
             response = "成功"; return true;
         }
     }
@@ -323,13 +355,18 @@ namespace NS_site27_api.Modules.Duel
         {
             var player = Player.Get(sender);
             if (player == null || player.KickPower < 4) { response = "权限不足"; return false; }
-            string[] na; var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out na);
+
+            var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out _);
             if (list == null || list.Count == 0) { response = "目标无效"; return false; }
             var target = Player.Get(list[0]);
             if (target == null || target.IsAlive || target == player) { response = "目标无效"; return false; }
 
             var bt = BattleType.JailBird;
-            if (arguments.Count > 1 && arguments.At(1) == "1") bt = BattleType.Gun;
+            if (arguments.Count > 1 && arguments.At(1) == "1")
+            {
+                bt = BattleType.Gun;
+            }
+
             DuelManager.WaitingBattleReqs.Add(new BattleReq { From = player, To = target, ToBackup = target.UserId, Type = bt, stopwatch = Stopwatch.StartNew() });
             response = "成功"; return true;
         }

@@ -1,17 +1,10 @@
-using Exiled.API.Features;
+using Exiled.API.Features.Pickups;
 using Exiled.Events.EventArgs.Player;
-using Exiled.API.Features.Items;
-using MEC;
+using Exiled.Events.EventArgs.Scp914;
 using NS_site27_heavy.Core;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using Player = Exiled.API.Features.Player;
-using PlayerHandlers = Exiled.Events.Handlers.Player;
-using Scp914Handlers = Exiled.Events.Handlers.Scp914;
 using Item = Exiled.API.Features.Items.Item;
-using Exiled.API.Features.Pickups;
-using Exiled.Events.EventArgs.Scp914;
 
 namespace NS_site27_heavy.Modules.Weapons.BombGun
 {
@@ -24,12 +17,12 @@ namespace NS_site27_heavy.Modules.Weapons.BombGun
     public class BombGunModule : ModuleBase<BombGunConfig>
     {
         public override string ModuleName => "BombGun";
-        public static HashSet<ushort> BombGunSerials = new HashSet<ushort>();
+        public static HashSet<ushort> BombGunSerials = new();
         public static int ActiveGrenades = 0;
-        public static BombGunModule Ins { get; private set;  }
-        public static int MaxActiveGrenades => Ins?.Config.MaxBombs + 200 ?? 300;
+        public static BombGunModule Ins { get; private set; }
+        public static int MaxActiveGrenades => (Ins?.Config.MaxBombs + 200) ?? 300;
 
-        public BombHandle Handler = new BombHandle();
+        public BombHandle Handler = new();
 
         public override void OnEnable()
         {
@@ -57,14 +50,16 @@ namespace NS_site27_heavy.Modules.Weapons.BombGun
             var gun = ev.Firearm;
 
             if (!BombGunModule.BombGunSerials.Contains(gun.Serial))
+            {
                 return;
+            }
 
             if (BombGunModule.ActiveGrenades >= BombGunModule.MaxActiveGrenades)
             {
                 return;
             }
 
-            var pos = player.CameraTransform.position + player.CameraTransform.forward * UnityEngine.Random.value;
+            var pos = player.CameraTransform.position + (player.CameraTransform.forward * UnityEngine.Random.value);
             var grenade = Item.Create(ItemType.GrenadeHE);
             var pickup = grenade.CreatePickup(pos, Quaternion.identity, true) as GrenadePickup;
 
@@ -78,25 +73,33 @@ namespace NS_site27_heavy.Modules.Weapons.BombGun
         public void OnUpgradingPickup(UpgradingPickupEventArgs ev)
         {
             if (ev.Pickup != null && BombGunModule.BombGunSerials.Contains(ev.Pickup.Serial))
+            {
                 ev.IsAllowed = false;
+            }
         }
 
         public void OnUpgradingInventoryItem(UpgradingInventoryItemEventArgs ev)
         {
             if (ev.Item != null && BombGunModule.BombGunSerials.Contains(ev.Item.Serial))
+            {
                 ev.IsAllowed = false;
+            }
         }
 
         public static void RegisterGun(Item gun)
         {
             if (!BombGunModule.BombGunSerials.Contains(gun.Serial))
-                BombGunModule.BombGunSerials.Add(gun.Serial);
+            {
+                _ = BombGunModule.BombGunSerials.Add(gun.Serial);
+            }
         }
 
         public static void RegisterGun(Pickup gun)
         {
             if (!BombGunModule.BombGunSerials.Contains(gun.Serial))
-                BombGunModule.BombGunSerials.Add(gun.Serial);
+            {
+                _ = BombGunModule.BombGunSerials.Add(gun.Serial);
+            }
         }
     }
 }

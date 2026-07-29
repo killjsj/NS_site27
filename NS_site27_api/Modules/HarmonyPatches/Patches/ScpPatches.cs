@@ -2,19 +2,14 @@ using Exiled.API.Features;
 using HarmonyLib;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
-using PlayerRoles.FirstPersonControl.NetworkMessages;
-using PlayerRoles.PlayableScps.Scp079;
-using PlayerRoles.Visibility;
-using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 
 namespace NS_site27_api.Modules.HarmonyPatches.Patches
 {
     [HarmonyPatch(typeof(FpcStateProcessor))]
     public static class FpcStateProcessorPatch
     {
-        static PropertyInfo hubField = typeof(FpcStateProcessor).GetProperty("Hub", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly PropertyInfo hubField = typeof(FpcStateProcessor).GetProperty("Hub", BindingFlags.NonPublic | BindingFlags.Instance);
         [HarmonyPatch("get_ServerUseRate")]
         [HarmonyPrefix]
         public static bool Prefix(FpcStateProcessor __instance, ref float __result)
@@ -24,8 +19,10 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             if (hub != null)
             {
                 var role = hub.roleManager.CurrentRole.RoleTypeId;
-                if (role == RoleTypeId.Scp939 || role == RoleTypeId.Scp106)
+                if (role is RoleTypeId.Scp939 or RoleTypeId.Scp106)
+                {
                     return true;
+                }
             }
 
             __result = 0;

@@ -1,15 +1,6 @@
-﻿using DisplayKit;
-using DisplayKit.Elements;
-using DisplayKit.Enums;
+﻿using DisplayKit.Elements;
 using Exiled.API.Features;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UIElements;
-using UIRotate = UnityEngine.UIElements.Rotate;
 namespace NS_site27_api.Core.UI.DisplayKit
 {
     public abstract class DisplayLayer : IModule
@@ -25,7 +16,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
         {
             canvas.SetVisibility(vis);
         }
-        public virtual TimeSpan updateTime { get => TimeSpan.FromSeconds(0.2f); }
+        public virtual TimeSpan updateTime => TimeSpan.FromSeconds(0.2f);
 
         // overrides
         public virtual void OnEnable()
@@ -35,7 +26,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
 
         public virtual void OnDisable()
         {
-            DisplayKitRunner.Instance.UnregisterLayer(this);
+            _ = DisplayKitRunner.Instance.UnregisterLayer(this);
 
         }
 

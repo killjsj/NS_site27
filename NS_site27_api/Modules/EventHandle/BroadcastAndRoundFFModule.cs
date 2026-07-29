@@ -1,13 +1,6 @@
 using Exiled.API.Features;
-using Exiled.Events.EventArgs.Player;
-using Exiled.Events.EventArgs.Server;
-using MEC;
 using NS_site27_api.Core;
-using NS_site27_api.Modules.Abilities;
 using NS_site27_api.Modules.EventHandle.Handlers;
-using NS_site27_api.Modules.MySQL;
-using PlayerRoles;
-using System;
 using System.Collections.Generic;
 
 namespace NS_site27_api.Modules.EventHandle
@@ -28,10 +21,10 @@ namespace NS_site27_api.Modules.EventHandle
         public override string ModuleName => "BroadcastAndRoundFF";
 
         public Dictionary<string, List<(bool enable, string card, string text, string holder, string color, string permColor, string displayName, int? rank, bool applyToAll)>> CachedCards
-            = new Dictionary<string, List<(bool, string, string, string, string, string, string, int?, bool)>>();
+            = new();
 
-        public Dictionary<ushort, ItemType> CachedCardTypes = new Dictionary<ushort, ItemType>();
-        public List<string> NotTodayScp = new List<string>();
+        public Dictionary<ushort, ItemType> CachedCardTypes = new();
+        public List<string> NotTodayScp = new();
         public IFFManager CurrentFFManager;
         public static ItemCleanerModule Ins { get; private set; }
         public override void OnEnable()

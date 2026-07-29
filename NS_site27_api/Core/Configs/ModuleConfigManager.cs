@@ -11,7 +11,7 @@ namespace NS_site27_api.Core
     {
         [YamlIgnore]
         public string ModuleName { get; set; }
-        [YamlMember(Description="是否启用 reload不重载这个 需要重启服务器")]
+        [YamlMember(Description = "是否启用 reload不重载这个 需要重启服务器")]
         public bool IsEnabled { get; set; } = true;
 
     }
@@ -22,7 +22,7 @@ namespace NS_site27_api.Core
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             //.IgnoreUnmatchedProperties()
             .IncludeNonPublicProperties()
-            
+
             .Build();
 
         private static readonly ISerializer Serializer = new SerializerBuilder()
@@ -30,14 +30,15 @@ namespace NS_site27_api.Core
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults)
             .Build();
 
-        private static readonly Dictionary<string, object> ConfigCache = new Dictionary<string, object>();
+        private static readonly Dictionary<string, object> ConfigCache = new();
         private static string ConfigDir;
 
         public static void Initialize(Plugin plugin)
         {
-            ConfigDir = Path.Combine(Path.GetDirectoryName(plugin.ConfigPath),"ModulesConfig" , Server.Port.ToString());
-            if (!Directory.Exists(ConfigDir)) { 
-                Directory.CreateDirectory(ConfigDir);
+            ConfigDir = Path.Combine(Path.GetDirectoryName(plugin.ConfigPath), "ModulesConfig", Server.Port.ToString());
+            if (!Directory.Exists(ConfigDir))
+            {
+                _ = Directory.CreateDirectory(ConfigDir);
             }
         }
 
@@ -48,7 +49,9 @@ namespace NS_site27_api.Core
         public static T Get<T>(string moduleName) where T : ModuleConfigBase, new()
         {
             if (ConfigCache.TryGetValue(moduleName, out var cached))
+            {
                 return (T)cached;
+            }
 
             var path = Path.Combine(ConfigDir, $"{moduleName}.yml");
 
@@ -73,7 +76,7 @@ namespace NS_site27_api.Core
 
             try
             {
-                Directory.CreateDirectory(ConfigDir);
+                _ = Directory.CreateDirectory(ConfigDir);
                 File.WriteAllText(path, Serializer.Serialize(defaultConfig));
                 Log.Info($"Created default config for module {moduleName} at {path}");
             }

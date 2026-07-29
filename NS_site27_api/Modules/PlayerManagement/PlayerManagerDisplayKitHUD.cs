@@ -1,17 +1,13 @@
 ﻿using DisplayKit;
 using DisplayKit.Elements;
-using DisplayKit.Enums;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Roles;
-using MySqlX.XDevAPI;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Extensions;
-using NS_site27_api.Modules.Chat;
 using NS_site27_api.Modules.Lobby;
-using NS_site27_api.Modules.LobbyMusic;
 using NS_site27_api.Modules.SpawnProtection;
 using PlayerRoles;
 using Respawning;
@@ -33,7 +29,6 @@ namespace NS_site27_api.Modules.PlayerManagement
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
-            //auto gen:
 
             // start define of VisualElement
             DisplayElement VisualElement = canvas.AddElement();
@@ -136,23 +131,6 @@ namespace NS_site27_api.Modules.PlayerManagement
             DisplayText ServerEventToPlayerText = ServerEventToPlayerDisplay.AddText("");
             ServerEventToPlayerText.BaseElement.name = "ServerEventToPlayerText";
 
-            // start define of PlayerCount
-            DisplayElement PlayerCount = VisualElement.AddElement();
-            PlayerCount.BaseElement.name = "PlayerCount";
-            PlayerCount.Position.Position = Position.Absolute;
-            PlayerCount.Position.Left = Length.Percent(40f);
-            PlayerCount.Position.Right = 0f;
-            PlayerCount.Position.Top = Length.Percent(22f);
-            PlayerCount.Size.Height = Length.Percent(5f);
-            PlayerCount.Size.Width = Length.Percent(20f);
-            PlayerCount.Text.FontSize = 27f;
-            PlayerCount.Text.Color = new Color(1f, 0.7529412f, 0f, 1f);
-
-            // start define of PlayerCountText
-            DisplayText PlayerCountText = PlayerCount.AddText("");
-            PlayerCountText.BaseElement.name = "PlayerCountText";
-            PlayerCountText.Text.Color = new Color(0.4666667f, 0f, 1f, 1f);
-
             // start define of levelDisplay
             DisplayElement levelDisplay = VisualElement.AddElement();
             levelDisplay.BaseElement.name = "levelDisplay";
@@ -181,8 +159,8 @@ namespace NS_site27_api.Modules.PlayerManagement
             TeamShowDisplay.Position.Position = Position.Absolute;
             TeamShowDisplay.Size.Height = Length.Percent(29f);
             TeamShowDisplay.Size.Width = Length.Percent(22f);
-            TeamShowDisplay.Position.Right = Length.Percent(0f);
-            TeamShowDisplay.Position.Top = Length.Percent(62f);
+            TeamShowDisplay.Position.Right = Length.Percent(14f);
+            TeamShowDisplay.Position.Top = Length.Percent(64f);
             TeamShowDisplay.Text.FontSize = 26f;
             TeamShowDisplay.Text.OutlineColor = Color.white;
             TeamShowDisplay.Text.Color = new Color(0.02745098f, 0.8039216f, 0.7764706f, 1f);
@@ -224,45 +202,8 @@ namespace NS_site27_api.Modules.PlayerManagement
             AmmoText.Position.Position = Position.Absolute;
             AmmoText.Text.Color = new Color(1f, 0.8588235f, 0f, 1f);
 
-            // start define of chat
-            DisplayElement chat = VisualElement.AddElement();
-            chat.BaseElement.name = "chat";
-            chat.Flex.Grow = 1f;
-            chat.Size.Width = Length.Percent(14.5f);
-            chat.Size.Height = Length.Percent(28f);
-            chat.Position.Position = Position.Absolute;
-            chat.Position.Top = Length.Percent(15f);
 
-            // start define of ChatText
-            DisplayText ChatText = chat.AddText("");
-            ChatText.BaseElement.name = "ChatText";
-            ChatText.Text.Font = FontType.LiberationSans;
-            ChatText.Text.FontSize = 23f;
-            ChatText.Text.Color = new Color(0.03529412f, 0.3176471f, 1f, 1f);
 
-            // start define of LobbySong
-            DisplayElement LobbySong = VisualElement.AddElement();
-            LobbySong.BaseElement.name = "LobbySong";
-            LobbySong.Flex.Grow = 1f;
-            LobbySong.Position.Position = Position.Absolute;
-            LobbySong.Position.Right = Length.Percent(0f);
-            LobbySong.Position.Bottom = Length.Percent(95f);
-            LobbySong.Position.Left = Length.Percent(85f);
-            LobbySong.Position.Top = Length.Percent(0f);
-
-            // start define of Althrougth_it_not_belong_here_but_how_cares
-            DisplayElement Althrougth_it_not_belong_here_but_how_cares = LobbySong.AddElement();
-            Althrougth_it_not_belong_here_but_how_cares.BaseElement.name = "Althrougth_it_not_belong_here_but_how_cares";
-            Althrougth_it_not_belong_here_but_how_cares.Flex.Grow = 1f;
-            Althrougth_it_not_belong_here_but_how_cares.Position.Position = Position.Absolute;
-
-            // start define of lyric
-            DisplayText lyric = LobbySong.AddText("");
-            lyric.BaseElement.name = "lyric";
-            lyric.Text.Color = new Color(0f, 1f, 0.9843137f, 1f);
-            lyric.Position.Position = Position.Relative;
-            lyric.Flex.Direction = FlexDirection.Column;
-            lyric.Align.AlignItems = Align.FlexEnd;
         }
         public enum PlayerManagerUI
         {
@@ -278,8 +219,6 @@ namespace NS_site27_api.Modules.PlayerManagement
             GroupText,
             ServerEventToPlayerDisplay,
             ServerEventToPlayerText,
-            PlayerCount,
-            PlayerCountText,
             levelDisplay,
             LevelText,
             alive,
@@ -288,13 +227,9 @@ namespace NS_site27_api.Modules.PlayerManagement
             SpawnProtect,
             ProtectText,
             Ammo,
-            AmmoText,
-            chat,
-            ChatText,
-            LobbySong,
-            Althrougth_it_not_be_long_here_but_how_cares,
-            lyric
+            AmmoText
         }
+
         public override async void Update(Player target, DisplayCanvas canvas)
         {
             try
@@ -307,7 +242,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                         UpdateOneNode(target, item, uiElement);
                     }
                 }
-            }catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Log.Error(e);
             }
@@ -323,50 +259,48 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static event OnBuildWaitingSpawnUI BuildSpawnUIEvent;
         private bool IsNeedRefresh(Player player, PlayerManagerUI ui, string res)
         {
-            if (_contentCache.TryGetValue(player, out var playerCache) && playerCache.TryGetValue(ui, out var cached) && cached == res)
-                return false;
-            return true;
+            return !_contentCache.TryGetValue(player, out var playerCache) || !playerCache.TryGetValue(ui, out var cached) || cached != res;
         }
 
         private void SetCached(Player player, PlayerManagerUI ui, string content)
         {
             if (!_contentCache.ContainsKey(player))
+            {
                 _contentCache[player] = new Dictionary<PlayerManagerUI, string>();
+            }
+
             _contentCache[player][ui] = content;
         }
         public static void ClearCacheForPlayer(Player player)
         {
-            _contentCache.Remove(player);
+            _ = _contentCache.Remove(player);
         }
         public async void UpdateOneNode(Player player, IDisplayElement element, PlayerManagerUI re)
         {
             var name = element.BaseElement.name;
             try
             {
-                if(element is DisplayText t) { 
+                if (element is DisplayText t)
+                {
                     var res = "";
-                
                     switch (re)
                     {
                         case PlayerManagerUI.ntfText:
                             if (player.IsDead)
                             {
-                                if (player == null || player.IsAlive || !(player.Role is SpectatorRole)) { }
+                                if (player == null || player.IsAlive || player.Role is not SpectatorRole) { }
                                 else
                                 {
-                                    var big = WaveManager.Waves.FirstOrDefault(x => x is NtfSpawnWave) as NtfSpawnWave;
-                                    var small = WaveManager.Waves.FirstOrDefault(x => x is NtfMiniWave) as NtfMiniWave;
-
-                                    StringBuilder result = new StringBuilder("");
-                                    if (big != null)
+                                    StringBuilder result = new("");
+                                    if (WaveManager.Waves.FirstOrDefault(x => x is NtfSpawnWave) is NtfSpawnWave big)
                                     {
                                         double left = Math.Max(0, big.Timer.TimeLeft);
-                                        result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾狐: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
+                                        _ = result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾狐: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
                                     }
-                                    if (small != null)
+                                    if (WaveManager.Waves.FirstOrDefault(x => x is NtfMiniWave) is NtfMiniWave small)
                                     {
                                         double left = Math.Max(0, small.Timer.TimeLeft);
-                                        result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
+                                        _ = result.AppendLine($"<align=left><size=25><color=#0000FFFF>🚁九尾增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
                                     }
                                     BuildSpawnUIEvent?.Invoke(UILocate.Left, ref result);
 
@@ -377,22 +311,19 @@ namespace NS_site27_api.Modules.PlayerManagement
                         case PlayerManagerUI.chaosText:
                             if (player.IsDead)
                             {
-                                if (player == null || player.IsAlive || !(player.Role is SpectatorRole)) { }
+                                if (player == null || player.IsAlive || player.Role is not SpectatorRole) { }
                                 else
                                 {
-                                    var big = WaveManager.Waves.FirstOrDefault(x => x is ChaosSpawnWave) as ChaosSpawnWave;
-                                    var small = WaveManager.Waves.FirstOrDefault(x => x is ChaosMiniWave) as ChaosMiniWave;
-
-                                    StringBuilder result = new StringBuilder("");
-                                    if (big != null)
+                                    StringBuilder result = new("");
+                                    if (WaveManager.Waves.FirstOrDefault(x => x is ChaosSpawnWave) is ChaosSpawnWave big)
                                     {
                                         double left = Math.Max(0, big.Timer.TimeLeft);
-                                        result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
+                                        _ = result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌: {TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
                                     }
-                                    if (small != null)
+                                    if (WaveManager.Waves.FirstOrDefault(x => x is ChaosMiniWave) is ChaosMiniWave small)
                                     {
                                         double left = Math.Max(0, small.Timer.TimeLeft);
-                                        result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
+                                        _ = result.AppendLine($"<align=right><size=25><color=#008000FF>🚗混沌增援:{TimeSpan.FromSeconds(left):mm\\:ss}</color></size></align>");
                                     }
                                     BuildSpawnUIEvent?.Invoke(UILocate.Right, ref result);
                                     res = result.ToString();
@@ -425,59 +356,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                             break;
                         case PlayerManagerUI.ServerEventToPlayerText:
                             {
-                                string r = "";
-                                {
-                                    if (player != null && player.CurrentRoom?.Type == RoomType.Lcz914)
-                                    {
-                                        r += Scp914Str.str;
-                                    }
-                                }
-                                {
-                                    bool hasContent = false;
-
-                                    foreach (var item in PlayerHUDManager.ElevatorInteractions.ToArray().Where(x => Vector3.Distance(x.InteractAt, player.ReferenceHub.transform.position) <= 9f))
-                                    {
-                                        if (Time.time - item.InteractTime <= 2f)
-                                        {
-                                            if (!hasContent) { r = "<size=22><color=#FFFF00>"; hasContent = true; }
-                                            r += $"{item.Interactor.Nickname}激活电梯\n";
-                                        }
-                                        else { PlayerHUDManager.ElevatorInteractions.Remove(item); }
-                                    }
-                                    if (hasContent) r += "</color></size>";
-                                }
-                                {
-                                    bool hasContent = false;
-                                    List<NukeInteractInfo> toRemove = new List<NukeInteractInfo>();
-                                    foreach (var item in PlayerHUDManager.NukeInteractions)
-                                    {
-                                        if (Time.time - item.InteractTime <= 2f)
-                                        {
-                                            if (!hasContent) { r = $"<size=22><color={(item.acted ? "red" : "green")}>"; hasContent = true; }
-                                            r += $"{item.Interactor.Nickname}{(item.acted ? " 已启动核弹" : "已关闭核弹")}\n";
-                                        }
-                                        else
-                                        {
-                                            toRemove.Add(item);
-                                        }
-                                    }
-                                    foreach (var item in toRemove)
-                                    {
-                                        PlayerHUDManager.NukeInteractions.Remove(item);
-                                    }
-                                    if (hasContent) r += "</color></size>";
-                                }
-                                res = r;
-                            }
-                            break;
-                        case PlayerManagerUI.PlayerCountText:
-                            if (Round.IsLobby)
-                            {
-                                res = LobbyModule.ShowingString;
-                            }
-                            else
-                            {
-                                res = "";
+                                res = ServerEventToPlayerTextUpdater(player);
                             }
                             break;
                         case PlayerManagerUI.LevelText:
@@ -491,180 +370,62 @@ namespace NS_site27_api.Modules.PlayerManagement
                             }
                             break;
                         case PlayerManagerUI.ProtectText:
-                            var spawnProtectedEffect = player.GetEffect(EffectType.SpawnProtected);
-                            if (!(spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled))
-                            {
-                                var Config = ModuleConfigManager.Get<SpawnProtectionConfig>("SpawnProtection");
-                                var remainingTime = spawnProtectedEffect.TimeLeft;
-                                var text = "";
-                                if (remainingTime > 0 && spawnProtectedEffect.IsEnabled)
-                                {
-                                    text = Config.InProtect.Replace("{remainingTime}", $"{remainingTime:F0}");
-                                }
-                                else
-                                {
-                                    if (SpawnProtectionModule.LoseProtectAt.TryGetValue(player, out var time) && time.lost)
-                                    {
-                                        if (Time.time - time.time >= 5f)
-                                        {
-                                            text = Config.OutProtect;
-                                        }
-                                    }
-                                }
-                                res = text;
-                            }
-
-                            break;
-                        case PlayerManagerUI.ChatText:
-                            {
-                                var _cfg = ChatManager._cfg;
-                                if (_cfg == null || player == null || !player.IsConnected)
-                                {
-                                }
-                                else
-                                {
-                                    Team team = player.Role.Team;
-                                    switch (team)
-                                    {
-                                        case Team.Scientists:
-                                            team = Team.FoundationForces;
-                                            break;
-                                        case Team.ClassD:
-                                            team = Team.ChaosInsurgency;
-                                            break;
-
-                                        default:
-                                            break;
-                                    }
-                                    if (!ChatManager.TeamList.ContainsKey(team))
-                                        team = Team.OtherAlive;
-                                    string ServerContent = GetChannelDisplay(ChatManager.ServerList, _cfg.MaxServerBroadcastLines, ChatMode.ServerBroadcast);
-                                    string teamContent = GetChannelDisplay(ChatManager.TeamList[team], _cfg.MaxTeamChatLines, ChatMode.Team);
-                                    string publicContent = GetChannelDisplay(ChatManager.ChatList, _cfg.MaxPublicChatLines, ChatMode.Global);
-                                    string adminContent = string.Empty;
-                                    if (player.RemoteAdminAccess)
-                                        adminContent = GetChannelDisplay(ChatManager.AdminList, _cfg.MaxAdminChatLines, ChatMode.Admin);
-                                    List<string> parts = new List<string>();
-                                    if (!string.IsNullOrEmpty(ServerContent)) parts.Add("<color=red>" + ServerContent + "</color>");
-                                    if (!string.IsNullOrEmpty(publicContent)) parts.Add("<color=white>公告聊天消息:\n" + publicContent + "</color>");
-                                    if (!string.IsNullOrEmpty(teamContent)) parts.Add($"<color={ChatManager.GetTeamColor(team)}>团队聊天消息:\n" + teamContent + "</color>");
-                                    if (!string.IsNullOrEmpty(adminContent)) parts.Add("<color=red>反馈:\n" + adminContent + "</color>");
-
-                                    string combined = string.Join("\n", parts);
-                                    res = combined;
-                                }
-                            }
-                            break;
-                        case PlayerManagerUI.lyric:
-                            if (!(string.IsNullOrEmpty(LobbyMusicManager.Instance.CurrentSongName) || LobbyMusicManager.Instance.sessionId == 0))
-                            {
-                                string lrcText = "";
-                                if (LobbyMusicManager.Instance._lrcLines != null)
-                                {
-                                    for (int i = LobbyMusicManager.Instance._lrcLines.Count - 1; i >= 0; i--)
-                                    {
-                                        if (LobbyMusicManager.Instance._lrcLines[i].Time <= LobbyMusicManager.Instance.current)
-                                        {
-                                            lrcText = LobbyMusicManager.Instance._lrcLines[i].Text;
-                                            break;
-                                        }
-                                    }
-                                }
-                                string timeStr = LobbyMusicManager.Instance.TotalTime > 0
-                                    ? $"{LobbyMusicManager.FormatTime(LobbyMusicManager.Instance.current)}/{LobbyMusicManager.FormatTime((float)LobbyMusicManager.Instance.TotalTime)}"
-                                    : LobbyMusicManager.FormatTime(LobbyMusicManager.Instance.current);
-
-                                res = $"<align=right><size=14><line-height=45%><color=#00FFFF50>[{timeStr}]:{LobbyMusicManager.Instance.CurrentSongName}({LobbyMusicManager.Instance.GetSourceName()})\n{lrcText}</color></line-height></size></align>";
-                            }
-                            else
-                            {
-                                res = "";
-                            }
+                            res = ProtectTextUpdater(player);
                             break;
                         case PlayerManagerUI.AmmoText:
                             {
-                                if (player == null) break;
-                                if (player.CurrentItem == null) break;
-                                var i = player.CurrentItem;
-                                if (i.IsFirearm && i.Type != ItemType.MicroHID && i is Firearm f)
+                                if (player == null)
                                 {
-                                    float RemainPercent = (float)f.TotalAmmo / f.TotalMaxAmmo;
-                                    string str = "<size=15><b>";
-
-                                    if (f.IsReloading)
-                                    {
-                                        str += "<color=#00FFFF>换弹中</color>";
-                                    }
-                                    else if (i.Type != ItemType.ParticleDisruptor && RemainPercent < 0.22 && RemainPercent > 0)
-                                    {
-                                        str += "<color=yellow>低弹药</color>";
-                                    }
-                                    else if (i.Type == ItemType.ParticleDisruptor && f.TotalAmmo <= 2)
-                                    {
-                                        str += "<color=yellow>低弹药</color>";
-
-                                    }
-                                    else if (f.TotalAmmo <= 0)
-                                    {
-                                        str += "<color=red>无弹药</color>";
-                                    }
-                                    str += "</b></size>";
-                                    res = str;
+                                    break;
                                 }
-                                if (i.Type == ItemType.MicroHID && i is MicroHid hid)
+
+                                if (player.CurrentItem == null)
                                 {
-                                    float RemainPercent = hid.Energy;
-                                    string str = "<size=15><b>";
-                                    if (RemainPercent < 0.20 && RemainPercent > 0)
-                                    {
-                                        str += "<color=yellow>低电量</color>";
-                                    }
-                                    else if (RemainPercent <= 0)
-                                    {
-                                        str += "<color=red>请充电</color>";
-                                    }
-                                    else if (hid.IsBroken)
-                                    {
-                                        str += "<color=red>已损坏</color>";
-
-                                    }
-                                    str += "</b></size>";
-                                    res = str;
+                                    break;
                                 }
+                                res = AmmoTextUpdater(player);
                                 break;
                             }
-                            break;
                         default:
                             break;
                     }
-                
+
                     if (t.Content != res || IsNeedRefresh(player, re, res))
                     {
                         t.Content = res;
                         SetCached(player, re, res);
                     }
                 }
-            } 
+            }
             catch (Exception e)
             {
                 Log.Error($"Failed to update!{e}");
             }
         }
+
+
         public static string ScpText = "<align=right><color=red>SCP{scp}:<color=green>♥ {hp} <color=purple>🔰 {sh} <color=yellow>位于 {pos}</color>";
         public static string Scp079Text = "<align=right><color=red>SCP079:<color=green>LV {lv} <color=yellow>Exp {exp}</color>";
         public static string ZombieText = "<align=right><color=red>SCP049-2:<color=green>{count}个</color>";
-        private async static Task<string> PlayerHudLVShow(Player player)
+        private static async Task<string> PlayerHudLVShow(Player player)
         {
-            if (player == null) return "";
+            if (player == null)
+            {
+                return "";
+            }
 
             Player target = player;
             int specCount = 0;
 
             if (player.Role is SpectatorRole specRole && specRole.SpectatedPlayer != null)
+            {
                 target = specRole.SpectatedPlayer;
+            }
 
             if (PlayerStateManager.SpecList.ContainsKey(target))
+            {
                 specCount = PlayerStateManager.SpecList[target].Count;
+            }
 
             var stats = await PlayerManagementModule.GetOrCreateStats(target);
             bool isSpec = player.Role is SpectatorRole;
@@ -679,7 +440,10 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         private static async Task<string> BuildFirstLine(Player player, bool isSpec)
         {
-            if (player == null) return "";
+            if (player == null)
+            {
+                return "";
+            }
 
             string teamName = player.Role.Team switch
             {
@@ -713,7 +477,10 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         private static string BuildSecondLine(Player player, PlayerManagementModule.RoundStatistics stats, int specCount, bool isSpec)
         {
-            if (player == null | stats == null) return "";
+            if (player == null | stats == null)
+            {
+                return "";
+            }
 
             var dur = PlayerDataManager.GetAllTime(player);
 
@@ -726,7 +493,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                    $"<color=#87CEEB>观众:{specCount}</color>" +
                    $"";
         }
-        static string GetScpNumber(RoleTypeId role)
+        private static string GetScpNumber(RoleTypeId role)
         {
             return role switch
             {
@@ -746,14 +513,14 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (player != null && !player.IsScp)
             {
                 v += "<size=19>";
-                if (player.Role.Type != RoleTypeId.Overwatch && player.Role.Type == RoleTypeId.Spectator) { }
-                else
+                v += "<align=right>";
+                if (player.Role.Team is Team.FoundationForces or Team.Scientists)
                 {
-                    v += "<align=right>";
-                    if (player.Role.Team == Team.FoundationForces || player.Role.Team == Team.Scientists)
-                        v += $"<color=#00FFFF>{PlayerHUDManager.doc}:博士数量</color>\n<color=#808080>{PlayerHUDManager.gruad}:保安数量</color>\n<color=#0000FF>{PlayerHUDManager.ntf}:九尾数量</color>";
-                    else if (player.Role.Team == Team.ChaosInsurgency || player.Role.Team == Team.ClassD)
-                        v += $"<color=yellow>{PlayerHUDManager.dd}:dd数量</color>\n<color=#009900>{PlayerHUDManager.chaos}:混沌数量</color>";
+                    v += $"<color=#00FFFF>{PlayerHUDManager.doc}:博士数量</color>\n<color=#808080>{PlayerHUDManager.gruad}:保安数量</color>\n<color=#0000FF>{PlayerHUDManager.ntf}:九尾数量</color>";
+                }
+                else if (player.Role.Team is Team.ChaosInsurgency or Team.ClassD)
+                {
+                    v += $"<color=yellow>{PlayerHUDManager.dd}:dd数量</color>\n<color=#009900>{PlayerHUDManager.chaos}:混沌数量</color>";
                 }
             }
             else if (player != null && player.IsScp)
@@ -770,7 +537,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     }
                     else if (item.Role is Scp079Role scp079)
                     {
-                        v += $"<color=red>SCP079:<color=green>LV {scp079.Level.ToString()} <color=yellow>🔋 {scp079.Energy:F0}/{scp079.MaxEnergy}</color>\n";
+                        v += $"<color=red>SCP079:<color=green>LV {scp079.Level} <color=yellow>🔋 {scp079.Energy:F0}/{scp079.MaxEnergy}</color>\n";
                     }
                     else if (item.Role is Scp096Role scp096)
                     {
@@ -795,7 +562,11 @@ namespace NS_site27_api.Modules.PlayerManagement
                     else if (item.Role is Scp3114Role scp3114)
                     {
                         var r = scp3114.StolenRole;
-                        if (r == RoleTypeId.None || scp3114.DisguiseStatus != PlayerRoles.PlayableScps.Scp3114.Scp3114Identity.DisguiseStatus.Active) r = RoleTypeId.Scp3114;
+                        if (r == RoleTypeId.None || scp3114.DisguiseStatus != PlayerRoles.PlayableScps.Scp3114.Scp3114Identity.DisguiseStatus.Active)
+                        {
+                            r = RoleTypeId.Scp3114;
+                        }
+
                         v += $"<color=red>SCP3114:<color=green>♥ {hp:F0} <color=purple>🔰 {sh:F0} <color=yellow>目前角色:{r.RoleToString()}\n";
                     }
                     else if (item.Role is Scp106Role scp106)
@@ -831,163 +602,140 @@ namespace NS_site27_api.Modules.PlayerManagement
             v += "</color></b></size></align>";
             return v;
         }
-        private static string GetChannelDisplay(List<ChatMessage> list, int maxLines, ChatMode mode)
+        private static string ProtectTextUpdater(Player player)
         {
-            // 移除过期消息
-            var outTime = 3f;
-            switch (mode)
+            string res = "";
+            var spawnProtectedEffect = player.GetEffect(EffectType.SpawnProtected);
+            if (!(spawnProtectedEffect == null || spawnProtectedEffect.TimeLeft <= 0 || !spawnProtectedEffect.IsEnabled))
             {
-                case ChatMode.Global:
-                    outTime = ChatManager._cfg.PublicChatDuration;
-                    break;
-                case ChatMode.Team:
-                    outTime = ChatManager._cfg.TeamChatDuration;
-                    break;
-                case ChatMode.Admin:
-                    outTime = ChatManager._cfg.AdminChatDuration;
-                    break;
-                case ChatMode.ServerBroadcast:
-                    outTime = ChatManager._cfg.ServerBroadcastDuration;
-                    break;
-
+                var Config = ModuleConfigManager.Get<SpawnProtectionConfig>("SpawnProtection");
+                var remainingTime = spawnProtectedEffect.TimeLeft;
+                var text = "";
+                if (remainingTime > 0 && spawnProtectedEffect.IsEnabled)
+                {
+                    text = Config.InProtect.Replace("{remainingTime}", $"{remainingTime:F0}");
+                }
+                else
+                {
+                    if (SpawnProtectionModule.LoseProtectAt.TryGetValue(player, out var time) && time.lost)
+                    {
+                        if (Time.time - time.time >= 5f)
+                        {
+                            text = Config.OutProtect;
+                        }
+                    }
+                }
+                res = text;
             }
-            list.RemoveAll(msg => msg.StartTime + outTime <= Time.time);
-            list.Sort(ChatManager._timeSorter);
-            while (list.Count > maxLines)
-                list.RemoveAt(0);
 
-            if (list.Count == 0)
-                return string.Empty;
-            var str = "";
-            foreach (var item in list)
-            {
-                string displayText = "";
-                switch (mode)
-                {
-                    case ChatMode.Global:
-                        displayText = $"{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}";
-                        break;
-                    case ChatMode.Team:
-                        Team team = item.player.Role.Team;
-                        string color = ChatManager.GetTeamColor(team);
-                        displayText = $"<color={color}>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
-                        break;
-                    case ChatMode.Admin:
-                        string teamName = item.player.Role.Team switch
-                        {
-                            Team.FoundationForces => "基金会",
-                            Team.ChaosInsurgency => "混沌",
-                            Team.Scientists => "基金会",
-                            Team.ClassD => "混沌",
-                            Team.OtherAlive => "教程",
-                            Team.SCPs => "SCP",
-                            _ => "死人"
-                        };
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
-                        break;
-                    case ChatMode.ServerBroadcast:
-                        displayText = $"<color=red>服务器广播: {(item.player == null ? "" : $"[{item.player.Nickname}]:")} {item.InputText}</color>";
-                        break;
-                    default:
-                        break;
-                }
-                str += displayText + "\n";
-                if (item.isFirstProcess)
-                {
-                    ChatManager.FirstProcesses.Add(item);
-                }
-            }
-            foreach (var item in ChatManager.FirstProcesses)
-            {
-                list.Remove(item);
-                var i = new ChatMessage() { StartTime = item.StartTime, InputText = item.InputText, player = item.player, isFirstProcess = false };
-                list.Add(i);
-                if (item.player != null && Plugin.Instance?.connect != null)
-                {
-                    _ = Plugin.Instance.connect.InsertChatLogAsync(
-                        item.player.UserId,
-                        item.player.Nickname,
-                        item.InputText,
-                        mode.ToString(),
-                        Server.Port.ToString()
-                    );
-                }
-                string displayText = "";
-                switch (mode)
-                {
-                    case ChatMode.Global:
-                        displayText = $"{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}";
-                        foreach (var item1 in Player.Enumerable)
-                        {
-                            item1.SendConsoleMessage($"[公共聊天]{displayText}", "white");
-                        }
-                        break;
-                    case ChatMode.Team:
-                        Team team = item.player.Role.Team;
-                        string color = ChatManager.GetTeamColor(team);
-                        displayText = $"<color={color}>{(item.player == null ? "" : $"{item.player.Nickname}")}: {item.InputText}</color>";
-
-                        foreach (var item1 in Player.Enumerable.Where(x =>
-                        {
-                            var Tteam = x.Role.Team;
-                            var pass = Tteam == team;
-                            if (!pass)
-                            {
-                                switch (Tteam)
-                                {
-                                    case Team.Scientists:
-                                    case Team.FoundationForces:
-                                        if (team == Team.Scientists || team == Team.FoundationForces)
-                                        {
-                                            pass = true;
-                                        }
-                                        break;
-                                    case Team.ClassD:
-                                    case Team.ChaosInsurgency:
-                                        if (team == Team.ClassD || team == Team.ChaosInsurgency)
-                                        {
-                                            pass = true;
-                                        }
-                                        break;
-                                }
-                            }
-                            return pass;
-                        }))
-                        {
-                            item1.SendConsoleMessage($"[队伍聊天]{displayText}", "yellow");
-                        }
-                        break;
-                    case ChatMode.Admin:
-                        string teamName = item.player.Role.Team switch
-                        {
-                            Team.FoundationForces => "基金会",
-                            Team.ChaosInsurgency => "混沌",
-                            Team.Scientists => "基金会",
-                            Team.ClassD => "混沌",
-                            Team.OtherAlive => "教程",
-                            Team.SCPs => "SCP",
-                            _ => "死人"
-                        };
-                        displayText = $"<color=red>{(item.player == null ? "" : $"{item.player.Nickname}({teamName})")}: {item.InputText}</color>";
-                        foreach (var item1 in Player.Enumerable.Where(x => x.RemoteAdminAccess && x != item.player))
-                        {
-                            item1.SendConsoleMessage($"[反馈]{displayText}", "red");
-                        }
-                        item.player.SendConsoleMessage($"[反馈]{displayText}", "red");
-                        break;
-                    case ChatMode.ServerBroadcast:
-                        displayText = $"<color=red>服务器广播: {(item.player == null ? "" : $"[{item.player.Nickname}]:")} {item.InputText}</color>";
-                        foreach (var item1 in Player.Enumerable)
-                        {
-                            item1.SendConsoleMessage($"[服务器广播] {displayText}", "red");
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            ChatManager.FirstProcesses.Clear();
-            return str;
+            return res;
         }
+
+        private static string AmmoTextUpdater(Player player)
+        {
+            string res = "";
+            var i = player.CurrentItem;
+            if (i.IsFirearm && i.Type != ItemType.MicroHID && i is Firearm f)
+            {
+                float RemainPercent = (float)f.TotalAmmo / f.TotalMaxAmmo;
+                string str = "<size=15><b>";
+
+                if (f.IsReloading)
+                {
+                    str += "<color=#00FFFF>换弹中</color>";
+                }
+                else if (i.Type != ItemType.ParticleDisruptor && RemainPercent < 0.22 && RemainPercent > 0)
+                {
+                    str += "<color=yellow>低弹药</color>";
+                }
+                else if (i.Type == ItemType.ParticleDisruptor && f.TotalAmmo <= 2)
+                {
+                    str += "<color=yellow>低弹药</color>";
+
+                }
+                else if (f.TotalAmmo <= 0)
+                {
+                    str += "<color=red>无弹药</color>";
+                }
+                str += "</b></size>";
+                res = str;
+            }
+            if (i.Type == ItemType.MicroHID && i is MicroHid hid)
+            {
+                float RemainPercent = hid.Energy;
+                string str = "<size=15><b>";
+                if (RemainPercent is < (float)0.20 and > 0)
+                {
+                    str += "<color=yellow>低电量</color>";
+                }
+                else if (RemainPercent <= 0)
+                {
+                    str += "<color=red>请充电</color>";
+                }
+                else if (hid.IsBroken)
+                {
+                    str += "<color=red>已损坏</color>";
+
+                }
+                str += "</b></size>";
+                res = str;
+            }
+
+            return res;
+        }
+        private static string ServerEventToPlayerTextUpdater(Player player)
+        {
+            string r = "";
+            {
+                if (player != null && player.CurrentRoom?.Type == RoomType.Lcz914)
+                {
+                    r += Scp914Str.str;
+                }
+            }
+            {
+                bool hasContent = false;
+
+                foreach (var item in PlayerHUDManager.ElevatorInteractions.ToArray().Where(x => Vector3.Distance(x.InteractAt, player.ReferenceHub.transform.position) <= 9f))
+                {
+                    if (Time.time - item.InteractTime <= 2f)
+                    {
+                        if (!hasContent) { r = "<size=22><color=#FFFF00>"; hasContent = true; }
+                        r += $"{item.Interactor.Nickname}激活电梯\n";
+                    }
+                    else { _ = PlayerHUDManager.ElevatorInteractions.Remove(item); }
+                }
+                if (hasContent)
+                {
+                    r += "</color></size>";
+                }
+            }
+            {
+                bool hasContent = false;
+                List<NukeInteractInfo> toRemove = new();
+                foreach (var item in PlayerHUDManager.NukeInteractions)
+                {
+                    if (Time.time - item.InteractTime <= 2f)
+                    {
+                        if (!hasContent) { r = $"<size=22><color={(item.acted ? "red" : "green")}>"; hasContent = true; }
+                        r += $"{item.Interactor.Nickname}{(item.acted ? " 已启动核弹" : "已关闭核弹")}\n";
+                    }
+                    else
+                    {
+                        toRemove.Add(item);
+                    }
+                }
+                foreach (var item in toRemove)
+                {
+                    _ = PlayerHUDManager.NukeInteractions.Remove(item);
+                }
+                if (hasContent)
+                {
+                    r += "</color></size>";
+                }
+            }
+
+            return r;
+        }
+
     }
 }

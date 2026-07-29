@@ -1,21 +1,13 @@
 ﻿using Exiled.API.Features;
-using Exiled.API.Features.Items;
-using Exiled.Events.Handlers;
 using LabApi.Events.Handlers;
-using LabApi.Features.Wrappers;
 using MEC;
 using NS_site27_heavy.heavy.SpecialWaveManager;
-using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using ProjectMER.Features.Objects;
 using ProjectMER.Features.Serializable.Schematics;
-using RemoteAdmin.Communication;
-using Respawning.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Player = Exiled.API.Features.Player;
 
@@ -40,7 +32,11 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public override void OnRestartRound()
         {
-            if (handle.IsRunning) Timing.KillCoroutines(handle);
+            if (handle.IsRunning)
+            {
+                _ = Timing.KillCoroutines(handle);
+            }
+
             if (root != null)
             {
                 root?.GetComponent<SchematicObject>()?.Destroy();
@@ -67,9 +63,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                 {
                     i.FpcModule.Motor.GravityController.Gravity = FpcGravityController.DefaultGravity;
                 }
-                                item.DisableEffect(Exiled.API.Enums.EffectType.Invigorated);
+                item.DisableEffect(Exiled.API.Enums.EffectType.Invigorated);
             }
-            CurrentSpawning.RemoveWhere(x=>WaitingToSpawn.Contains(x));
+            _ = CurrentSpawning.RemoveWhere(WaitingToSpawn.Contains);
             return (true, WaitingToSpawn);
         }
 
@@ -81,7 +77,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public bool isInAnim = false;
         private void PlayerEvents_ValidatedVisibility(LabApi.Events.Arguments.PlayerEvents.PlayerValidatedVisibilityEventArgs ev)
         {
-            if (isInAnim &&!HasLanded&& ev.IsVisible && CurrentSpawning != null)
+            if (isInAnim && !HasLanded && ev.IsVisible && CurrentSpawning != null)
             {
                 if (ev.Player != null && ev.Target != null)
                 {
@@ -98,7 +94,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             PlayerEvents.ValidatedVisibility += PlayerEvents_ValidatedVisibility;
 
         }
-        CoroutineHandle handle;
+        private CoroutineHandle handle;
 
         public bool HasLanded = false;
         public GameObject LandEndWhenScaleChanged;
@@ -109,20 +105,35 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public IEnumerator<float> AnimUpdater()
         {
             isInAnim = true;
-                yield return Timing.WaitForSeconds(0.02f);
+            yield return Timing.WaitForSeconds(0.02f);
             var CalledSpawn = false;
             while (true)
             {
                 if (PlayerCamera == null)
+                {
                     break;
+                }
+
                 if (CurrentSpawning == null)
+                {
                     break;
+                }
+
                 if (HeliAnim == null)
+                {
                     break;
+                }
+
                 if (LandEndWhenScaleChanged == null)
+                {
                     break;
+                }
+
                 if (Exiled.API.Features.Round.IsEnded)
+                {
                     break;
+                }
+
                 var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
                 if (stateInfo.IsName("start"))
                 {
@@ -136,9 +147,15 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                             try
                             {
                                 if (player == null)
+                                {
                                     continue;
+                                }
+
                                 if (!player.IsAlive)
+                                {
                                     continue;
+                                }
+
                                 if (player.Role.Base is IFpcRole i)
                                 {
                                     i.FpcModule.Motor.GravityController.Gravity = Vector3.zero;
@@ -149,26 +166,46 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
                                 if ((player.Position - pos).sqrMagnitude > 0.0004f) // 大约2cm
                                 {
-                                    player.ReferenceHub.TryOverridePosition(pos);
+                                    _ = player.ReferenceHub.TryOverridePosition(pos);
                                 }
                                 Vector3 playerEuler = player.Rotation.eulerAngles;
                                 Vector3 cameraEuler = PlayerCamera.transform.eulerAngles;
 
                                 float playerPitch = playerEuler.x;
-                                if (playerPitch > 180f) playerPitch -= 360f;
+                                if (playerPitch > 180f)
+                                {
+                                    playerPitch -= 360f;
+                                }
+
                                 playerPitch = -Mathf.Clamp(playerPitch, -90f, 90f);
 
                                 float playerYaw = playerEuler.y;
-                                if (playerYaw < 0f) playerYaw += 360f;
-                                else if (playerYaw > 360f) playerYaw -= 360f;
+                                if (playerYaw < 0f)
+                                {
+                                    playerYaw += 360f;
+                                }
+                                else if (playerYaw > 360f)
+                                {
+                                    playerYaw -= 360f;
+                                }
 
                                 float centerPitch = cameraEuler.x;
-                                if (centerPitch > 180f) centerPitch -= 360f;
+                                if (centerPitch > 180f)
+                                {
+                                    centerPitch -= 360f;
+                                }
+
                                 centerPitch = -Mathf.Clamp(centerPitch, -90f, 90f);
 
                                 float centerYaw = cameraEuler.y;
-                                if (centerYaw < 0f) centerYaw += 360f;
-                                else if (centerYaw > 360f) centerYaw -= 360f;
+                                if (centerYaw < 0f)
+                                {
+                                    centerYaw += 360f;
+                                }
+                                else if (centerYaw > 360f)
+                                {
+                                    centerYaw -= 360f;
+                                }
 
                                 float deltaPitch = Mathf.DeltaAngle(centerPitch, playerPitch);
                                 float deltaYaw = Mathf.DeltaAngle(centerYaw, playerYaw);
@@ -179,18 +216,28 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                 if (Mathf.Abs(deltaPitch) > limit || Mathf.Abs(deltaYaw) > limit)
                                 {
                                     float clampedDeltaPitch = Mathf.Clamp(deltaPitch, -limit, limit);
-                                    if (Mathf.Abs(deltaPitch) <= limit) clampedDeltaPitch = 0;
+                                    if (Mathf.Abs(deltaPitch) <= limit)
+                                    {
+                                        clampedDeltaPitch = 0;
+                                    }
+
                                     float clampedDeltaYaw = Mathf.Clamp(deltaYaw, -limit, limit);
-                                    if (Mathf.Abs(deltaYaw) <= limit) clampedDeltaYaw = 0;
+                                    if (Mathf.Abs(deltaYaw) <= limit)
+                                    {
+                                        clampedDeltaYaw = 0;
+                                    }
 
                                     float finalPitch = centerPitch + clampedDeltaPitch;
                                     float finalYaw = centerYaw + clampedDeltaYaw;
 
                                     finalPitch = Mathf.Clamp(finalPitch, -90f, 90f);
-                                    finalYaw = finalYaw % 360f;
-                                    if (finalYaw < 0f) finalYaw += 360f;
+                                    finalYaw %= 360f;
+                                    if (finalYaw < 0f)
+                                    {
+                                        finalYaw += 360f;
+                                    }
 
-                                    player.ReferenceHub.TryOverrideRotation(new Vector2(finalPitch, finalYaw));
+                                    _ = player.ReferenceHub.TryOverrideRotation(new Vector2(finalPitch, finalYaw));
                                 }
                             }
                             catch (Exception e)
@@ -199,7 +246,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                             }
                         }
                     }
-                    else if(!CalledSpawn)
+                    else if (!CalledSpawn)
                     {
                         CalledSpawn = true;
                         OnPlayDone?.Invoke(this, CurrentSpawning.ToList());
@@ -225,17 +272,17 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             root?.GetComponent<SchematicObject>()?.Destroy();
             isInAnim = false;
             HasLanded = true;
-            
+
         }
         public bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone)
         {
             OnRestartRound();
-            CurrentSpawning = new(); 
+            CurrentSpawning = new();
             this.OnPlayDone = OnPlayDone;
             foreach (var item in WaitingToSpawn)
             {
                 item.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Tutorial, PlayerRoles.RoleChangeReason.None);
-                CurrentSpawning.Add(item);
+                _ = CurrentSpawning.Add(item);
             }
             var hp = new SerializableSchematic()
             {
@@ -264,10 +311,10 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                             break;
                     }
                 }
-                Timing.CallDelayed(0.01f, () =>
+                _ = Timing.CallDelayed(0.01f, () =>
                 {
                     HeliAnim.Play("start");
-                    handle = Timing.RunCoroutine(AnimUpdater(),Segment.LateUpdate);
+                    handle = Timing.RunCoroutine(AnimUpdater(), Segment.LateUpdate);
 
                 });
                 return true;
@@ -280,35 +327,31 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public float GetPlayedTime()
         {
-            if(HeliAnim == null)
+            if (HeliAnim == null)
+            {
                 return 0;
+            }
+
             var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
-            if (stateInfo.IsName("start"))
-            {
-                return stateInfo.normalizedTime * stateInfo.length;
-            }
-            else
-            {
-                return 0;
-            }
+            return stateInfo.IsName("start") ? stateInfo.normalizedTime * stateInfo.length : 0;
         }
 
         public string GetSpawingUIText()
         {
             if (HeliAnim == null)
-                return "";
-            var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
-            if (stateInfo.IsName("start"))
             {
-                return $"<color=#0000FF>Spawning test wave in {Math.Max(0, 9.2 - GetPlayedTime()):F0}s</color>";
+                return "";
             }
-            return "";
+
+            var stateInfo = HeliAnim.GetCurrentAnimatorStateInfo(0);
+            return stateInfo.IsName("start") ? $"<color=#0000FF>Spawning test wave in {Math.Max(0, 9.2 - GetPlayedTime()):F0}s</color>" : "";
         }
 
         public override string GetWaitingSpawningUIText()
         {
-            if (this.RemainCount <= 0) return "";
-            return $"<color=#F000FF>TestWave RemainTime:{Math.Max(this.SpawnTotalTime - (Time.time - this.LastSpawnTime), 0):F0}s</color>";
+            return RemainCount <= 0
+                ? ""
+                : $"<color=#F000FF>TestWave RemainTime:{Math.Max(SpawnTotalTime - (Time.time - LastSpawnTime), 0):F0}s</color>";
         }
     }
 }

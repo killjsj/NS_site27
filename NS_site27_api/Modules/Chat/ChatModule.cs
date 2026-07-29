@@ -1,17 +1,11 @@
 using CommandSystem;
-using Exiled.API.Extensions;
-using Exiled.API.Features;
-using MEC;
+using Exiled.Events.EventArgs.Player;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
-using Org.BouncyCastle.Asn1.X509;
+using NS_site27_api.Core.UI.DisplayKit;
 using PlayerRoles;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using static Subtitles.SubtitleCategory;
 using Player = Exiled.API.Features.Player;
 using Time = UnityEngine.Time;
 
@@ -78,10 +72,10 @@ namespace NS_site27_api.Modules.Chat
         }
         public static TimeSorter _timeSorter = new();
         // 显示列表
-        public static List<ChatMessage> ChatList = new List<ChatMessage>();
-        public static List<ChatMessage> AdminList = new List<ChatMessage>();
-        public static List<ChatMessage> ServerList = new List<ChatMessage>();
-        public static Dictionary<Team, List<ChatMessage>> TeamList = new Dictionary<Team, List<ChatMessage>>()
+        public static List<ChatMessage> ChatList = new();
+        public static List<ChatMessage> AdminList = new();
+        public static List<ChatMessage> ServerList = new();
+        public static Dictionary<Team, List<ChatMessage>> TeamList = new()
         {
             { Team.Dead, new List<ChatMessage>() },
             { Team.FoundationForces, new List<ChatMessage>() },
@@ -92,12 +86,12 @@ namespace NS_site27_api.Modules.Chat
         };
 
         // 冷却相关
-        public static readonly Dictionary<string, float> cooldownEndTimes = new Dictionary<string, float>();
-        public static readonly Dictionary<string, List<float>> recentMessageTimes = new Dictionary<string, List<float>>();
+        public static readonly Dictionary<string, float> cooldownEndTimes = new();
+        public static readonly Dictionary<string, List<float>> recentMessageTimes = new();
         public static readonly List<ChatMessage> FirstProcesses = new();
 
         // 阵营颜色
-        public static readonly Dictionary<Team, string> teamColors = new Dictionary<Team, string>()
+        public static readonly Dictionary<Team, string> teamColors = new()
         {
             { Team.SCPs, "#FF0000" },
             { Team.FoundationForces, "#0096FF" },
@@ -109,7 +103,10 @@ namespace NS_site27_api.Modules.Chat
             { Team.OtherAlive, "#FFFFFF" },
         };
 
-        public static void SetConfig(ChatConfig config) => _cfg = config;
+        public static void SetConfig(ChatConfig config)
+        {
+            _cfg = config;
+        }
 
         // ---------- 冷却检查 ----------
         public static bool CanSendMessage(Player player, out float cooldownRemaining)
@@ -130,7 +127,7 @@ namespace NS_site27_api.Modules.Chat
                 times = new List<float>();
                 recentMessageTimes[userId] = times;
             }
-            times.RemoveAll(t => now - t > _cfg.CooldownWindow);
+            _ = times.RemoveAll(t => now - t > _cfg.CooldownWindow);
 
             if (times.Count >= _cfg.MaxMessagesPerCooldown)
             {
@@ -163,26 +160,42 @@ namespace NS_site27_api.Modules.Chat
             ChatList.Clear();
             AdminList.Clear();
             foreach (var key in TeamList.Keys)
+            {
                 TeamList[key].Clear();
+            }
+
             cooldownEndTimes.Clear();
             recentMessageTimes.Clear();
         }
-        public static string GetTeamColor(Team team) => teamColors.TryGetValue(team, out var color) ? color : "#FFFFFF";
+        public static string GetTeamColor(Team team)
+        {
+            return teamColors.TryGetValue(team, out var color) ? color : "#FFFFFF";
+        }
     }
     public class ChatModule : ModuleBase<ChatConfig>
     {
         public override string ModuleName => "Chat";
         public static ChatModule Ins { get; private set; }
 
+        public void Verified(VerifiedEventArgs ev)
+        {
+            if (ev.Player != null)
+            {
+                ev.Player.AddLayer("ChatLayer");
+            }
+        }
+
         public override void OnEnable()
         {
             ChatManager.SetConfig(Config);
+            Exiled.Events.Handlers.Player.Verified += Verified;
             Ins = this;
         }
 
         public override void OnDisable()
         {
             ChatManager.Cleanup();
+            Exiled.Events.Handlers.Player.Verified -= Verified;
             Ins = null;
         }
 
@@ -275,22 +288,19 @@ namespace NS_site27_api.Modules.Chat
             }
             string message = string.Join(" ", arguments);
             var team = player.Role.Team;
-            string color = ChatManager.GetTeamColor(team);
+            _ = ChatManager.GetTeamColor(team);
             switch (team)
             {
                 case Team.SCPs:
                     ChatManager.TeamList[Team.SCPs].Add(new ChatMessage(message, player));
-                    team = Team.SCPs;
                     break;
                 case Team.Scientists:
                 case Team.FoundationForces:
                     ChatManager.TeamList[Team.FoundationForces].Add(new ChatMessage(message, player));
-                    team = Team.FoundationForces;
                     break;
                 case Team.ChaosInsurgency:
                 case Team.ClassD:
                     ChatManager.TeamList[Team.ChaosInsurgency].Add(new ChatMessage(message, player));
-                    team = Team.ChaosInsurgency;
                     break;
                 default:
                     ChatManager.TeamList[team].Add(new ChatMessage(message, player));

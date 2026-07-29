@@ -1,14 +1,8 @@
 ﻿using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
-using Exiled.API.Features.Spawn;
 using MEC;
 using NS_site27_api.Modules.CustomRolePlus;
 using PlayerRoles;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 {
@@ -39,7 +33,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         {
             base.RoleAdded(player);
             player.Position = new UnityEngine.Vector3(123, 289, 21);
-            Timing.CallDelayed(0.3f, () =>
+            _ = Timing.CallDelayed(0.3f, () =>
             {
                 WhipS.Ins.Give(player);
                 AM.Ins.Give(player);

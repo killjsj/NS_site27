@@ -10,7 +10,6 @@ using Exiled.CustomItems.API.Features;
 using Exiled.CustomRoles.API.Features;
 using Exiled.Events.EventArgs.Item;
 using Exiled.Events.EventArgs.Player;
-using Exiled.Events.Features;
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Armor;
@@ -20,8 +19,6 @@ using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using MEC;
-using MonoMod.Utils;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Modules.Abilities;
 using System;
@@ -75,7 +72,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
         {
             foreach (var Eitem in canvas.Children)
             {
-                if(Eitem.BaseElement.name == "specUiText" && Eitem is DisplayText t)
+                if (Eitem.BaseElement.name == "specUiText" && Eitem is DisplayText t)
                 {
                     string showing = "<align=right><size=24><color=white>\n";
                     if (p != null)
@@ -149,7 +146,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                         }
                     }
                     showing += "</color></size></align>";
-                    if(showing != t.Content)
+                    if (showing != t.Content)
                     {
                         t.Content = showing;
                     }
@@ -160,9 +157,9 @@ namespace NS_site27_api.Modules.CustomRolePlus
     public abstract class CustomRolePlus : CustomRole
     {
         // 所有玩家共享的能力模板
-        public List<AbilityBase> abilities = new List<AbilityBase>();
+        public List<AbilityBase> abilities = new();
 
-        override protected void ShowMessage(Player player)
+        protected override void ShowMessage(Player player)
         {
         }
         public static void AddAbilityMessage(Player player)
@@ -178,26 +175,31 @@ namespace NS_site27_api.Modules.CustomRolePlus
         private static bool HasVisibleAbilitiesOrItems(Player player)
         {
             if (player == null)
+            {
                 return false;
+            }
 
             if (CustomItemPlus.PlayerItems.TryGetValue(player, out var pItems) && pItems.Count > 0)
+            {
                 return true;
+            }
 
             var set = AbilityBase.GetPlayerAbilitySet(player);
-            if (set != null && set.HasVisible())
-                return true;
-
-            return false;
+            return set != null && set.HasVisible();
         }
 
         private static void RefreshAbilityMessage(Player player)
         {
             if (player == null)
+            {
                 return;
+            }
 
             RemoveAbilityMessage(player);
             if (HasVisibleAbilitiesOrItems(player))
+            {
                 AddAbilityMessage(player);
+            }
         }
 
         protected override void SubscribeEvents()
@@ -214,28 +216,38 @@ namespace NS_site27_api.Modules.CustomRolePlus
         private static void ClearStaleRoleAbilities(Player player)
         {
             if (player == null)
+            {
                 return;
+            }
 
             var set = AbilityBase.GetPlayerAbilitySet(player);
             if (set == null || set.RoleAbilities.Count == 0)
+            {
                 return;
+            }
 
             foreach (var ability in set.RoleAbilities.ToList())
             {
                 if (ability is IRegisiterNeeded<AbilityBase> reg)
+                {
                     reg.Unregister(player);
+                }
             }
 
             set.RoleAbilities.Clear();
 
             if (!set.HasAny())
+            {
                 RemoveAbilityMessage(player);
+            }
         }
 
         private static void OnPlayerChangingRole(ChangingRoleEventArgs ev)
         {
             if (ev.Player == null)
+            {
                 return;
+            }
 
             ClearStaleRoleAbilities(ev.Player);
             RefreshAbilityMessage(ev.Player);
@@ -248,7 +260,9 @@ namespace NS_site27_api.Modules.CustomRolePlus
             AddAbilityMessage(player);
 
             if (abilities == null || abilities.Count == 0)
+            {
                 return;
+            }
 
             var set = new PlayerAbilitySet().GetOrCreate(player);
 
@@ -271,18 +285,24 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             var set = AbilityBase.GetPlayerAbilitySet(player);
             if (set == null || set.RoleAbilities.Count == 0)
+            {
                 return;
+            }
 
             foreach (var ability in set.RoleAbilities.ToList())
             {
                 if (ability is IRegisiterNeeded<AbilityBase> reg)
+                {
                     reg.Unregister(player);
+                }
             }
 
             set.RoleAbilities.Clear();
 
             if (!set.HasAny())
+            {
                 RemoveAbilityMessage(player);
+            }
         }
     }
 
@@ -290,16 +310,14 @@ namespace NS_site27_api.Modules.CustomRolePlus
     {
         public static CustomItemPlus GetItemsCustom(this Item item)
         {
-            if (item == null) return null;
-            if (CustomItemPlus.ItemMapping.TryGetValue(item, out var map))
+            if (item == null)
             {
-                return map;
+                return null;
             }
-            if (CustomItemPlus.ItemMappingBySerial.TryGetValue(item.Serial, out var map2))
-            {
-                return map2;
-            }
-            return null;
+
+            return CustomItemPlus.ItemMapping.TryGetValue(item, out var map)
+                ? map
+                : CustomItemPlus.ItemMappingBySerial.TryGetValue(item.Serial, out var map2) ? map2 : null;
         }
     }
 
@@ -313,7 +331,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
             set
             {
                 if (!value.IsWeapon(checkNonFirearm: false) && value != ItemType.None)
+                {
                     throw new ArgumentOutOfRangeException("Type", value, "Invalid weapon type.");
+                }
+
                 base.Type = value;
             }
         }
@@ -324,14 +345,16 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         public override Pickup? Spawn(Vector3 position, Exiled.API.Features.Player? previousOwner = null)
         {
-            if (!(Item.Create(Type) is Firearm firearm))
+            if (Item.Create(Type) is not Firearm firearm)
             {
                 Log.Debug("Spawn: Item is not Firearm.");
                 return null;
             }
 
             if (!Attachments.IsEmpty())
+            {
                 firearm.AddAttachment(Attachments);
+            }
 
             Pickup pickup = firearm.CreatePickup(position);
             if (pickup == null)
@@ -341,14 +364,18 @@ namespace NS_site27_api.Modules.CustomRolePlus
             }
 
             if (ClipSize > 0)
+            {
                 firearm.MagazineAmmo = ClipSize;
+            }
 
             pickup.Weight = Weight;
             pickup.Scale = Scale;
             if (previousOwner != null)
+            {
                 pickup.PreviousOwner = previousOwner;
+            }
 
-            TrackedSerials.Add(pickup.Serial);
+            _ = TrackedSerials.Add(pickup.Serial);
             return pickup;
         }
 
@@ -357,16 +384,23 @@ namespace NS_site27_api.Modules.CustomRolePlus
             if (item is Firearm firearm)
             {
                 if (!Attachments.IsEmpty())
+                {
                     firearm.AddAttachment(Attachments);
+                }
+
                 if (ClipSize > 0)
+                {
                     firearm.MagazineAmmo = ClipSize;
+                }
 
                 Pickup pickup = firearm.CreatePickup(position);
                 pickup.Scale = Scale;
                 if (previousOwner != null)
+                {
                     pickup.PreviousOwner = previousOwner;
+                }
 
-                TrackedSerials.Add(pickup.Serial);
+                _ = TrackedSerials.Add(pickup.Serial);
                 return pickup;
             }
             return base.Spawn(position, item, previousOwner);
@@ -378,13 +412,18 @@ namespace NS_site27_api.Modules.CustomRolePlus
             if (item is Firearm firearm)
             {
                 if (!Attachments.IsEmpty())
+                {
                     firearm.AddAttachment(Attachments);
+                }
+
                 if (ClipSize > 0)
+                {
                     firearm.MagazineAmmo = ClipSize;
+                }
             }
 
             Log.Debug($"{Name}: Adding {item.Serial} to tracker.");
-            TrackedSerials.Add(item.Serial);
+            _ = TrackedSerials.Add(item.Serial);
             OnAcquired(player, item, displayMessage);
         }
 
@@ -418,7 +457,9 @@ namespace NS_site27_api.Modules.CustomRolePlus
         protected virtual void OnHurting(HurtingEventArgs ev)
         {
             if (ev.IsAllowed && Damage >= 0f)
+            {
                 ev.Amount = Damage;
+            }
         }
 
         protected virtual void OnChangingAttachment(ChangingAttachmentsEventArgs ev) { }
@@ -426,7 +467,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
         // 修复：实现基于 ClipSize 的手动装填，避免完全无法装弹
         private void OnInternalReloading(ReloadingWeaponEventArgs ev)
         {
-            if (!Check(ev.Item)) return;
+            if (!Check(ev.Item))
+            {
+                return;
+            }
 
             if (ClipSize > 0)
             {
@@ -453,7 +497,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
         // 保留原有逻辑，以备在某些特殊情形下仍被触发（如通过命令强制装填）
         private void OnInternalReloaded(ReloadedWeaponEventArgs ev)
         {
-            if (!Check(ev.Item)) return;
+            if (!Check(ev.Item))
+            {
+                return;
+            }
 
             if (ClipSize > 0)
             {
@@ -481,38 +528,68 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         private void OnInternalShooting(ShootingEventArgs ev)
         {
-            if (Check(ev.Item)) OnShooting(ev);
+            if (Check(ev.Item))
+            {
+                OnShooting(ev);
+            }
         }
 
         private void OnInternalShot(ShotEventArgs ev)
         {
-            if (Check(ev.Item)) OnShot(ev);
+            if (Check(ev.Item))
+            {
+                OnShot(ev);
+            }
         }
 
         // 修复：移除对 CurrentItem 的检查，仅依赖 DamageHandler 中的物品信息
         private void OnInternalHurting(HurtingEventArgs ev)
         {
-            if (ev.Attacker == null || ev.Player == null) return;
-            if (ev.Attacker == ev.Player) return; // 防止自伤触发自定义伤害
-            if (ev.DamageHandler == null) return;
+            if (ev.Attacker == null || ev.Player == null)
+            {
+                return;
+            }
 
-            if (!ev.DamageHandler.CustomBase.BaseIs<FirearmDamageHandler>(out var param)) return;
-            if (!Check(param.Item)) return;
+            if (ev.Attacker == ev.Player)
+            {
+                return; // 防止自伤触发自定义伤害
+            }
 
-            if (!FriendlyFire && ev.Attacker.Role.Team == ev.Player.Role.Team) return;
+            if (ev.DamageHandler == null)
+            {
+                return;
+            }
+
+            if (!ev.DamageHandler.CustomBase.BaseIs<FirearmDamageHandler>(out var param))
+            {
+                return;
+            }
+
+            if (!Check(param.Item))
+            {
+                return;
+            }
+
+            if (!FriendlyFire && ev.Attacker.Role.Team == ev.Player.Role.Team)
+            {
+                return;
+            }
 
             OnHurting(ev);
         }
 
         private void OnInternalChangingAttachment(ChangingAttachmentsEventArgs ev)
         {
-            if (Check(ev.Player.CurrentItem)) OnChangingAttachment(ev);
+            if (Check(ev.Player.CurrentItem))
+            {
+                OnChangingAttachment(ev);
+            }
         }
     }
 
     public abstract class CustomItemPlus : CustomItem
     {
-        public List<ItemAbilityBase> abilities = new List<ItemAbilityBase>();
+        public List<ItemAbilityBase> abilities = new();
 
         private static bool _availabilityCheckerStarted = false;
         private static bool _staticEventsSubscribed = false;
@@ -540,7 +617,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
                             ushort serial = tup.Item1;
                             var custom = tup.Item2;
                             var exItem = Item.Get(serial);
-                            if (exItem == null) continue;
+                            if (exItem == null)
+                            {
+                                continue;
+                            }
 
                             foreach (var template in custom.abilities.ToArray())
                             {
@@ -563,9 +643,11 @@ namespace NS_site27_api.Modules.CustomRolePlus
                                     if (inst != null)
                                     {
                                         UnregisterInstanceForTemplate(template, player, serial);
-                                        created.RemoveAll(x => x.id == template.id);
+                                        _ = created.RemoveAll(x => x.id == template.id);
                                         if (PlayerAbilities.TryGetValue(player, out var pal))
-                                            pal.ItemAbilities.RemoveAll(x => x.id == template.id);
+                                        {
+                                            _ = pal.ItemAbilities.RemoveAll(x => x.id == template.id);
+                                        }
                                     }
                                 }
                                 else if (!exists && shouldBe)
@@ -581,7 +663,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
                                     var set = new PlayerAbilitySet().GetOrCreate(player);
                                     if (!set.ItemAbilities.Any(x => x.id == instance.id))
+                                    {
                                         set.ItemAbilities.Add(instance);
+                                    }
+
                                     CustomRolePlus.AddAbilityMessage(player);
                                 }
                             }
@@ -599,9 +684,13 @@ namespace NS_site27_api.Modules.CustomRolePlus
             try
             {
                 if (template is IitemRegisiterNeeded<ItemAbilityBase> reg1)
+                {
                     instance = reg1.Register(serial);
+                }
                 else if (template is IRegisiterNeeded<ItemAbilityBase> reg)
+                {
                     instance = reg.Register(player);
+                }
             }
             catch (Exception ex) { Log.Warn($"CreateInstanceFromTemplate error: {ex}"); }
             return instance;
@@ -609,7 +698,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         private static void RegisterInstance(ItemAbilityBase instance, Player player, ushort serial)
         {
-            if (instance == null) return;
+            if (instance == null)
+            {
+                return;
+            }
 
             if (!ItemAbilities.TryGetValue(serial, out var list))
             {
@@ -617,34 +709,56 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 ItemAbilities[serial] = list;
             }
             if (!list.Any(x => x.id == instance.id))
+            {
                 list.Add(instance);
+            }
 
             var set = new PlayerAbilitySet().GetOrCreate(player);
             if (!set.ItemAbilities.Any(x => x.id == instance.id))
+            {
                 set.ItemAbilities.Add(instance);
+            }
 
             CustomRolePlus.AddAbilityMessage(player);
         }
 
         private static void UnregisterInstanceForTemplate(ItemAbilityBase template, Player player, ushort serial)
         {
-            if (!ItemAbilities.TryGetValue(serial, out var list)) return;
+            if (!ItemAbilities.TryGetValue(serial, out var list))
+            {
+                return;
+            }
+
             var inst = list.FirstOrDefault(x => x.id == template.id);
-            if (inst == null) return;
+            if (inst == null)
+            {
+                return;
+            }
 
             try
             {
                 if (template is IitemRegisiterNeeded<ItemAbilityBase> reg1)
+                {
                     reg1.Unregister(serial);
+                }
                 else if (template is IRegisiterNeeded<ItemAbilityBase> reg)
+                {
                     reg.Unregister(player);
+                }
             }
             catch (Exception ex) { Log.Warn($"UnregisterInstanceForTemplate error: {ex}"); }
 
-            list.RemoveAll(x => x.id == template.id);
+            _ = list.RemoveAll(x => x.id == template.id);
             if (PlayerAbilities.TryGetValue(player, out var pal))
-                pal.ItemAbilities.RemoveAll(x => x.id == template.id);
-            if (list.Count == 0) ItemAbilities.Remove(serial);
+            {
+                _ = pal.ItemAbilities.RemoveAll(x => x.id == template.id);
+            }
+
+            if (list.Count == 0)
+            {
+                _ = ItemAbilities.Remove(serial);
+            }
+
             CustomRolePlus.AddAbilityMessage(player);
         }
 
@@ -657,10 +771,21 @@ namespace NS_site27_api.Modules.CustomRolePlus
         protected override void ShowPickedUpMessage(Player player) { }
 
         // 修复：IsAvailable 现在基于传入的 item 参数，而不是玩家的当前手持物品
-        public virtual bool IsAvailable(Player player, Item item) => Check(item);
+        public virtual bool IsAvailable(Player player, Item item)
+        {
+            return Check(item);
+        }
 
-        protected void OnFlipingCoin(PlayerFlippedCoinEventArgs ev) => OnUsed(ev.Player, Item.Get(ev.CoinItem.Base));
-        protected void OnUsingItem(PlayerUsedItemEventArgs ev) => OnUsed(ev.Player, Item.Get(ev.UsableItem.Base));
+        protected void OnFlipingCoin(PlayerFlippedCoinEventArgs ev)
+        {
+            OnUsed(ev.Player, Item.Get(ev.CoinItem.Base));
+        }
+
+        protected void OnUsingItem(PlayerUsedItemEventArgs ev)
+        {
+            OnUsed(ev.Player, Item.Get(ev.UsableItem.Base));
+        }
+
         protected virtual void OnUsed(Player player, Item item) { }
 
         protected override void SubscribeEvents()
@@ -692,17 +817,21 @@ namespace NS_site27_api.Modules.CustomRolePlus
             PlayerEvents.FlippedCoin -= OnFlipingCoin;
         }
 
-        private static HashSet<ushort> PickedItem = new();
+        private static readonly HashSet<ushort> PickedItem = new();
 
         private void PlayerEvents_PickingUpItem(LabApi.Events.Arguments.PlayerEvents.PlayerPickingUpItemEventArgs ev)
         {
-            PickedItem.Add(ev.Pickup.Serial);
+            _ = PickedItem.Add(ev.Pickup.Serial);
             RefreshPlayersItems(Player.Get(ev.Player));
         }
 
         private void ItemBase_OnItemRemoved(ReferenceHub hub, ItemBase it, ItemPickupBase itb)
         {
-            if (it == null) return;
+            if (it == null)
+            {
+                return;
+            }
+
             OnDestroyedInternal(it.ItemId.SerialNumber, hub);
             RefreshPlayersItems(Player.Get(hub));
         }
@@ -716,7 +845,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
         {
             if (PickedItem.Contains(obj.ItemId.SerialNumber))
             {
-                PickedItem.Remove(obj.ItemId.SerialNumber);
+                _ = PickedItem.Remove(obj.ItemId.SerialNumber);
                 return;
             }
             OnDestroyedInternal(obj.ItemId.SerialNumber);
@@ -725,26 +854,31 @@ namespace NS_site27_api.Modules.CustomRolePlus
         private static bool HasVisibleAbilitiesOrItems(Player player)
         {
             if (player == null)
+            {
                 return false;
+            }
 
             if (PlayerItems.TryGetValue(player, out var pItems) && pItems.Any())
+            {
                 return true;
+            }
 
             var set = AbilityBase.GetPlayerAbilitySet(player);
-            if (set != null && set.HasVisible())
-                return true;
-
-            return false;
+            return set != null && set.HasVisible();
         }
 
         private static void RefreshAbilityMessage(Player player)
         {
             if (player == null)
+            {
                 return;
+            }
 
             CustomRolePlus.RemoveAbilityMessage(player);
             if (HasVisibleAbilitiesOrItems(player))
+            {
                 CustomRolePlus.AddAbilityMessage(player);
+            }
         }
 
         private static void RemoveSerialFromAllPlayerItems(ushort serial)
@@ -754,7 +888,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 if (kv.Value.RemoveAll(x => x.Item1 == serial) > 0)
                 {
                     if (kv.Value.Count == 0)
-                        PlayerItems.Remove(kv.Key);
+                    {
+                        _ = PlayerItems.Remove(kv.Key);
+                    }
+
                     RefreshAbilityMessage(kv.Key);
                 }
             }
@@ -762,44 +899,62 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         protected virtual void OnDestroyedInternal(ushort serial, ReferenceHub referenceHub = null)
         {
-            if (!ItemMappingBySerial.ContainsKey(serial)) return;
+            if (!ItemMappingBySerial.ContainsKey(serial))
+            {
+                return;
+            }
 
             var player = Player.Get(referenceHub);
             if (player != null)
+            {
                 RefreshPlayersItems(player);
+            }
             else
+            {
                 RemoveSerialFromAllPlayerItems(serial);
+            }
 
             if (ItemAbilities.TryGetValue(serial, out var itemAbilities))
             {
-                List<ItemAbilityBase> toRemove = new List<ItemAbilityBase>(itemAbilities);
+                List<ItemAbilityBase> toRemove = new(itemAbilities);
                 foreach (var ability in toRemove)
                 {
                     try
                     {
                         if (ability is IRegisiterNeeded<ItemAbilityBase> reg)
+                        {
                             reg.Unregister(player);
+                        }
+
                         if (ability is IitemRegisiterNeeded<ItemAbilityBase> reg1)
+                        {
                             reg1.Unregister(serial);
+                        }
                     }
                     catch { }
                 }
                 if (PlayerAbilities.TryGetValue(player, out var set))
-                    set.ItemAbilities.RemoveAll(x => toRemove.Any(y => y.id == x.id));
-                ItemAbilities.Remove(serial);
+                {
+                    _ = set.ItemAbilities.RemoveAll(x => toRemove.Any(y => y.id == x.id));
+                }
+
+                _ = ItemAbilities.Remove(serial);
             }
 
 
             try
             {
                 var keys = ItemMapping.Where(kv => kv.Key?.Serial == serial).Select(kv => kv.Key).ToList();
-                foreach (var k in keys) ItemMapping.Remove(k);
+                foreach (var k in keys)
+                {
+                    _ = ItemMapping.Remove(k);
+                }
             }
             catch { }
-            ItemMappingBySerial.Remove(serial);
+            _ = ItemMappingBySerial.Remove(serial);
 
             OnDestroyed(serial, player);
-            TrackedSerials.Remove(serial);
+            _ = TrackedSerials.Remove(serial);
 
             RefreshAbilityMessage(player);
         }
@@ -819,7 +974,9 @@ namespace NS_site27_api.Modules.CustomRolePlus
             {
                 var c = item.GetItemsCustom();
                 if (c != null)
+                {
                     list.Add((item.Serial, c));
+                }
             }
         }
 
@@ -833,22 +990,27 @@ namespace NS_site27_api.Modules.CustomRolePlus
             RefreshPlayersItems(player);
 
             if (abilities == null || abilities.Count == 0)
+            {
                 return;
+            }
 
             if (!_availabilityCheckerStarted)
             {
                 _availabilityCheckerStarted = true;
-                NS_site27_api.Core.CorePlugin.RunCoroutine(AvailabilityChecker());
+                _ = NS_site27_api.Core.CorePlugin.RunCoroutine(AvailabilityChecker());
             }
 
             CustomRolePlus.AddAbilityMessage(player);
 
             foreach (var template in abilities)
             {
-                bool available = true;
+                bool available;
                 try { available = template.IsAvailable(player, item) && IsAvailable(player, item); }
                 catch { available = true; }
-                if (!available) continue;
+                if (!available)
+                {
+                    continue;
+                }
 
                 var instance = CreateInstanceFromTemplate(template, player, item.Serial);
                 RegisterInstance(instance, player, item.Serial);
@@ -857,26 +1019,37 @@ namespace NS_site27_api.Modules.CustomRolePlus
         protected override void OnDroppingItem(DroppingItemEventArgs ev)
         {
             base.OnDroppingItem(ev);
-            if (!Check(ev.Item)) return;
+            if (!Check(ev.Item))
+            {
+                return;
+            }
 
             // 1. 清理掉落物品对应的所有能力实例
             if (ItemAbilities.TryGetValue(ev.Item.Serial, out var itemAbilities))
             {
-                List<ItemAbilityBase> toRemove = new List<ItemAbilityBase>(itemAbilities);
+                List<ItemAbilityBase> toRemove = new(itemAbilities);
                 foreach (var ability in toRemove)
                 {
                     try
                     {
                         if (ability is IRegisiterNeeded<ItemAbilityBase> reg)
+                        {
                             reg.Unregister(ev.Player);
+                        }
+
                         if (ability is IitemRegisiterNeeded<ItemAbilityBase> reg1)
+                        {
                             reg1.Unregister(ev.Item.Serial);
+                        }
                     }
                     catch { }
                 }
                 if (PlayerAbilities.TryGetValue(ev.Player, out var set))
-                    set.ItemAbilities.RemoveAll(x => toRemove.Any(y => y.id == x.id));
-                ItemAbilities.Remove(ev.Item.Serial);
+                {
+                    _ = set.ItemAbilities.RemoveAll(x => toRemove.Any(y => y.id == x.id));
+                }
+
+                _ = ItemAbilities.Remove(ev.Item.Serial);
             }
 
             RefreshPlayersItems(ev.Player);
@@ -885,17 +1058,23 @@ namespace NS_site27_api.Modules.CustomRolePlus
             // 2. 判断是否还有需要显示 UI 的理由（剩余物品或能力）
             bool hasVisible = false;
             if (PlayerItems.TryGetValue(ev.Player, out var pItems) && pItems.Any(t => t.Item1 != ev.Item.Serial))
+            {
                 hasVisible = true;
+            }
             else if (PlayerAbilities.TryGetValue(ev.Player, out var pal) && pal.HasVisible())
+            {
                 hasVisible = true;
+            }
 
             // 3. 强制刷新 UI：先移除，若仍有可见内容则重新添加
             CustomRolePlus.RemoveAbilityMessage(ev.Player);
             if (hasVisible)
+            {
                 CustomRolePlus.AddAbilityMessage(ev.Player);
+            }
 
             // 4. 在物品真正从玩家背包移除后再刷新一次，避免掉落事件触发时库存状态仍旧包含该物品
-            Timing.CallDelayed(0.1f, () =>
+            _ = Timing.CallDelayed(0.1f, () =>
             {
                 RefreshPlayersItems(ev.Player);
                 RefreshAbilityMessage(ev.Player);
@@ -910,7 +1089,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
     public abstract class CustomArmor : CustomItemPlus
     {
-        public override bool IsAvailable(Player player, Item item) => true;
+        public override bool IsAvailable(Player player, Item item)
+        {
+            return true;
+        }
 
         public override ItemType Type
         {
@@ -918,7 +1100,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
             set
             {
                 if (value != ItemType.None && !value.IsArmor())
+                {
                     throw new ArgumentOutOfRangeException("Type", value, "Invalid armor type.");
+                }
+
                 base.Type = value;
             }
         }
@@ -944,20 +1129,27 @@ namespace NS_site27_api.Modules.CustomRolePlus
             armor.HelmetEfficacy = HelmetEfficacy;
 
             if (AmmoLimits.Count != 0)
+            {
                 armor.AmmoLimits = AmmoLimits;
+            }
 
             // 修复：正确判断 CategoryLimits 是否非空
             if (CategoryLimits.Count != 0)
+            {
                 armor.CategoryLimits = CategoryLimits;
+            }
 
             player.AddItem(armor);
-            TrackedSerials.Add(armor.Serial);
-            Timing.CallDelayed(0.1f, delegate
+            _ = TrackedSerials.Add(armor.Serial);
+            _ = Timing.CallDelayed(0.1f, delegate
             {
                 OnAcquired(player, armor, displayMessage);
                 RefreshPlayersItems(player);
             });
-            if (displayMessage) ShowPickedUpMessage(player);
+            if (displayMessage)
+            {
+                ShowPickedUpMessage(player);
+            }
         }
 
         protected override void SubscribeEvents()
@@ -980,7 +1172,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 if (ev.IsAllowed)
                 {
                     ev.IsAllowed = false;
-                    TrackedSerials.Remove(ev.Pickup.Serial);
+                    _ = TrackedSerials.Remove(ev.Pickup.Serial);
                     ev.Pickup.Destroy();
                     Give(ev.Player);
                 }

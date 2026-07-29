@@ -1,5 +1,4 @@
 using Exiled.API.Extensions;
-using Exiled.API.Features;
 using Exiled.API.Features.Roles;
 using Exiled.Events.EventArgs.Player;
 using Interactables.Interobjects.DoorUtils;
@@ -7,7 +6,6 @@ using MEC;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.Admin;
 using NS_site27_api.Modules.Duel;
-using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using System;
 using System.Collections.Generic;
@@ -27,7 +25,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static Dictionary<Player, CoroutineHandle> rainbowC = new();
         public static Dictionary<Player, (Stopwatch stand, double lastTime, Vector3 lastPos)> ScpStandHP = new();
 
-        public static List<string> colors = new List<string>() { "red", "green", "yellow", "cyan", "magenta" };
+        public static List<string> colors = new() { "red", "green", "yellow", "cyan", "magenta" };
         public static Dictionary<Player, CoroutineHandle> RainbowCoroutines = new();
 
         public static void Init()
@@ -42,37 +40,47 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.FailingEscapePocketDimension -= OnFailPocket;
         }
 
-        private static Dictionary<Player, Player> _scp106Catchers = new();
+        private static readonly Dictionary<Player, Player> _scp106Catchers = new();
 
         private static void OnInteractDoor(InteractingDoorEventArgs ev)
         {
-            if (ev.Door.IsMoving || ev.Door.IsNonInteractable || ev.Door.IsLocked) return;
+            if (ev.Door.IsMoving || ev.Door.IsNonInteractable || ev.Door.IsLocked)
+            {
+                return;
+            }
+
             foreach (var item in ev.Player.Items)
             {
                 if (item.Base is IDoorPermissionProvider dp)
                 {
                     if (ev.Door.Base.CheckPermissions(dp, out var _))
+                    {
                         ev.IsAllowed = true;
+                    }
                 }
             }
         }
 
         private static void OnFailPocket(FailingEscapePocketDimensionEventArgs ev)
         {
-            if (ev.Player != null && _scp106Catchers.TryGetValue(ev.Player, out var scp))
+            if (ev.Player != null && _scp106Catchers.TryGetValue(ev.Player, out _))
             {
                 //scp.ShowHint("<color=red>你抓到了一个目标!</color>", 5);
-                _scp106Catchers.Remove(ev.Player);
+                _ = _scp106Catchers.Remove(ev.Player);
             }
         }
         public static void HandleScpStandHeal(Player player)
         {
-            if (!(player.Role?.Base is IFpcRole fpcRole) || !player.IsScp) return;
+            if (player.Role?.Base is not IFpcRole || !player.IsScp)
+            {
+                return;
+            }
 
             double interval = 1.0;
-
-            if (!ScpStandHP.TryGetValue(player, out var data))
+            if (!ScpStandHP.TryGetValue(player, out _))
+            {
                 ScpStandHP[player] = (Stopwatch.StartNew(), 0.0, player.Position);
+            }
 
             var (stopwatch, lastHealTime, lastPos) = ScpStandHP[player];
             double elapsed = stopwatch.Elapsed.TotalSeconds;
@@ -96,11 +104,27 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static void HandleBadgeSync(Player player, ReferenceHub hub)
         {
-                    if (hub == null) return ;
-                    if (player == null) return;
-            (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes) badgeData = ("","",new List<string>(new[]{ "white" }),DateTime.UtcNow,true,"");
-            if (!badges.TryGetValue(player.UserId, out badgeData)) return;
-            if (DuelManager.PlayerBadges.ContainsKey(player.UserId)) return;
+            if (hub == null)
+            {
+                return;
+            }
+
+            if (player == null)
+            {
+                return;
+            }
+
+            _ = ("", "", new List<string>(new[] { "white" }), DateTime.UtcNow, true, "");
+            if (!badges.TryGetValue(player.UserId, out (string player_name, string badge, List<string> color, DateTime expiration_date, bool is_permanent, string notes) badgeData))
+            {
+                return;
+            }
+
+            if (DuelManager.PlayerBadges.ContainsKey(player.UserId))
+            {
+                return;
+            }
+
             var text = badgeData.badge;
             if (player.RemoteAdminAccess && AdminAssignModule.CachedGroups.ContainsKey(player))
             {
@@ -118,9 +142,13 @@ namespace NS_site27_api.Modules.PlayerManagement
             if (badgeData.color != null && badgeData.color.Contains("rainbow"))
             {
                 if (!rainbowC.ContainsKey(player))
+                {
                     rainbowC[player] = Timing.RunCoroutine(RainbowTimeCoroutine(player, colors));
+                }
                 else if (!rainbowC[player].IsRunning)
+                {
                     rainbowC[player] = Timing.RunCoroutine(RainbowTimeCoroutine(player, colors));
+                }
             }
             else
             {
@@ -129,53 +157,85 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static IEnumerator<float> RainbowTimeCoroutine(Player player, List<string> colorsList)
         {
-            if (player == null) yield break;
-            if (colorsList == null) yield break;
+            if (player == null)
+            {
+                yield break;
+            }
+
+            if (colorsList == null)
+            {
+                yield break;
+            }
+
             while (player != null)
             {
                 foreach (var color in colorsList)
                 {
-                    if (player == null) break;
+                    if (player == null)
+                    {
+                        break;
+                    }
+
                     player.RankColor = color;
                     yield return Timing.WaitForSeconds(1.5f);
                 }
-                if (player == null) break;
+                if (player == null)
+                {
+                    break;
+                }
+
                 yield return Timing.WaitForSeconds(1.5f);
             }
         }
         public static void HandleSpectatorTracking(Player player, SpectatorRole spectatorRole)
         {
-            if (player == null || !player.IsConnected) return;
+            if (player == null || !player.IsConnected)
+            {
+                return;
+            }
 
             var target = spectatorRole?.SpectatedPlayer;
 
             foreach (var kv in SpecList.Keys.ToList())
             {
                 if (kv == null || !kv.IsConnected)
-                    SpecList.Remove(kv);
+                {
+                    _ = SpecList.Remove(kv);
+                }
             }
 
             var keysToUpdate = new HashSet<Player>();
             foreach (var entry in SpecList.ToList())
             {
                 if (entry.Value.Contains(player))
-                    keysToUpdate.Add(entry.Key);
+                {
+                    _ = keysToUpdate.Add(entry.Key);
+                }
             }
 
             foreach (var key in keysToUpdate)
             {
-                SpecList[key].Remove(player);
+                _ = SpecList[key].Remove(player);
                 if (SpecList[key].Count == 0)
-                    SpecList.Remove(key);
+                {
+                    _ = SpecList.Remove(key);
+                }
             }
 
-            if (target == null || !target.IsConnected) return;
+            if (target == null || !target.IsConnected)
+            {
+                return;
+            }
 
             if (!SpecList.ContainsKey(target))
+            {
                 SpecList[target] = new HashSet<Player>();
+            }
 
             if (!SpecList[target].Contains(player))
-                SpecList[target].Add(player);
+            {
+                _ = SpecList[target].Add(player);
+            }
         }
 
         public static void HandleSpectatorTracking(Player player, OverwatchRole overwatch)
@@ -189,24 +249,32 @@ namespace NS_site27_api.Modules.PlayerManagement
             foreach (var entry in SpecList.ToList())
             {
                 if (entry.Value.Contains(player))
+                {
                     keysToUpdate.Add(entry.Key);
+                }
             }
             foreach (var key in keysToUpdate)
             {
-                SpecList[key].Remove(player);
+                _ = SpecList[key].Remove(player);
                 if (SpecList[key].Count == 0)
-                    SpecList.Remove(key);
+                {
+                    _ = SpecList.Remove(key);
+                }
             }
         }
-        public static HashSet<Player> HasRenamedPlayers = new HashSet<Player>();
+        public static HashSet<Player> HasRenamedPlayers = new();
         public static async void HandlePlayerRenamer(Player player)
         {
-            if(player == null) return;
+            if (player == null)
+            {
+                return;
+            }
+
             var pstr = await PhaseManager.GetPhaseProgressString(player);
-            if(!HasRenamedPlayers.Contains(player))
+            if (!HasRenamedPlayers.Contains(player))
             {
                 player.DisplayNickname = $"{pstr}{player.Nickname}";
-                HasRenamedPlayers.Add(player);
+                _ = HasRenamedPlayers.Add(player);
             }
         }
     }

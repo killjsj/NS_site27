@@ -1,22 +1,17 @@
 using AudioManagerAPI.Defaults;
 using CommandSystem;
 using Exiled.API.Features;
-using Exiled.Events.EventArgs.Player;
-using LabApi.Features.Wrappers;
 using MEC;
-using MySqlX.XDevAPI;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using NeteaseMusicAPI;
 using Newtonsoft.Json.Linq;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
-using Org.BouncyCastle.Ocsp;
+using NS_site27_api.Core.UI.DisplayKit;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,8 +42,15 @@ namespace NS_site27_api.Modules.LobbyMusic
             source = ss;
         }
 
-        public override bool Equals(object obj) => obj is SongReq other && other.id == id && other.player == player;
-        public override int GetHashCode() => id.GetHashCode();
+        public override bool Equals(object obj)
+        {
+            return obj is SongReq other && other.id == id && other.player == player;
+        }
+
+        public override int GetHashCode()
+        {
+            return id.GetHashCode();
+        }
     }
 
     // 模块配置（可按需扩展）
@@ -108,7 +110,11 @@ namespace NS_site27_api.Modules.LobbyMusic
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             if (LobbyMusicManager.Instance == null) { response = "点歌系统未初始化"; return false; }
-            while (LobbyMusicManager.Instance.WaitForProcess.TryDequeue(out _)) ;
+            while (LobbyMusicManager.Instance.WaitForProcess.TryDequeue(out _))
+            {
+                ;
+            }
+
             LobbyMusicManager.Instance.AdminOverride = !LobbyMusicManager.Instance.AdminOverride;
             response = $"点歌功能已{(LobbyMusicManager.Instance.AdminOverride ? "禁止" : "允许")}";
             LobbyMusicManager.Instance.DestroySpeaker();
@@ -140,7 +146,7 @@ namespace NS_site27_api.Modules.LobbyMusic
 
         public bool AdminOverride { get; set; }
         public bool AdminOverrideEnable { get; set; }
-        public readonly ConcurrentQueue<SongReq> WaitForProcess = new ConcurrentQueue<SongReq>();
+        public readonly ConcurrentQueue<SongReq> WaitForProcess = new();
 
         public SongReq _processing;
         public CoroutineHandle _processor;
@@ -156,8 +162,8 @@ namespace NS_site27_api.Modules.LobbyMusic
         public string CurrentSongName { get; set; }
         public double TotalTime { get; set; }
 
-        public readonly List<string> _tempFiles = new List<string>();
-        public readonly NeteaseAPI _api = new NeteaseAPI();
+        public readonly List<string> _tempFiles = new();
+        public readonly NeteaseAPI _api = new();
 
         public struct LrcLine
         {
@@ -178,7 +184,11 @@ namespace NS_site27_api.Modules.LobbyMusic
         // 清理
         public void Cleanup()
         {
-            if (_processor.IsRunning) Timing.KillCoroutines(_processor);
+            if (_processor.IsRunning)
+            {
+                _ = Timing.KillCoroutines(_processor);
+            }
+
             Instance = null;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
             Exiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
@@ -188,13 +198,19 @@ namespace NS_site27_api.Modules.LobbyMusic
             DestroySpeaker();
             foreach (var file in _tempFiles)
             {
-                if (File.Exists(file)) File.Delete(file);
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
             }
             _tempFiles.Clear();
         }
 
         // 回合开始
-        public void OnRoundStarted() => DestroySpeaker();
+        public void OnRoundStarted()
+        {
+            DestroySpeaker();
+        }
 
         // 回合重启
         public void OnRestartingRound()
@@ -205,7 +221,10 @@ namespace NS_site27_api.Modules.LobbyMusic
             DestroySpeaker();
             foreach (var file in _tempFiles)
             {
-                if (File.Exists(file)) File.Delete(file);
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
             }
             _tempFiles.Clear();
         }
@@ -214,7 +233,11 @@ namespace NS_site27_api.Modules.LobbyMusic
         public void OnWaitingForPlayers()
         {
             OnRestartingRound();
-            if (_processor.IsRunning) Timing.KillCoroutines(_processor);
+            if (_processor.IsRunning)
+            {
+                _ = Timing.KillCoroutines(_processor);
+            }
+
             _processor = Timing.RunCoroutine(ProcessQueue());
             AdminOverride = false;
             AdminOverrideEnable = false;
@@ -232,12 +255,15 @@ namespace NS_site27_api.Modules.LobbyMusic
                 if (state?.PhysicalSpeaker is DefaultSpeakerToyAdapter adapter)
                 {
                     float pos = adapter.GetPlaybackPosition();
-                    this.current = pos;
+                    current = pos;
                     if (Time.time - _songStartTime >= (float)TotalTime + 0.5f)
                     {
                         foreach (var file in _tempFiles)
                         {
-                            if (File.Exists(file)) File.Delete(file);
+                            if (File.Exists(file))
+                            {
+                                File.Delete(file);
+                            }
                         }
                         _tempFiles.Clear();
                         DestroySpeaker();
@@ -254,7 +280,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     if (player.Role.Type == PlayerRoles.RoleTypeId.None)
                     {
                         player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Tutorial, PlayerRoles.RoleChangeReason.None, PlayerRoles.RoleSpawnFlags.UseSpawnpoint);
-                        Timing.CallDelayed(0.2f, () =>
+                        _ = Timing.CallDelayed(0.2f, () =>
                         {
                             player.RoleManager.ServerSetRole(PlayerRoles.RoleTypeId.Spectator, PlayerRoles.RoleChangeReason.None);
 
@@ -275,7 +301,10 @@ namespace NS_site27_api.Modules.LobbyMusic
                 sessionId = 0;
 
             }
-            if (monitor.IsRunning) Timing.KillCoroutines(monitor);
+            if (monitor.IsRunning)
+            {
+                _ = Timing.KillCoroutines(monitor);
+            }
 
             TotalTime = 0;
             _readyToNext = true;
@@ -299,7 +328,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                         continue;
                     }
                     _readyToNext = false;
-                    ProcessSongAsync(songId);
+                    _ = ProcessSongAsync(songId);
                 }
             }
         }
@@ -347,7 +376,9 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                             var lyricResult = await _api.GetLyric(songId, new());
                             if (lyricResult?.code == 200 && !string.IsNullOrEmpty(lyricResult.lrc?.lyric))
+                            {
                                 lrcContent = lyricResult.lrc.lyric;
+                            }
                         }
                     }
                     else // MonsterSiren
@@ -379,7 +410,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                         if (!string.IsNullOrEmpty(lyricUrl))
                         {
                             try { lrcContent = await http.GetStringAsync(lyricUrl); }
-                            catch {}
+                            catch { }
                         }
                     }
 
@@ -430,19 +461,15 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                 using (var httpClient = new HttpClient())
                 {
-                    using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct))
-                    {
-                        response.EnsureSuccessStatusCode();
-                        using (var fileStream = File.OpenWrite(tempFile))
-                        {
-                            await response.Content.CopyToAsync(fileStream);
-                        }
-                    }
+                    using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+                    _ = response.EnsureSuccessStatusCode();
+                    using var fileStream = File.OpenWrite(tempFile);
+                    await response.Content.CopyToAsync(fileStream);
                 }
 
                 ct.ThrowIfCancellationRequested();
 
-                Log.Info($"Loading {this._processing.id} - decoding");
+                Log.Info($"Loading {_processing.id} - decoding");
                 _processing.player?.SendConsoleMessage("歌曲加载 - 解码中", "green");
 
                 ct.ThrowIfCancellationRequested();
@@ -487,11 +514,11 @@ namespace NS_site27_api.Modules.LobbyMusic
                     return;
                 }
                 DefaultAudioManager.Instance.RegisterAudio(guid.ToString(), () => File.OpenRead(tempOggFile));
-                    sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, volume:0.8f);
+                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f);
                 CurrentSongName = name;
                 _songStartTime = Time.time;
                 StartLyrics(lrc);
-                Timing.CallDelayed(0.4f, () =>
+                _ = Timing.CallDelayed(0.4f, () =>
                 {
                     if (ct.IsCancellationRequested || !SongPlayable)
                     {
@@ -500,7 +527,10 @@ namespace NS_site27_api.Modules.LobbyMusic
                         return;
                     }
                     if (sessionId != 0)
+                    {
                         monitor = Timing.RunCoroutine(MonitorPlaybackEnd(), Segment.LateUpdate);
+                    }
+
                     Log.Info($"歌曲播放开始: {name}");
                     _processing.player?.SendConsoleMessage("歌曲播放成功!", "green");
 
@@ -531,14 +561,20 @@ namespace NS_site27_api.Modules.LobbyMusic
                 foreach (var line in lrcContent.Split('\n'))
                 {
                     var match = regex.Match(line);
-                    if (!match.Success) continue;
+                    if (!match.Success)
+                    {
+                        continue;
+                    }
+
                     int min = int.Parse(match.Groups[1].Value);
                     int sec = int.Parse(match.Groups[2].Value);
                     int ms = int.Parse(match.Groups[3].Value.PadRight(3, '0'));
-                    float time = min * 60 + sec + ms / 1000f;
+                    float time = (min * 60) + sec + (ms / 1000f);
                     string text = match.Groups[4].Value.Trim();
                     if (!string.IsNullOrEmpty(text))
+                    {
                         lines.Add(new LrcLine { Time = time, Text = text });
+                    }
                 }
                 lines.Sort((a, b) => a.Time.CompareTo(b.Time));
             }
@@ -555,7 +591,12 @@ namespace NS_site27_api.Modules.LobbyMusic
             {
                 StopLyrics();
                 _lrcLines = ParseLrc(lrcContent);
-            }catch(Exception e)
+                foreach (var item in Player.Enumerable)
+                {
+                    item.AddLayer("lyDisplay");
+                }
+            }
+            catch (Exception e)
             {
                 Log.Error(e);
             }
@@ -564,14 +605,21 @@ namespace NS_site27_api.Modules.LobbyMusic
         public void StopLyrics()
         {
             _lrcLines = null;
+            foreach (var item in Player.Enumerable)
+            {
+                item.RemoveLayer("lyDisplay");
+            }
         }
 
-        public string GetSourceName() => _processing.source switch
+        public string GetSourceName()
         {
-            SongSource.NeteaseCloud => "网易云",
-            SongSource.MonsterSiren => "塞壬唱片",
-            _ => "未知"
-        };
+            return _processing.source switch
+            {
+                SongSource.NeteaseCloud => "网易云",
+                SongSource.MonsterSiren => "塞壬唱片",
+                _ => "未知"
+            };
+        }
 
         public static string FormatTime(float seconds)
         {

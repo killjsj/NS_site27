@@ -2,15 +2,13 @@ using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
-using MEC;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Player = Exiled.API.Features.Player;
-using ServerHandlers = Exiled.Events.Handlers.Server;
 using PlayerHandlers = Exiled.Events.Handlers.Player;
+using ServerHandlers = Exiled.Events.Handlers.Server;
 
 
 namespace NS_site27_api.Modules.SpawnProtection
@@ -25,7 +23,7 @@ namespace NS_site27_api.Modules.SpawnProtection
 
     public class SpawnProtectionModule : ModuleBase<SpawnProtectionConfig>
     {
-        public static Dictionary<Player, (bool lost,float time)> LoseProtectAt = new();
+        public static Dictionary<Player, (bool lost, float time)> LoseProtectAt = new();
         public override string ModuleName => "SpawnProtection";
         public override void OnEnable()
         {
@@ -47,7 +45,10 @@ namespace NS_site27_api.Modules.SpawnProtection
 
         private void RespawnedTeam(RespawnedTeamEventArgs ev)
         {
-            if (Round.IsEnded) return;
+            if (Round.IsEnded)
+            {
+                return;
+            }
 
             foreach (var player in ev.Players)
             {
@@ -92,7 +93,7 @@ namespace NS_site27_api.Modules.SpawnProtection
                 }
                 else
                 {
-                    
+
                 }
             }
         }

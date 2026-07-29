@@ -1,9 +1,8 @@
+using Exiled.API.Enums;
 using Exiled.API.Features;
+using PlayerRoles;
 using System.Collections.Generic;
 using System.Linq;
-using MapGeneration;
-using PlayerRoles;
-using Exiled.API.Enums;
 
 namespace NS_site27_api.Extensions
 {
@@ -11,42 +10,40 @@ namespace NS_site27_api.Extensions
     {
         public static string ZoneToString(this ZoneType zone)
         {
-            switch (zone)
+            return zone switch
             {
-                case ZoneType.LightContainment: return "轻收容";
-                case ZoneType.HeavyContainment: return "重收容";
-                case ZoneType.Entrance: return "办公";
-                case ZoneType.Surface: return "地表";
-                case ZoneType.Pocket: return "口袋空间";
-                default: return "未知";
-            }
+                ZoneType.LightContainment => "轻收容",
+                ZoneType.HeavyContainment => "重收容",
+                ZoneType.Entrance => "办公",
+                ZoneType.Surface => "地表",
+                ZoneType.Pocket => "口袋空间",
+                _ => "未知",
+            };
         }
 
         public static string RoomToString(this Room room)
         {
-            if (room == null) return "未知房间";
+            if (room == null)
+            {
+                return "未知房间";
+            }
 
             string zone = room.Zone != null ? room.Zone.ZoneToString() + " " : "";
             string name = zone;
 
-            switch (room.Type)
+            name += room.Type switch
             {
-                case RoomType.HczIntersectionJunk:
-                    name += "管道房";
-                    break;
-                default:
-                    name += room.Name;
-                    break;
-            }
-
-            return name.Replace("(Clone)","");
+                RoomType.HczIntersectionJunk => "管道房",
+                _ => room.Name,
+            };
+            return name.Replace("(Clone)", "");
         }
 
         public static List<Player> GetServerPlayers()
         {
             return Player.Enumerable.ToList();
         }
-        public static Dictionary<RoleTypeId, string> RoleTrans = new Dictionary<RoleTypeId, string>() {
+        public static Dictionary<RoleTypeId, string> RoleTrans = new() {
                 {RoleTypeId.Scp049, "Scp049" },
                 {RoleTypeId.Scp096, "Scp096" },
                 {RoleTypeId.Scp3114, "Scp3114" },
@@ -76,9 +73,7 @@ namespace NS_site27_api.Extensions
             };
         public static string RoleToString(this RoleTypeId role)
         {
-            if (RoleTrans.TryGetValue(role, out var name))
-                return name;
-            return role.ToString();
+            return RoleTrans.TryGetValue(role, out var name) ? name : role.ToString();
         }
     }
 }

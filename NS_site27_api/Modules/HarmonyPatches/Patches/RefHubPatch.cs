@@ -1,14 +1,6 @@
 using CentralAuth;
 using HarmonyLib;
-using NS_site27_api.Modules.EventHandle.Handlers;
-using PlayerRoles;
-using PlayerRoles.FirstPersonControl;
-using PlayerRoles.FirstPersonControl.NetworkMessages;
-using PlayerRoles.Visibility;
 using System;
-using System.Collections.Generic;
-using System.Reflection;
-using UnityEngine;
 
 namespace NS_site27_api.Modules.HarmonyPatches.Patches
 {

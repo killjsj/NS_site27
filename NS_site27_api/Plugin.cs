@@ -34,14 +34,14 @@ namespace NS_site27_api
         public override PluginPriority Priority => PluginPriority.Medium;
 
         public static Plugin Instance { get; private set; }
-        public MySQLConnect connect = new MySQLConnect();
+        public MySQLConnect connect = new();
 
         public override void OnEnabled()
         {
             Instance = this;
             CorePlugin.Instance = this;
             Log.Info("NS_site27 plugin starting...");
-            
+
             ModuleConfigManager.Initialize(this);
 
             var d = new DisplayKitRunner();
@@ -71,10 +71,7 @@ namespace NS_site27_api
             ServerHandlers.WaitingForPlayers -= OnWaitingForPlayers;
             ServerHandlers.RestartingRound -= OnRestartingRound;
 
-            if(DisplayKitRunner.Instance != null)
-            {
-                DisplayKitRunner.Instance.Disable();
-            }
+            DisplayKitRunner.Instance?.Disable();
 
             foreach (var module in CorePlugin.Modules.Reverse<IModule>())
             {
@@ -101,7 +98,11 @@ namespace NS_site27_api
             {
                 try
                 {
-                    if (!module.IsEnabled) continue;
+                    if (!module.IsEnabled)
+                    {
+                        continue;
+                    }
+
                     module.OnDisable();
                     module.OnEnable();
                 }
@@ -122,11 +123,15 @@ namespace NS_site27_api
                 try
                 {
 
-                        var obj = (IModule)Activator.CreateInstance(type);
-                        if (!obj.IsEnabled) continue;
-                        obj.OnEnable();
-                        CorePlugin.Modules.Add(obj);
-                    
+                    var obj = (IModule)Activator.CreateInstance(type);
+                    if (!obj.IsEnabled)
+                    {
+                        continue;
+                    }
+
+                    obj.OnEnable();
+                    CorePlugin.Modules.Add(obj);
+
                     Log.Info($"Module '{obj.ModuleName}' loaded.");
                 }
                 catch (Exception ex)
@@ -139,8 +144,6 @@ namespace NS_site27_api
         private void OnWaitingForPlayers()
         {
             CorePlugin.RestartingRound();
-
-            CustomLiteNetLib4MirrorTransport.GetConnectKey()
         }
 
         private void OnRestartingRound()

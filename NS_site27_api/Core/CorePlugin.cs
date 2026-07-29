@@ -1,15 +1,8 @@
-using Exiled.API.Features;
 using Exiled.API.Interfaces;
-using System;
+using MEC;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using MEC;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
-using NS_site27_api.Modules.EventHandle;
 
 namespace NS_site27_api.Core
 {
@@ -35,7 +28,10 @@ namespace NS_site27_api.Core
         {
             var ch = Timing.RunCoroutine(coroutine);
             if (stopOnEnd)
+            {
                 ClearOnEnd.Add(ch);
+            }
+
             return ch;
         }
         public static T GetModule<T>() where T : IModule
@@ -47,7 +43,9 @@ namespace NS_site27_api.Core
             foreach (var item in ClearOnEnd)
             {
                 if (item.IsRunning)
-                    Timing.KillCoroutines(item);
+                {
+                    _ = Timing.KillCoroutines(item);
+                }
             }
             ClearOnEnd.Clear();
         }
@@ -62,7 +60,7 @@ namespace NS_site27_api.Core
 
         public virtual void OnReloadConfig()
         {
-            
+
         }
         public T Config => GetConfig();
         public T GetConfig()

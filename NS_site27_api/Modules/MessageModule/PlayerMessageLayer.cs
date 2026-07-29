@@ -59,7 +59,6 @@ namespace NS_site27_api.Modules.MessageModule
                 }
                 player.RemoveLayer(this);
                 _ = msgQueues.Remove(player);
-
             }
             catch (Exception e)
             {
@@ -90,15 +89,11 @@ namespace NS_site27_api.Modules.MessageModule
             Container.Flex.Wrap = Wrap.NoWrap;
             Container.Size.MaxHeight = Length.Percent(62f);
             Container.Flex.Shrink = 0f;
-
-
             canvas.SortOrder = 255;
-
         }
 
         public static DisplayElement CreateMsgNode(DisplayElement Container)
         {
-            // start define of MsgOutSide
             DisplayElement MsgOutSide = Container.AddElement();
             MsgOutSide.BaseElement.name = "MsgOutSide";
             MsgOutSide.Flex.Grow = 0f;
@@ -117,7 +112,6 @@ namespace NS_site27_api.Modules.MessageModule
             MsgOutSide.Flex.Shrink = 0f;
             MsgOutSide.Spacing.MarginBottom = 9f;
 
-            // start define of color
             DisplayElement color = MsgOutSide.AddElement();
             color.BaseElement.name = "color";
             color.Flex.Grow = 1f;
@@ -139,7 +133,6 @@ namespace NS_site27_api.Modules.MessageModule
             color.Border.BottomLeftRadius = Length.Percent(50f);
             color.Background.Color = new Color(0f, 1f, 0.9411765f, 1f);
 
-            // start define of MsgText
             DisplayText MsgText = MsgOutSide.AddText("");
             MsgText.BaseElement.name = "MsgText";
             MsgText.Spacing.PaddingTop = 0f;
@@ -154,13 +147,11 @@ namespace NS_site27_api.Modules.MessageModule
             MsgText.Position.Left = Length.Percent(4f);
             MsgText.Text.Wrap = WhiteSpace.Normal;
 
-            // start define of title
             DisplayText title = MsgOutSide.AddText("");
             title.BaseElement.name = "title";
             title.Position.Position = Position.Absolute;
             title.Position.Left = Length.Percent(13f);
             title.Text.Color = new Color(0f, 1f, 0.7960784f, 1f);
-
 
             return MsgOutSide;
         }
@@ -205,13 +196,12 @@ namespace NS_site27_api.Modules.MessageModule
         {
             if (CanAddMsg(player))
             {
-                if (!msgQueues.TryGetValue(player, out var msg))
+                if (!msgQueues.TryGetValue(player, out var pq))
                 {
-                    msg = new();
-                    msgQueues.Add(player, msg);
+                    pq = new PriorityQueue<MsgArgs, int>();
+                    msgQueues.Add(player, pq);
                 }
-                msg.Enqueue(arg);
-
+                pq.Enqueue(arg, arg.Priority);
             }
             return true;
         }
@@ -223,10 +213,6 @@ namespace NS_site27_api.Modules.MessageModule
                 msgs.Add(player, msg);
                 return true;
             }
-            //if (msg.Count >= 6)
-            //{
-            //    return false;
-            //}
             return true;
         }
         public void RemoveMsg(Player player, string id, bool noAnim = false)
@@ -282,12 +268,12 @@ namespace NS_site27_api.Modules.MessageModule
             }
         }
         public static Dictionary<Player, List<Msg>> msgs = new();
-        //public static Dictionary<Player, DisplayElement> containers = new();
         private void internalAddMsg(DisplayElement container, Player player, MsgArgs args)
         {
             Msg m = new()
             {
-                id = args.id
+                id = args.id,
+                Updater = args.Updater
             };
             if (msgs.TryGetValue(player, out var existing))
             {
@@ -317,7 +303,7 @@ namespace NS_site27_api.Modules.MessageModule
                                 break;
                         }
                     }
-                    else if(item is DisplayElement e)
+                    else if (item is DisplayElement e)
                     {
                         switch (result)
                         {
@@ -328,16 +314,14 @@ namespace NS_site27_api.Modules.MessageModule
                         }
                     }
                     break;
-
                 }
             }
-            m.Updater = args.Updater;
             m.startTime = Time.time;
             m.lifetime = args.lifetime;
             m.animCH = Timing.RunCoroutine(SlideIn(m.MsgOutSide));
             msgs[player].Add(m);
         }
-        public static Dictionary<Player, Queue<MsgArgs>> msgQueues = new();
+        public static Dictionary<Player, PriorityQueue<MsgArgs, int>> msgQueues = new();
 
         public override void Update(Player player, DisplayCanvas canvas)
         {
@@ -345,19 +329,17 @@ namespace NS_site27_api.Modules.MessageModule
             {
                 foreach (var child in canvas.Children)
                 {
-
                     if (child.BaseElement.name == "Container" && child is DisplayElement container)
                     {
                         if (msgs.TryGetValue(player, out var msg))
                         {
-                            // process reqs
                             while (msg.Count >= 6)
                             {
                                 RemoveMsg(player, msg[0]);
                             }
                             if (msgQueues.TryGetValue(player, out var re))
                             {
-                                while (msg.Count < 6 && re.TryDequeue(out var arg))
+                                while (msg.Count < 6 && re.TryDequeue(out var arg, out _))
                                 {
                                     internalAddMsg(container, player, arg);
                                 }
@@ -394,7 +376,6 @@ namespace NS_site27_api.Modules.MessageModule
                                 {
                                     Log.Error($"When updatingmsg:{player}'s {item.id} {e}");
                                 }
-
                             }
                         }
                         break;
@@ -407,80 +388,105 @@ namespace NS_site27_api.Modules.MessageModule
             }
         }
     }
+
+    public class PriorityQueue<TElement, TPriority> where TPriority : IComparable<TPriority>
+    {
+        private readonly List<(TElement Element, TPriority Priority)> heap = new();
+
+        public int Count => heap.Count;
+
+        public void Enqueue(TElement element, TPriority priority)
+        {
+            heap.Add((element, priority));
+            int i = heap.Count - 1;
+            while (i > 0)
+            {
+                int parent = (i - 1) / 2;
+                if (heap[parent].Priority.CompareTo(heap[i].Priority) <= 0)
+                    break;
+                (heap[parent], heap[i]) = (heap[i], heap[parent]);
+                i = parent;
+            }
+        }
+
+        public bool TryDequeue(out TElement element, out TPriority priority)
+        {
+            if (heap.Count == 0)
+            {
+                element = default;
+                priority = default;
+                return false;
+            }
+
+            (element, priority) = heap[0];
+            int last = heap.Count - 1;
+            heap[0] = heap[last];
+            heap.RemoveAt(last);
+
+            int i = 0;
+            while (true)
+            {
+                int left = 2 * i + 1;
+                int right = 2 * i + 2;
+                int smallest = i;
+
+                if (left < heap.Count && heap[left].Priority.CompareTo(heap[smallest].Priority) < 0)
+                    smallest = left;
+                if (right < heap.Count && heap[right].Priority.CompareTo(heap[smallest].Priority) < 0)
+                    smallest = right;
+
+                if (smallest == i)
+                    break;
+
+                (heap[i], heap[smallest]) = (heap[smallest], heap[i]);
+                i = smallest;
+            }
+
+            return true;
+        }
+    }
+
     public static class PlayerMessageHelper
     {
-        public static void AddHint(this Player player, string id, float time, Func<Player, MsgUpdateResult> getter)
+        public static void AddHint(this Player player, string id, float time, Func<Player, MsgUpdateResult> getter,int Priority = 0)
         {
-            if (player == null)
-            {
-                return;
-            }
-
-            if (PlayerMessageLayer.Instance == null)
-            {
-                return;
-            }
-
+            if (player == null || PlayerMessageLayer.Instance == null) return;
             MsgArgs args = new()
             {
                 Updater = getter,
                 lifetime = time,
                 id = id,
+                Priority = Priority
             };
             _ = PlayerMessageLayer.Instance.AddMsg(player, args);
         }
-        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter)
+        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter, int Priority = 0)
         {
-            if (player == null)
-            {
-                return;
-            }
-
-            if (PlayerMessageLayer.Instance == null)
-            {
-                return;
-            }
-
+            if (player == null || PlayerMessageLayer.Instance == null) return;
             MsgArgs args = new()
             {
                 Updater = x => new MsgUpdateResult() { Content = getter(x) },
                 lifetime = time,
                 id = id,
+                Priority = Priority
             };
             _ = PlayerMessageLayer.Instance.AddMsg(player, args);
         }
-        public static void AddHint(this Player player, string id, float time,string str)
+        public static void AddHint(this Player player, string id, float time, string str, int Priority = 0)
         {
-            if (player == null)
-            {
-                return;
-            }
-
-            if (PlayerMessageLayer.Instance == null)
-            {
-                return;
-            }
-
+            if (player == null || PlayerMessageLayer.Instance == null) return;
             MsgArgs args = new()
             {
                 Updater = x => new MsgUpdateResult() { Content = str },
                 lifetime = time,
                 id = id,
+                Priority = Priority
             };
             _ = PlayerMessageLayer.Instance.AddMsg(player, args);
         }
         public static void RemoveHint(this Player player, string id)
         {
-            if (player == null)
-            {
-                return;
-            }
-
-            if (PlayerMessageLayer.Instance == null)
-            {
-                return;
-            }
-
+            if (player == null || PlayerMessageLayer.Instance == null) return;
             PlayerMessageLayer.Instance.RemoveMsg(player, id);
         }
     }
@@ -489,7 +495,7 @@ namespace NS_site27_api.Modules.MessageModule
         public Color NoticeCircleColor = Color.green;
         public string Title = "Title";
         public string Content = "";
-    } 
+    }
     public class Msg
     {
         public string id;
@@ -516,6 +522,7 @@ namespace NS_site27_api.Modules.MessageModule
         public string id;
         public Func<Player, MsgUpdateResult> Updater;
         public float lifetime;
+        public int Priority;
         public override bool Equals(object obj)
         {
             return obj is MsgArgs other && id == other.id;
@@ -529,18 +536,14 @@ namespace NS_site27_api.Modules.MessageModule
     public class SendPrivateTip : ICommand
     {
         public string Command => "SendPrivateTip";
-
         public string[] Aliases => new[] { "SPT" };
-
         public string Description => "SPT playerid time message";
-
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             var player = Player.Get(sender);
             if (player == null) { response = "player == null"; return false; }
             if (PlayerMessageLayer.Instance == null) { response = "PlayerMessageLayer.Instance == null"; return false; }
             if (arguments.Count < 3) { response = $"用法: {Description}"; return false; }
-
             var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out string[] na);
             if (list == null || list.Count == 0) { response = "目标无效"; return false; }
             var time = float.Parse(na.First());

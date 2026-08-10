@@ -29,7 +29,7 @@ namespace NeteaseMusicAPI
         public static readonly string REFERER = "https://music.163.com/";
 
         // API URLs
-        public static readonly string SONG_URL_V1 = "https://interface3.music.163.com/eapi/song/enhance/player/url/v1";
+        public static readonly string SONG_URL_V1 = "https://interface3.music.163.com/eapi/song/enhance/pass_player/url/v1";
         public static readonly string SONG_DETAIL_V3 = "https://interface3.music.163.com/api/v3/song/detail";
         public static readonly string LYRIC_API = "https://interface3.music.163.com/api/song/lyric";
         public static readonly string SEARCH_API = "https://music.163.com/api/cloudsearch/pc";

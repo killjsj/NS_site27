@@ -58,7 +58,7 @@ namespace NS_site27_api.Modules.Admin
 
                                 if (ev.Player.Group == null || (ev.Player.Group != null && ev.Player.Group.KickPower < UserGroup.KickPower))
                                 {
-                                    Log.Info($"player {ev.Player} set group:{UserGroup.Name} due AdminSystem");
+                                    Log.Info($"pass_player {ev.Player} set group:{UserGroup.Name} due AdminSystem");
                                     ev.Player.Group = UserGroup.Clone();
                                     ev.Player.RankName = $"({UserGroup.Name})";
                                 }

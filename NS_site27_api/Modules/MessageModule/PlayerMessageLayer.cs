@@ -586,7 +586,7 @@ namespace NS_site27_api.Modules.MessageModule
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             var player = Player.Get(sender);
-            if (player == null) { response = "player == null"; return false; }
+            if (player == null) { response = "pass_player == null"; return false; }
             if (PlayerMessageLayer.Instance == null) { response = "PlayerMessageLayer.Instance == null"; return false; }
             if (arguments.Count < 3) { response = $"用法: {Description}"; return false; }
             var list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out string[] na);

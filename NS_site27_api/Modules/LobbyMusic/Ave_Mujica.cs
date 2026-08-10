@@ -64,7 +64,7 @@ namespace NS_site27_api.Modules.LobbyMusic
     {
         public string Command => "orderSong";
         public string[] Aliases => new[] { "os" };
-        public string Description => "大厅点歌 (仅网易云ID)，用法: os <歌曲ID>";
+        public string Description => "大厅点歌 (仅网易云ID)，用法: os <歌曲ID> / os <歌曲url>";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
@@ -514,7 +514,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     return;
                 }
                 DefaultAudioManager.Instance.RegisterAudio(guid.ToString(), () => File.OpenRead(tempOggFile));
-                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f);
+                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio<int>(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f,state:1,validPlayersFilter:(p,_) => p.IsReady);
                 CurrentSongName = name;
                 _songStartTime = Time.time;
                 StartLyrics(lrc);

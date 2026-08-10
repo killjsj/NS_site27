@@ -131,7 +131,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Failed to update ui at player:{Displayer.player} in id: {Displayer.displayLayer.Id} due:{ex}");
+                    Log.Error($"Failed to update ui at pass_player:{Displayer.player} in id: {Displayer.displayLayer.Id} due:{ex}");
                 }
                 yield return Timing.WaitForSeconds((float)Displayer.displayLayer.updateTime.TotalSeconds);
             }

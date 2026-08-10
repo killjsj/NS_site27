@@ -99,7 +99,7 @@ namespace NS_site27_api.Modules.ItemCleaner
                     {
                         foreach (var item in Player.Enumerable)
                         {
-                            item.AddHint("clean_startcountdown", cfg.CleanTime - counter, x => new MsgUpdateResult() { Content = ShowingStr, Title = "Clean!", NoticeCircleColor = Color.red });
+                            item.AddHint("clean_startcountdown", cfg.CleanTime - counter, x => new MsgUpdateResult() { Content = ShowingStr, Title = "Clean!", NoticeCircleColor = Color.red }, PriorityLevel.High);
                         }
                         countdownstart = true;
                     }

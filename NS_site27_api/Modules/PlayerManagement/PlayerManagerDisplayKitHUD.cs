@@ -7,7 +7,6 @@ using Exiled.API.Features.Roles;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI.DisplayKit;
 using NS_site27_api.Extensions;
-using NS_site27_api.Modules.Lobby;
 using NS_site27_api.Modules.SpawnProtection;
 using PlayerRoles;
 using Respawning;

@@ -14,7 +14,7 @@ namespace NS_site27_api.Modules.BanSystem
     {
         public string Command => "sban";
         public string[] Aliases => new[] { "site27ban" };
-        public string Description => "Ban a player with MySQL integration";
+        public string Description => "Ban a player";
         public string[] Usage => new[] { "%player%", "duration", "reason" };
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -58,7 +58,7 @@ namespace NS_site27_api.Modules.BanSystem
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
                 _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
-                //player.Ban((uint)(duration * 60), reason);
+                //pass_player.Ban((uint)(duration * 60), reason);
                 player.Kick(reason, runner);
             }
 

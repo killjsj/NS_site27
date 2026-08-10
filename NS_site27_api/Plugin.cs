@@ -1,27 +1,15 @@
-using AutoEvent.API;
-using AutoEvent.API.Enums;
 using CommandSystem;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Core.UserSettings;
 using Exiled.CustomItems.API.Features;
 using Exiled.CustomRoles.API.Features;
 using HarmonyLib;
 using NS_site27_api.Core;
-using NS_site27_api.Core.UI;
 using NS_site27_api.Core.UI.DisplayKit;
-using NS_site27_api.Modules._Keycard;
-using NS_site27_api.Modules.EventHandle;
 using NS_site27_api.Modules.MySQL;
-using NS_site27_api.Modules.PlayerManagement;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
-using UnityEngine.Networking;
-using Player = Exiled.API.Features.Player;
-using PlayerHandlers = Exiled.Events.Handlers.Player;
 using ServerHandlers = Exiled.Events.Handlers.Server;
 
 
@@ -55,12 +43,12 @@ namespace NS_site27_api
             CorePlugin.Harmony.PatchAll();
 
             DiscoverAndLoadModules();
-            CustomRole.RegisterRoles(false);
+            _ = CustomRole.RegisterRoles(false);
 
 
             ServerHandlers.WaitingForPlayers += OnWaitingForPlayers;
             ServerHandlers.RestartingRound += OnRestartingRound;
-            CustomItem.RegisterItems();
+            _ = CustomItem.RegisterItems();
 
             Log.Info($"NS_site27 plugin enabled with {CorePlugin.Modules.Count} modules.");
             base.OnEnabled();

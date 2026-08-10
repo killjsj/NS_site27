@@ -12,7 +12,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public static WhipS Ins;
         public static uint WhipId = 411;
         public override uint Id { get => WhipId; set { } }
-        public override string Name { get => "test-coin"; set { } }
+        public override string Name { get => "test-"; set { } }
         public override string Description { get => "corn"; set { } }
         public override float Weight { get => 3f; set { } }
 

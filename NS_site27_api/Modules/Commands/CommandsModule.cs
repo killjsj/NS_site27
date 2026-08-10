@@ -67,7 +67,7 @@ namespace NS_site27_api.Modules.Commands
             {
                 if (scp.Role.Type == target)
                 {
-                    scp.AddHint("SwapScp", 10f, x => new MsgUpdateResult() { Content = $"<size=29><color=yellow>{player.DisplayNickname}想要与你交换SCP,控制台: .ScpArgee 同意</color></size>", Title = "SCP交换", NoticeCircleColor = Color.green });
+                    scp.AddHint("SwapScp", 10f, x => new MsgUpdateResult() { Content = $"<size=29><color=yellow>{player.DisplayNickname}想要与你交换SCP,控制台: .ScpArgee 同意</color></size>", Title = "SCP交换", NoticeCircleColor = Color.green }, PriorityLevel.Medium);
 
                 }
             }

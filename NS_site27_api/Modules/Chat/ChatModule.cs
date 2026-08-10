@@ -179,10 +179,7 @@ namespace NS_site27_api.Modules.Chat
 
         public void Verified(VerifiedEventArgs ev)
         {
-            if (ev.Player != null)
-            {
-                ev.Player.AddLayer("ChatLayer");
-            }
+            ev.Player?.AddLayer("ChatLayer");
         }
 
         public override void OnEnable()

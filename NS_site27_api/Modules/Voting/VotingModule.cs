@@ -50,7 +50,7 @@ namespace NS_site27_api.Modules.Voting
             CurrentVoteName = voteName;
             foreach (var player in Player.Enumerable)
             {
-                player.AddHint("votestart", voteTime, VoteHint);
+                player.AddHint("votestart", voteTime, VoteHint, Priority: PriorityLevel.High);
             }
             remainingTime = voteTime;
             for (; remainingTime != 0; remainingTime--)
@@ -65,7 +65,7 @@ namespace NS_site27_api.Modules.Voting
             foreach (var player in Player.Enumerable)
             {
                 player.RemoveHint("votestart");
-                player.AddHint("voteend", 7f, x => new MsgUpdateResult() { Title = "vote", Content = $"投票:{voteName} 结果: 同意率:{percentage:F2}% 同意:{yes} 不同意:{no}" });
+                player.AddHint("voteend", 7f, x => new MsgUpdateResult() { Title = "vote", Content = $"投票:{voteName} 结果: 同意率:{percentage:F2}% 同意:{yes} 不同意:{no}" }, Priority: PriorityLevel.High);
             }
             IsVoting = false;
             VoteControl = new List<List<Player>>();

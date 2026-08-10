@@ -31,7 +31,7 @@ namespace NS_site27_api.Core
             .Build();
 
         private static readonly Dictionary<string, object> ConfigCache = new();
-        private static string ConfigDir;
+        public static string ConfigDir;
 
         public static void Initialize(Plugin plugin)
         {

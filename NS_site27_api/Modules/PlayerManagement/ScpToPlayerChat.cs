@@ -36,19 +36,19 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             VoiceSetting = new KeybindSetting(Config.SettingId, "SCP对人类语音", UnityEngine.KeyCode.V, false, false, "按下此键可以让SCP的语音对人类可听", 255, null, (p, sb) =>
             {
-            if (p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
-            {
-                if (!TalkTohumanScp.Contains(p))
+                if (p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
                 {
-                    TalkTohumanScp.Add(p);
-                }
-                else
-                {
-                    _ = TalkTohumanScp.Remove(p);
-                }
-                string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
-                p.RemoveHint("scphumantalk");
-                p.AddHint("scphumantalk", 3, x => new MsgUpdateResult() { Content = str, Title = "scpTalkToHuman"});
+                    if (!TalkTohumanScp.Contains(p))
+                    {
+                        TalkTohumanScp.Add(p);
+                    }
+                    else
+                    {
+                        _ = TalkTohumanScp.Remove(p);
+                    }
+                    string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
+                    p.RemoveHint("scphumantalk");
+                    p.AddHint("scphumantalk", 3, x => new MsgUpdateResult() { Content = str, Title = "scpTalkToHuman" });
 
                 }
             });

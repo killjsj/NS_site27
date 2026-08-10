@@ -7,6 +7,7 @@ using PlayerRoles.Subroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 namespace NS_site27_api.Modules.Abilities
 {
@@ -154,6 +155,8 @@ namespace NS_site27_api.Modules.Abilities
         public virtual string CustomInfoToShow { get; set; }
         public virtual int id => GetStableHash(GetType().FullName) + offset;
 
+        public bool AppendCustomInfoAfterNormalInfo { get; set; }
+
         private static int GetStableHash(string text)
         {
             unchecked
@@ -181,7 +184,7 @@ namespace NS_site27_api.Modules.Abilities
 
     public abstract class CoolDownAbility : AbilityBase, ICounted, ITiming
     {
-        public virtual double Time { get; } = 30;
+        public virtual double time { get; } = 30;
         public virtual float WaitForDoneTime { get; } = 0;
         public virtual int TotalCount { get; set; } = 1;
         public int count { get; set; } = 1;
@@ -215,7 +218,7 @@ namespace NS_site27_api.Modules.Abilities
 
             if (cooldown.IsReady)
             {
-                cooldown.Trigger(Time + WaitForDoneTime);
+                cooldown.Trigger(time + WaitForDoneTime);
             }
 
             count--;
@@ -236,7 +239,7 @@ namespace NS_site27_api.Modules.Abilities
             }
             if (cooldown.IsReady)
             {
-                cooldown.Trigger(Time);
+                cooldown.Trigger(time);
             }
         }
 
@@ -249,7 +252,7 @@ namespace NS_site27_api.Modules.Abilities
                     count++;
                     if (count < TotalCount)
                     {
-                        cooldown.Trigger(Time);
+                        cooldown.Trigger(time);
                     }
                 }
                 yield return Timing.WaitForSeconds(0.3f);
@@ -257,8 +260,16 @@ namespace NS_site27_api.Modules.Abilities
         }
 
         public abstract bool OnTrigger();
-        public abstract AbilityBase Register(Player player);
+        public virtual AbilityBase Register(Player player)
+        {
+            var ctor = GetType().GetConstructor(new[] { typeof(Player) });
+            if (ctor == null)
+                return this;
 
+            var a = (CoolDownAbility)ctor.Invoke(new object[] { player });
+            a.InternalRegister();
+            return a;
+        }
         public virtual void InternalRegister()
         {
             _ = CorePlugin.RunCoroutine(CooldownReset());
@@ -306,16 +317,29 @@ namespace NS_site27_api.Modules.Abilities
 
         public override AbilityBase Register(Player player)
         {
-            if ((KeyAbility)Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { player }, null) is not KeyAbility a)
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var type = GetType();
+            var ctor = type.GetConstructor(flags, null, new[] { typeof(Player) }, null);
+            if (ctor != null)
             {
-                var tmp = (KeyAbility)Activator.CreateInstance(GetType());
-                tmp.player = player;
-                tmp.InitSetting();
-                tmp.InternalRegisterPlayer(player);
-                return tmp;
+                var a = (KeyAbility)ctor.Invoke(new object[] { player });
+                a.InternalRegisterPlayer(player);
+                return a;
             }
-            a.InternalRegisterPlayer(player);
-            return a;
+
+            // 退回无参构造函数
+            var parameterless = type.GetConstructor(flags, null, Type.EmptyTypes, null);
+            if (parameterless == null)
+            {
+                Log.Error($"{type.FullName} 缺少 (Player) 或无参构造函数，无法注册。");
+                return null;
+            }
+
+            var tmp = (KeyAbility)parameterless.Invoke(null);
+            tmp.player = player;
+            tmp.InitSetting();
+            tmp.InternalRegisterPlayer(player);
+            return tmp;
         }
 
         public void InternalRegisterPlayer(Player player)
@@ -358,52 +382,48 @@ namespace NS_site27_api.Modules.Abilities
 
     public abstract class PassAbility : AbilityBase, IRegisiterNeeded<AbilityBase>
     {
-        public static bool _initialized;
-        public Player player;
+        //public static bool _initialized;
+        public Player pass_player;
         public static Dictionary<Player, List<PassAbility>> activeAbilities = new();
-
-        public static void Init()
+        public virtual float checktime => 0.2f;
+        public void Init()
         {
-            if (!_initialized)
-            {
-                _initialized = true;
-                _ = CorePlugin.RunCoroutine(Refresher());
-            }
+            _ = CorePlugin.RunCoroutine(Refresher());
         }
 
-        public static IEnumerator<float> Refresher()
+        public IEnumerator<float> Refresher()
         {
             while (true)
             {
-                foreach (var kv in activeAbilities.ToArray())
-                {
-                    foreach (var ability in kv.Value.ToArray())
-                    {
-                        try { ability.OnCheck(kv.Key); }
+                        try { this.OnCheck(this.pass_player); }
                         catch (Exception ex) { Log.Warn($"PassAbility error: {ex}"); }
-                    }
-                    yield return Timing.WaitForOneFrame;
-                }
-                yield return Timing.WaitForSeconds(0.3f);
+                yield return Timing.WaitForSeconds(checktime);
             }
         }
 
-        public abstract void OnCheck(Player player);
-        public abstract AbilityBase Register(Player player);
+        public virtual void OnCheck(Player player) { }
+        public virtual AbilityBase Register(Player player)
+        {
+            var ctor = GetType().GetConstructor(new[] { typeof(Player) });
+            if (ctor == null)
+                return this;
 
+            var a = (PassAbility)ctor.Invoke(new object[] { player });
+            a.InternalRegister(player);
+            return a;
+        }
         public void InternalRegister(Player panel)
         {
-            player = panel;
-            if (!activeAbilities.ContainsKey(player))
+            pass_player = panel;
+            if (!activeAbilities.ContainsKey(pass_player))
             {
-                activeAbilities.Add(player, new List<PassAbility> { this });
+                activeAbilities.Add(pass_player, new List<PassAbility> { this });
             }
             else
             {
-                activeAbilities[player].Add(this);
+                activeAbilities[pass_player].Add(this);
             }
 
-            // ensure refresher coroutine is started
             Init();
         }
 
@@ -418,7 +438,7 @@ namespace NS_site27_api.Modules.Abilities
         public PassAbility() { }
         public PassAbility(Player player)
         {
-            this.player = player;
+            this.pass_player = player;
             Init();
         }
     }

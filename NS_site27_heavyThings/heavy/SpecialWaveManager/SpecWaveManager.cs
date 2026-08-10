@@ -25,6 +25,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             PlayerManagerDisplayKitHUD.BuildSpawnUIEvent -= PlayerHUDManager_BuildSpawnUIEvent;
             RestartingRound();
             Exiled.Events.Handlers.Server.WaitingForPlayers -= WaitingForPlayers;
+            //Exiled.Events.Handlers.Player.UsedItem
             Exiled.Events.Handlers.Server.RoundStarted -= RoundStarted;
             Exiled.Events.Handlers.Server.RestartingRound -= RestartingRound;
             foreach (var item in RegWaves)

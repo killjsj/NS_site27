@@ -132,10 +132,17 @@ namespace NS_site27_api.Modules.CustomRolePlus
                                     nS += $"{(!timing.Done ? "还剩下:" : "冷却:")}{(!timing.Done ? SkillRemainTime : RemainTime):F0}s ";
                                     show = true;
                                 }
-                                if (!string.IsNullOrEmpty(item.CustomInfoToShow))
+                                if (!string.IsNullOrEmpty(CustomInfo))
                                 {
                                     show = true;
-                                    nS += $"{CustomInfo}";
+                                    if (item.AppendCustomInfoAfterNormalInfo) { 
+                                        nS += $"{CustomInfo}";
+
+                                    }
+                                    else
+                                    {
+                                        nS = $"{CustomInfo}";
+                                    }
                                 }
                                 nS += "\n";
                                 if (show)
@@ -310,12 +317,9 @@ namespace NS_site27_api.Modules.CustomRolePlus
     {
         public static CustomItemPlus GetItemsCustom(this Item item)
         {
-            if (item == null)
-            {
-                return null;
-            }
-
-            return CustomItemPlus.ItemMapping.TryGetValue(item, out var map)
+            return item == null
+                ? null
+                : CustomItemPlus.ItemMapping.TryGetValue(item, out var map)
                 ? map
                 : CustomItemPlus.ItemMappingBySerial.TryGetValue(item.Serial, out var map2) ? map2 : null;
         }

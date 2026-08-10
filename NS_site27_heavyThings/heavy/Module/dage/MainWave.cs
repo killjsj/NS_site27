@@ -11,7 +11,7 @@ using System.Linq;
 using UnityEngine;
 using Player = Exiled.API.Features.Player;
 
-namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
+namespace NS_site27_heavy.heavy.Module.dage
 {
     public class MainWave : SpecialWave, ICountedWave, IAnimWave, INeedInitWave, ITiming
     {
@@ -169,7 +169,76 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                     _ = player.ReferenceHub.TryOverridePosition(pos);
                                 }
                                 Vector3 playerEuler = player.Rotation.eulerAngles;
-                                TryLookDirection(player.ReferenceHub, PlayerCamera.transform.forward);
+                                Vector3 cameraEuler = PlayerCamera.transform.eulerAngles;
+
+                                float playerPitch = playerEuler.x;
+                                if (playerPitch > 180f)
+                                {
+                                    playerPitch -= 360f;
+                                }
+
+                                playerPitch = -Mathf.Clamp(playerPitch, -90f, 90f);
+
+                                float playerYaw = playerEuler.y;
+                                if (playerYaw < 0f)
+                                {
+                                    playerYaw += 360f;
+                                }
+                                else if (playerYaw > 360f)
+                                {
+                                    playerYaw -= 360f;
+                                }
+
+                                float centerPitch = cameraEuler.x;
+                                if (centerPitch > 180f)
+                                {
+                                    centerPitch -= 360f;
+                                }
+
+                                centerPitch = -Mathf.Clamp(centerPitch, -90f, 90f);
+
+                                float centerYaw = cameraEuler.y;
+                                if (centerYaw < 0f)
+                                {
+                                    centerYaw += 360f;
+                                }
+                                else if (centerYaw > 360f)
+                                {
+                                    centerYaw -= 360f;
+                                }
+
+                                float deltaPitch = Mathf.DeltaAngle(centerPitch, playerPitch);
+                                float deltaYaw = Mathf.DeltaAngle(centerYaw, playerYaw);
+
+                                const float limit = 20f;
+                                // This is obsoleted because 15.0 will have MouseLock enum
+                                // Think you NW I JUST WROTE THIS IN 7/6 AND OBSOLETE IN 7/8
+                                if (Mathf.Abs(deltaPitch) > limit || Mathf.Abs(deltaYaw) > limit)
+                                {
+                                    float clampedDeltaPitch = Mathf.Clamp(deltaPitch, -limit, limit);
+                                    if (Mathf.Abs(deltaPitch) <= limit)
+                                    {
+                                        clampedDeltaPitch = 0;
+                                    }
+
+                                    float clampedDeltaYaw = Mathf.Clamp(deltaYaw, -limit, limit);
+                                    if (Mathf.Abs(deltaYaw) <= limit)
+                                    {
+                                        clampedDeltaYaw = 0;
+                                    }
+
+                                    float finalPitch = centerPitch + clampedDeltaPitch;
+                                    float finalYaw = centerYaw + clampedDeltaYaw;
+
+                                    finalPitch = Mathf.Clamp(finalPitch, -90f, 90f);
+                                    finalYaw %= 360f;
+                                    if (finalYaw < 0f)
+                                    {
+                                        finalYaw += 360f;
+                                    }
+
+                                    _ = player.ReferenceHub.TryOverrideRotation(new Vector2(finalPitch, finalYaw));
+                                }
                             }
                             catch (Exception e)
                             {
@@ -205,27 +274,6 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             HasLanded = true;
 
         }
-        public static bool TryLookDirection(ReferenceHub hub, Vector3 dir)
-        {
-            if (dir.sqrMagnitude < 1e-8f)
-                return false;
-
-            dir.Normalize();
-
-            // vertical: + up, - down
-            float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-            vertical = Mathf.Clamp(vertical, -88f, 88f);          // ClampVertical does this anyway
-
-            // horizontal: world yaw, 0..360
-            float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            if (horizontal < 0f)
-                horizontal += 360f;
-
-            return hub.TryOverrideRotation(new Vector2(vertical, horizontal));
-        }
-
-        public static bool TryLookAt(ReferenceHub hub, Vector3 worldPoint)
-            => TryLookDirection(hub, worldPoint - hub.PlayerCameraReference.position);
         public bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone)
         {
             OnRestartRound();

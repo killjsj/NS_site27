@@ -445,7 +445,7 @@ namespace Next_generationSite_27.UnionP.Turret
 
                 float dist = Vector3.Distance(shotPoint.transform.position, player.Position);
 
-                // If the player is within range
+                // If the pass_player is within range
                 if (dist <= DistanceToLock)
                 {
                     // Calculate the lock time based on distance
@@ -597,7 +597,7 @@ namespace Next_generationSite_27.UnionP.Turret
             }
             if (runner.KickPower < 12)
             {
-                response = "你没权 （player.KickPower < 12）";
+                response = "你没权 （pass_player.KickPower < 12）";
                 return false;
             }
             _ = Turret.Create(Owner.CameraTransform.position, Vector3.right, Owner);

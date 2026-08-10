@@ -2,17 +2,12 @@
 using Exiled.API.Features;
 using NS_site27_api.Core.UI.DisplayKit;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static NS_site27_api.Modules.PlayerManagement.PlayerManagerDisplayKitHUD;
 
 namespace NS_site27_api.Modules.Lobby
 {
-    class LobbyLayer : DisplayLayer
+    internal class LobbyLayer : DisplayLayer
     {
         public override string Id { get; set; } = "PlayerCountLayer";
 
@@ -50,7 +45,8 @@ namespace NS_site27_api.Modules.Lobby
 
         public override void Update(Player target, DisplayCanvas canvas)
         {
-            try {
+            try
+            {
                 foreach (var item in canvas.Children)
                 {
                     if (item.BaseElement.name == "PlayerCountText" && item is DisplayText t)
@@ -64,7 +60,8 @@ namespace NS_site27_api.Modules.Lobby
                         break;
                     }
                 }
-            }catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Log.Error(e);
             }

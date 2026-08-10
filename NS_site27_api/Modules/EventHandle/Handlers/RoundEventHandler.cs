@@ -73,7 +73,7 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
         }
         public static void OnRoundStarted()
         {
-            NS_site27_api.Modules.Abilities.PassAbility.Init();
+            //NS_site27_api.Modules.Abilities.PassAbility.Init();
         }
 
         public static void OnRespawningTeam(RespawningTeamEventArgs ev)

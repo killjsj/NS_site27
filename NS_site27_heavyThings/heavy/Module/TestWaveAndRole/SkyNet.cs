@@ -19,7 +19,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Des => "房间放毒7秒";
 
         public override int id => 106;
-        public override double Time => 120;
+        public override double time => 120;
         public override float WaitForDoneTime => 7;
         public static readonly CachedLayerMask HitregMask = new(new string[]
 {
@@ -71,7 +71,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Des => "指向目标锁定7秒";
 
         public override int id => 104;
-        public override double Time => 75;
+        public override double time => 75;
         public override float WaitForDoneTime => 12;
         public static readonly CachedLayerMask HitregMask = new(new string[]
 {
@@ -123,7 +123,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Des => "45m内传送";
 
         public override int id => 102;
-        public override double Time => 3;
+        public override double time => 3;
         public static readonly CachedLayerMask HitregMask = new(new string[]
 {
             "Default",
@@ -182,17 +182,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Name => "范围扫描";
 
         public override string Des => "扫描周围35m内的敌人";
-
-        public override int id => 105;
-        //public override double Time => 75;
+        //public override double time => 75;
         //public override float WaitForDoneTime => 12;
-        public static AbilityCooldown cd = new();
-        public override AbilityBase Register(Player player)
-        {
-            var a = new DebuggersAbility3(player);
-            a.InternalRegister(player);
-            return a;
-        }
+        public AbilityCooldown cd = new();
 
         float ITiming.CoolDownRemaining { get => cd.Remaining; set => cd.Remaining = value; }
         float ITiming.DoneRemaining { get => 0; set { } }
@@ -201,7 +193,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public override void OnCheck(Player player)
         {
-            //base.OnCheck(player);
+            //base.OnCheck(pass_player);
             if (cd.IsReady)
             {
                 cd.Trigger(2.5);
@@ -285,7 +277,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 if (player != p && Vector3.Distance(player.Position, p.Position) <= 35f)
                 {
-                    //if (HitboxIdentity.IsEnemy(player.ReferenceHub, p.ReferenceHub))
+                    //if (HitboxIdentity.IsEnemy(pass_player.ReferenceHub, p.ReferenceHub))
                     {
                         new DrawableLineMessage(0.5f, Color.yellow * new Color(1, 1, 1, 1 - (Vector3.Distance(player.Position, p.Position) / 150) + 0.01f), new Vector3[2] { p.CameraTransform.position + (0.2f * Vector3.down), player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
                     }

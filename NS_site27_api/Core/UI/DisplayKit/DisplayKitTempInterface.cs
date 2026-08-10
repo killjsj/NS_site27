@@ -1,16 +1,4 @@
-﻿// ai
-// ============================================================================
-// DisplayKitTempInterface.cs
-// 从 DisplayKit*.md 文档中提取的所有 API 接口/类型签名（仅供参考，非编译代码）
-// ============================================================================
-// 来源文件:
-//   DisplayKit.md, DisplayKit-CreatingElements.md, DisplayKit-DeletingElements.md,
-//   DisplayKit-ElementReference.md, DisplayKit-Examples.md,
-//   DisplayKit-ModifyingElements.md, DisplayKit-SendingToPlayers.md,
-//   DisplayKit-StyleProperties.md
-// ============================================================================
-
-using DisplayKit.Elements;
+﻿using DisplayKit.Elements;
 using Mirror;
 using System;
 using System.Collections.Generic;
@@ -39,10 +27,6 @@ using Visibility = UnityEngine.UIElements.Visibility;
 using WhiteSpace = UnityEngine.UIElements.WhiteSpace;
 using Wrap = UnityEngine.UIElements.Wrap;
 
-// ============================================================================
-// DisplayKit.Enums
-// ============================================================================
-
 namespace DisplayKit.Enums
 {
     public enum FontStyle { Normal, Bold, Italic, BoldItalic }
@@ -60,10 +44,6 @@ namespace DisplayKit.Enums
 
     public enum CanvasVisibility { Visible, Hidden }
 }
-
-// ============================================================================
-// DisplayKit — 基础接口
-// ============================================================================
 
 namespace DisplayKit
 {
@@ -96,9 +76,32 @@ namespace DisplayKit
 
     public class RecyclableIdGenerator { }
 
-    // ============================================================================
-    // 样式数据类
-    // ============================================================================
+    internal static class ExternObjectCache
+    {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> _cache = new();
+
+        public static T GetOrAdd<T>(string key, System.Func<T> factory)
+        {
+            return (T)_cache.GetOrAdd(key, _ => factory());
+        }
+
+        public static void Set(string key, object value)
+        {
+            _cache[key] = value;
+        }
+
+        public static bool TryGet<T>(string key, out T value)
+        {
+            if (_cache.TryGetValue(key, out var o) && o is T t)
+            {
+                value = t;
+                return true;
+            }
+            value = default!;
+            return false;
+        }
+    }
+
 
     public class BackgroundData { public StyleColor Color { get; set; } }
 
@@ -203,76 +206,240 @@ namespace DisplayKit
     }
 }
 
-// ============================================================================
-// DisplayKit.Elements — 核心元素类
-// ============================================================================
-
 namespace DisplayKit.Elements
 {
     public class DisplayCanvas : IDisplayElement, IDisplayStyleTarget
     {
-        public static extern DisplayCanvas Create();
-        public extern DisplayElement AddElement();
-        public extern DisplayText AddText(string text = "");
+        public static DisplayCanvas Create()
+        {
+            return ExternObjectCache.GetOrAdd("DisplayCanvas.Create", () => new DisplayCanvas());
+        }
 
-        public extern void Spawn();
-        public extern void Spawn(int connectionId);
-        public extern void Spawn(ReferenceHub hub);
+        public DisplayCanvas()
+        {
+            Children = new List<IDisplayElement>();
+            Observers = new Dictionary<int, ObserverStatus>();
+            IdToElement = new Dictionary<int, IDisplayElement>();
+            IdGenerator = new RecyclableIdGenerator();
 
-        public extern void Show();
-        public extern void Hide();
-        public extern void Show(int connectionId);
-        public extern void Hide(int connectionId);
-        public extern void Show(ReferenceHub hub);
-        public extern void Hide(ReferenceHub hub);
-        public extern void SetVisibility(bool visible);
-        public extern void SetVisibility(int connectionId, bool visible);
-        public extern void SetVisibility(ReferenceHub hub, bool visible);
+            Background = new BackgroundData();
+            Flex = new FlexData();
+            Align = new AlignData();
+            Size = new SizeData();
+            Spacing = new SpacingData();
+            Border = new BorderData();
+            Position = new PositionData();
+            Transform = new TransformData();
+            Display = new DisplayData();
+            Text = new TextData();
 
-        public extern void Destroy();
+            BaseElement = new VisualElement();
+            Root = this;
+            IsLoaded = true;
+            HasChanges = false;
+        }
 
-        public int? Id { get; }
+        public DisplayElement AddElement()
+        {
+            var key = $"DisplayCanvas.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var el = new DisplayElement
+                {
+                    Parent = this,
+                    Root = this,
+                    BaseElement = new VisualElement()
+                };
+                Children.Add(el);
+                return el;
+            });
+        }
+
+        public DisplayText AddText(string text = "")
+        {
+            var key = $"DisplayCanvas.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var t = new DisplayText
+                {
+                    Parent = this,
+                    Root = this,
+                    BaseElement = new VisualElement(),
+                    Content = text
+                };
+                Children.Add(t);
+                return t;
+            });
+        }
+
+        public void Spawn()
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}", true);
+        }
+
+        public void Spawn(int connectionId)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}.{connectionId}", true);
+        }
+
+        public void Spawn(ReferenceHub hub)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", true);
+        }
+
+        public void Show()
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", true);
+        }
+
+        public void Hide()
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", false);
+        }
+
+        public void Show(int connectionId)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", true);
+        }
+
+        public void Hide(int connectionId)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", false);
+        }
+
+        public void Show(ReferenceHub hub)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", true);
+        }
+
+        public void Hide(ReferenceHub hub)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", false);
+        }
+
+        public void SetVisibility(bool visible)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", visible);
+        }
+
+        public void SetVisibility(int connectionId, bool visible)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", visible);
+        }
+
+        public void SetVisibility(ReferenceHub hub, bool visible)
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", visible);
+        }
+
+        public void Destroy()
+        {
+            ExternObjectCache.Set($"DisplayCanvas.Destroyed.{this.GetHashCode()}", true);
+        }
+
+        public int? Id { get; internal set; }
         public int? SortOrder { get; set; }
         public Enums.CanvasVisibility DefaultVisibility { get; set; }
-        public Dictionary<int, ObserverStatus> Observers { get; }
-        public Dictionary<int, IDisplayElement> IdToElement { get; }
-        public bool IsGloballySpawned { get; }
-        public RecyclableIdGenerator IdGenerator { get; }
+        public Dictionary<int, ObserverStatus> Observers { get; internal set; }
+        public Dictionary<int, IDisplayElement> IdToElement { get; internal set; }
+        public bool IsGloballySpawned { get; internal set; }
+        public RecyclableIdGenerator IdGenerator { get; internal set; }
 
-        public DisplayCanvas Root { get; }
-        public IDisplayElement Parent { get; }
-        public List<IDisplayElement> Children { get; }
-        public VisualElement BaseElement { get; }
-        public bool IsLoaded { get; }
-        public bool HasChanges { get; }
+        public DisplayCanvas Root { get; internal set; }
+        public IDisplayElement Parent { get; internal set; }
+        public List<IDisplayElement> Children { get; internal set; }
+        public VisualElement BaseElement { get; internal set; }
+        public bool IsLoaded { get; internal set; }
+        public bool HasChanges { get; internal set; }
 
-        public BackgroundData Background { get; }
-        public FlexData Flex { get; }
-        public AlignData Align { get; }
-        public SizeData Size { get; }
-        public SpacingData Spacing { get; }
-        public BorderData Border { get; }
-        public PositionData Position { get; }
-        public TransformData Transform { get; }
-        public DisplayData Display { get; }
-        public TextData Text { get; }
+        public BackgroundData Background { get; internal set; }
+        public FlexData Flex { get; internal set; }
+        public AlignData Align { get; internal set; }
+        public SizeData Size { get; internal set; }
+        public SpacingData Spacing { get; internal set; }
+        public BorderData Border { get; internal set; }
+        public PositionData Position { get; internal set; }
+        public TransformData Transform { get; internal set; }
+        public DisplayData Display { get; internal set; }
+        public TextData Text { get; internal set; }
 
-        public extern event Action<NetworkConnection> OnPlayerCanvasConstructed;
+        private Action<NetworkConnection> _onPlayerCanvasConstructed;
+        public event Action<NetworkConnection> OnPlayerCanvasConstructed
+        {
+            add => _onPlayerCanvasConstructed += value;
+            remove => _onPlayerCanvasConstructed -= value;
+        }
     }
 
     public class DisplayElement : IDisplayElement, IDisplayStyleTarget
     {
-        public extern DisplayElement AddElement();
-        public extern DisplayText AddText(string text = "");
-        public extern void Remove();
+        public DisplayElement()
+        {
+            Children = new List<IDisplayElement>();
+            Background = new BackgroundData();
+            Flex = new FlexData();
+            Align = new AlignData();
+            Size = new SizeData();
+            Spacing = new SpacingData();
+            Border = new BorderData();
+            Position = new PositionData();
+            Transform = new TransformData();
+            Display = new DisplayData();
+            Text = new TextData();
+            BaseElement = new VisualElement();
+            IsLoaded = true;
+            HasChanges = false;
+        }
 
-        public int? Id { get; }
-        public DisplayCanvas Root { get; }
-        public IDisplayElement Parent { get; }
-        public List<IDisplayElement> Children { get; }
-        public VisualElement BaseElement { get; }
-        public bool IsLoaded { get; }
-        public bool HasChanges { get; }
+        public DisplayElement AddElement()
+        {
+            var key = $"DisplayElement.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var el = new DisplayElement
+                {
+                    Parent = this,
+                    Root = this.Root,
+                    BaseElement = new VisualElement()
+                };
+                Children.Add(el);
+                return el;
+            });
+        }
+
+        public DisplayText AddText(string text = "")
+        {
+            var key = $"DisplayElement.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var t = new DisplayText
+                {
+                    Parent = this,
+                    Root = this.Root,
+                    BaseElement = new VisualElement(),
+                    Content = text
+                };
+                Children.Add(t);
+                return t;
+            });
+        }
+
+        public void Remove()
+        {
+            ExternObjectCache.Set($"DisplayElement.Removed.{this.GetHashCode()}", true);
+            if (Parent is DisplayCanvas dc)
+                dc.Children.Remove(this);
+            else if (Parent is DisplayElement de)
+                de.Children.Remove(this);
+        }
+
+        public int? Id { get; internal set; }
+        public DisplayCanvas Root { get; internal set; }
+        public IDisplayElement Parent { get; internal set; }
+        public List<IDisplayElement> Children { get; internal set; }
+        public VisualElement BaseElement { get; internal set; }
+        public bool IsLoaded { get; internal set; }
+        public bool HasChanges { get; internal set; }
 
         public BackgroundData Background { get; }
         public FlexData Flex { get; }
@@ -288,19 +455,75 @@ namespace DisplayKit.Elements
 
     public class DisplayText : IDisplayElement, IDisplayStyleTarget
     {
-        public extern DisplayElement AddElement();
-        public extern DisplayText AddText(string text = "");
-        public extern void Remove();
+        public DisplayText()
+        {
+            Children = new List<IDisplayElement>();
+            Background = new BackgroundData();
+            Flex = new FlexData();
+            Align = new AlignData();
+            Size = new SizeData();
+            Spacing = new SpacingData();
+            Border = new BorderData();
+            Position = new PositionData();
+            Transform = new TransformData();
+            Display = new DisplayData();
+            Text = new TextData();
+            BaseElement = new VisualElement();
+            IsLoaded = true;
+            HasChanges = false;
+        }
+
+        public DisplayElement AddElement()
+        {
+            var key = $"DisplayText.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var el = new DisplayElement
+                {
+                    Parent = this,
+                    Root = this.Root,
+                    BaseElement = new VisualElement()
+                };
+                Children.Add(el);
+                return el;
+            });
+        }
+
+        public DisplayText AddText(string text = "")
+        {
+            var key = $"DisplayText.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            return ExternObjectCache.GetOrAdd(key, () =>
+            {
+                var t = new DisplayText
+                {
+                    Parent = this,
+                    Root = this.Root,
+                    BaseElement = new VisualElement(),
+                    Content = text
+                };
+                Children.Add(t);
+                return t;
+            });
+        }
+
+        public void Remove()
+        {
+            ExternObjectCache.Set($"DisplayText.Removed.{this.GetHashCode()}", true);
+            if (Parent is DisplayCanvas dc)
+                dc.Children.Remove(this);
+            else if (Parent is DisplayElement de)
+                de.Children.Remove(this);
+        }
 
         public string Content { get; set; }
 
-        public int? Id { get; }
-        public DisplayCanvas Root { get; }
-        public IDisplayElement Parent { get; }
-        public List<IDisplayElement> Children { get; }
-        public VisualElement BaseElement { get; }
-        public bool IsLoaded { get; }
-        public bool HasChanges { get; }
+        public int? Id { get; internal set; }
+        public DisplayCanvas Root { get; internal set; }
+        public IDisplayElement Parent { get; internal set; }
+        public List<IDisplayElement> Children { get; internal set; }
+        public VisualElement BaseElement { get; internal set; }
+        public bool IsLoaded { get; internal set; }
+        public bool HasChanges { get; internal set; }
 
         public BackgroundData Background { get; }
         public FlexData Flex { get; }
@@ -315,44 +538,124 @@ namespace DisplayKit.Elements
     }
 }
 
-// ============================================================================
-// DisplayKit — 工具类
-// ============================================================================
 
 namespace DisplayKit
 {
     public static class StyleParser
     {
-        public static extern void ParseAndApply(string cssStyle, IDisplayStyleTarget element);
-        public static extern Dictionary<string, string> Parse(string cssStyle);
+        public static void ParseAndApply(string cssStyle, IDisplayStyleTarget element)
+        {
+            var styles = Parse(cssStyle);
+            ExternObjectCache.Set($"StyleParser.ParseAndApply.{cssStyle}.{(element?.GetHashCode().ToString() ?? "null")}", styles);
+        }
+
+        public static Dictionary<string, string> Parse(string cssStyle)
+        {
+            var key = $"StyleParser.Parse.{cssStyle}";
+            return ExternObjectCache.GetOrAdd(key, () => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        }
     }
 
     public static class StyleCodeGen
     {
-        public static extern void WriteAssignments(Dictionary<string, string> styles, string varName, StringBuilder sb);
+        public static void WriteAssignments(Dictionary<string, string> styles, string varName, StringBuilder sb)
+        {
+            if (styles == null) return;
+            var concatenated = string.Join(";", System.Linq.Enumerable.Select(styles, kv => $"{kv.Key}:{kv.Value}"));
+            var key = $"StyleCodeGen.WriteAssignments.{varName}.{concatenated}";
+            var cached = ExternObjectCache.GetOrAdd(key, () => concatenated);
+            sb.Append(cached);
+        }
     }
 
     public static class StyleIStyleConverter
     {
-        public static extern void Apply(UIElements.IStyle s, IDisplayStyleTarget e);
-        public static extern Dictionary<string, string> ToDictionary(UIElements.IStyle s);
-        public static extern Dictionary<string, string> ToDictionary(UIElements.IResolvedStyle rs);
+        public static void Apply(UIElements.IStyle s, IDisplayStyleTarget e)
+        {
+            var dict = ToDictionary(s);
+            ExternObjectCache.Set($"StyleIStyleConverter.Apply.{(e?.GetHashCode().ToString() ?? "null")}", dict);
+        }
+
+        public static Dictionary<string, string> ToDictionary(UIElements.IStyle s)
+        {
+            var key = $"StyleIStyleConverter.ToDictionary.IStyle.{(s?.GetHashCode().ToString() ?? "null")}";
+            return ExternObjectCache.GetOrAdd(key, () => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        public static Dictionary<string, string> ToDictionary(UIElements.IResolvedStyle rs)
+        {
+            var key = $"StyleIStyleConverter.ToDictionary.IResolvedStyle.{(rs?.GetHashCode().ToString() ?? "null")}";
+            return ExternObjectCache.GetOrAdd(key, () => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        }
     }
 
     internal static class CssParse
     {
-        public static extern string StripSuffix(string s, string suffix);
-        public static extern bool TryParseKeyword(string raw, out StyleKeyword keyword);
-        public static extern StyleFloat ParseFloat(string raw);
-        public static extern StyleColor ParseColor(string raw);
-        public static extern StyleLength ParseLength(string raw);
-        public static extern Length ParseLengthRaw(string s);
-        public static extern StyleScale ParseScale(string raw);
-        public static extern StyleRotate ParseRotate(string raw);
-        public static extern StyleTranslate ParseTranslate(string raw);
-        public static extern StyleTransformOrigin ParseTransformOrigin(string raw);
-        public static extern StyleTextShadow ParseTextShadow(string raw);
-        public static extern T ParseEnum<T>(string raw) where T : struct, Enum;
-        public static extern Enums.FontType? ParseFontDef(string raw);
+        public static string StripSuffix(string s, string suffix)
+        {
+            if (string.IsNullOrEmpty(s) || string.IsNullOrEmpty(suffix)) return s;
+            return s.EndsWith(suffix, StringComparison.Ordinal) ? s.Substring(0, s.Length - suffix.Length) : s;
+        }
+
+        public static bool TryParseKeyword(string raw, out StyleKeyword keyword)
+        {
+            keyword = default;
+            return false;
+        }
+
+        public static StyleFloat ParseFloat(string raw)
+        {
+            return default;
+        }
+
+        public static StyleColor ParseColor(string raw)
+        {
+            return default;
+        }
+
+        public static StyleLength ParseLength(string raw)
+        {
+            return default;
+        }
+
+        public static Length ParseLengthRaw(string s)
+        {
+            return default;
+        }
+
+        public static StyleScale ParseScale(string raw)
+        {
+            return default;
+        }
+
+        public static StyleRotate ParseRotate(string raw)
+        {
+            return default;
+        }
+
+        public static StyleTranslate ParseTranslate(string raw)
+        {
+            return default;
+        }
+
+        public static StyleTransformOrigin ParseTransformOrigin(string raw)
+        {
+            return default;
+        }
+
+        public static StyleTextShadow ParseTextShadow(string raw)
+        {
+            return default;
+        }
+
+        public static T ParseEnum<T>(string raw) where T : struct, Enum
+        {
+            return default;
+        }
+
+        public static Enums.FontType? ParseFontDef(string raw)
+        {
+            return null;
+        }
     }
 }

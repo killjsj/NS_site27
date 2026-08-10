@@ -78,7 +78,7 @@ namespace NS_site27_api.Modules.Lobby
                                 ? $"{LobbyMusicManager.FormatTime(LobbyMusicManager.Instance.current)}/{LobbyMusicManager.FormatTime((float)LobbyMusicManager.Instance.TotalTime)}"
                                 : LobbyMusicManager.FormatTime(LobbyMusicManager.Instance.current);
 
-                            res = $"<align=right><size=14><line-height=45%><color=#00FFFF50>[{timeStr}]:{LobbyMusicManager.Instance.CurrentSongName}({LobbyMusicManager.Instance.GetSourceName()})\n{lrcText}</color></line-height></size></align>";
+                            res = $"<align=right><size=14><line-height=45%><color=#00FFFF50>[{timeStr}]:{LobbyMusicManager.Instance.CurrentSongName} ({LobbyMusicManager.Instance.GetSourceName()})\n{lrcText}</color></line-height></size></align>";
                         }
                         else
                         {

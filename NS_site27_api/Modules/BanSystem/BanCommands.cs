@@ -14,8 +14,8 @@ namespace NS_site27_api.Modules.BanSystem
     {
         public string Command => "sban";
         public string[] Aliases => new[] { "site27ban" };
-        public string Description => "Ban a player with MySQL integration";
-        public string[] Usage => new[] { "%player%", "duration", "reason" };
+        public string Description => "Ban a pass_player with MySQL integration";
+        public string[] Usage => new[] { "%pass_player%", "duration", "reason" };
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
@@ -28,7 +28,7 @@ namespace NS_site27_api.Modules.BanSystem
 
             if (arguments.Count < 2)
             {
-                response = "Usage: sban <player> <duration(m)> [reason]";
+                response = "Usage: sban <pass_player> <duration(m)> [reason]";
                 return false;
             }
 
@@ -58,11 +58,11 @@ namespace NS_site27_api.Modules.BanSystem
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
                 _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
-                //player.Ban((uint)(duration * 60), reason);
+                //pass_player.Ban((uint)(duration * 60), reason);
                 player.Kick(reason, runner);
             }
 
-            response = $"Banned {targets.Count} player(s).";
+            response = $"Banned {targets.Count} pass_player(s).";
             return true;
         }
 
@@ -71,7 +71,7 @@ namespace NS_site27_api.Modules.BanSystem
         {
             public string Command => "cban";
             public string[] Aliases => Array.Empty<string>();
-            public string Description => "Query ban records for a player";
+            public string Description => "Query ban records for a pass_player";
 
             public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
             {

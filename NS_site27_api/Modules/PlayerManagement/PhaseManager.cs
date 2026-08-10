@@ -48,27 +48,15 @@ namespace NS_site27_api.Modules.PlayerManagement
                 return GamePhase.MinorAchievement;
             }
 
-            if (hours < 20)
-            {
-                return GamePhase.SteadyProgress;
-            }
-
-            if (hours < 25)
-            {
-                return GamePhase.BattleHardened;
-            }
-
-            if (hours < 30)
-            {
-                return GamePhase.SeasonedRider;
-            }
-
-            if (hours < 35)
-            {
-                return GamePhase.HundredBattles;
-            }
-
-            return hours < 45 ? GamePhase.RegionalForce : hours < 55 ? GamePhase.RenownedFar : GamePhase.SupremeRealm;
+            return hours < 20
+                ? GamePhase.SteadyProgress
+                : hours < 25
+                ? GamePhase.BattleHardened
+                : hours < 30
+                ? GamePhase.SeasonedRider
+                : hours < 35
+                ? GamePhase.HundredBattles
+                : hours < 45 ? GamePhase.RegionalForce : hours < 55 ? GamePhase.RenownedFar : GamePhase.SupremeRealm;
         }
 
         public static string PhaseToName(GamePhase phase)

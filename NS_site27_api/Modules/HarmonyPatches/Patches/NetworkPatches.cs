@@ -24,7 +24,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         {
             if (__instance.connectionId == 0)
             {
-                Log.Info("Critical: attempted to disconnect the dedicated server player.");
+                Log.Info("Critical: attempted to disconnect the dedicated server pass_player.");
                 return false;
             }
             return true;

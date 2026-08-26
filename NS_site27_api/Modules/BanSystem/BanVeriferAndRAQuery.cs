@@ -30,17 +30,17 @@ namespace NS_site27_api.Modules.BanSystem
 
         private void PlayerEvents_RequestedRaPlayerInfo(LabApi.Events.Arguments.PlayerEvents.PlayerRequestedRaPlayerInfoEventArgs ev)
         {
-            if (Player.TryGet(ev.Target, out _))
-            {
-                if (CommandProcessor.RemoteAdminCommandHandler.TryGetCommand("cban", out var command) && ev.Player.ReferenceHub.queryProcessor.TryGetSender(out var s))
-                {
-                    if (command.Execute(new ArraySegment<string>(new[] { ev.Player.UserId }), s, out var re))
-                    {
-                        _ = ev.InfoBuilder.AppendLine("\n");
-                        _ = ev.InfoBuilder.AppendLine(re);
-                    }
-                }
-            }
+            //if (Player.TryGet(ev.Target, out _))
+            //{
+            //    if (CommandProcessor.RemoteAdminCommandHandler.TryGetCommand("cban", out var command) && ev.Player.ReferenceHub.queryProcessor.TryGetSender(out var s))
+            //    {
+            //        if (command.Execute(new ArraySegment<string>(new[] { ev.Player.UserId }), s, out var re))
+            //        {
+            //            _ = ev.InfoBuilder.AppendLine("\n");
+            //            _ = ev.InfoBuilder.AppendLine(re);
+            //        }
+            //    }
+            //}
         }
 
         public async void OnPreVerifer(PreAuthenticatingEventArgs ev)

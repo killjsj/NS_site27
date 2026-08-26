@@ -8,6 +8,7 @@ using InventorySystem.Items.Firearms.Modules;
 using MEC;
 using NAudio.Wave;
 using NS_site27_api.Core.UI;
+using NS_site27_api.Extensions;
 using NS_site27_api.Modules.Abilities;
 using NS_site27_heavy.Core;
 using PlayerRoles.FirstPersonControl;
@@ -42,7 +43,7 @@ namespace NS_site27_heavy.heavy.Module.dage
 
         private Vector3 lastPos;
         private float lastVer, lastHo;
-        public override float checktime => 0.015f;
+        public override float checktime => 0.005f;
         public override void OnCheck(Player player)
         {
             if (player.Role.Base is not IFpcRole fpc)
@@ -55,10 +56,12 @@ namespace NS_site27_heavy.heavy.Module.dage
             float ver = module.MouseLook.CurrentVertical;
             float ho = module.MouseLook.CurrentHorizontal;
 
-            bool still = (pos - lastPos).sqrMagnitude < 0.0001f
-                         && !module.Motor.RotationDetected
-                         && Mathf.Abs(Mathf.DeltaAngle(lastVer, ver)) < 0.1f
-                         && Mathf.Abs(Mathf.DeltaAngle(lastHo, ho)) < 0.1f;
+            bool still =
+                true;
+            //(pos - lastPos).sqrMagnitude < 0.0001f
+            //         && !module.Motor.RotationDetected
+            //         && Mathf.Abs(Mathf.DeltaAngle(lastVer, ver)) < 0.1f
+            //         && Mathf.Abs(Mathf.DeltaAngle(lastHo, ho)) < 0.1f;
 
             lastPos = pos;
             lastVer = ver;
@@ -80,19 +83,19 @@ namespace NS_site27_heavy.heavy.Module.dage
         {
             AimOverride.ClearAll();
         }
-        public override void Unregister(Player player)
+        public override void Uninit(Player player)
         {
-            base.Unregister(player);
+            base.Uninit(player);
             if (LineXray.IsEnabled(player.ReferenceHub))
             {
                 LineXray.Disable(player.ReferenceHub);
             }
             _ = vaild.Remove(player.ReferenceHub);
         }
-        public override AbilityBase Register(Player player)
+        public override void Init(Player player)
         {
             vaild.Add(player.ReferenceHub);
-            return base.Register(player);
+            base.Init(player);
         }
         private const float ConeHalfAngle = 20f;
         private const float MaxRange = 150f;
@@ -124,7 +127,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             AimOverride.Set(hub, target);
 
             ev.Direction = (aimPoint - origin).normalized;
-            _ = TryLookAt(ev.Player.ReferenceHub, aimPoint);
+            _ = ev.Player.TryLookAt(aimPoint);
             DrawTracer(hub, origin, aimPoint);
 
         }
@@ -161,33 +164,6 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
         }
 
-        public static bool TryLookDirection(ReferenceHub hub, Vector3 dir)
-        {
-            if (dir.sqrMagnitude < 1e-8f)
-            {
-                return false;
-            }
-
-            dir.Normalize();
-
-            // vertical: + up, - down
-            float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-            vertical = Mathf.Clamp(vertical, -88f, 88f);          // ClampVertical does this anyway
-
-            // horizontal: world yaw, 0..360
-            float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            if (horizontal < 0f)
-            {
-                horizontal += 360f;
-            }
-
-            return hub.TryOverrideRotation(new Vector2(vertical, horizontal));
-        }
-
-        public static bool TryLookAt(ReferenceHub hub, Vector3 worldPoint)
-        {
-            return TryLookDirection(hub, worldPoint - hub.PlayerCameraReference.position);
-        }
 
         private static readonly CachedLayerMask l = new("Player", "Hitbox");
         public static RaycastHit[] ConeCastAll(
@@ -258,23 +234,19 @@ namespace NS_site27_heavy.heavy.Module.dage
         public override string Name => "它转起来了!";
 
         public override string Des => "";
-        public override AbilityBase Register(Player player)
+        public override void Init(Player player)
         {
             FpcSpoofing.FakeYawSpinController.Start(player.ReferenceHub);
-            return base.Register(player);
+            base.Init(player);
         }
         public override void OnCheck(Player player)
         {
         }
-        public override void Unregister(Player player)
+        public override void Uninit(Player player)
         {
-            base.Unregister(player);
+            base.Uninit(player);
             FpcSpoofing.FakeYawSpinController.Stop(player.ReferenceHub);
 
-        }
-        internal rot(Player player) : base(player)
-        {
-            //TotalCount = 1;
         }
         public rot() : base()
         {
@@ -293,6 +265,7 @@ namespace NS_site27_heavy.heavy.Module.dage
 
         public override bool OnTrigger()
         {
+            if (ZhuXian.guas.Contains(player)) { return true; }
             if (player.Role.Base is IFpcRole fpc)
             {
                 if (fpc.FpcModule?.Motor?.JumpController != null)
@@ -305,7 +278,7 @@ namespace NS_site27_heavy.heavy.Module.dage
         }
         public override int TotalCount { get; set; } = 999;
         public override double time => 0;
-        public override float WaitForDoneTime => 0.005f;
+        public override float WaitForDoneTime => 0.001f;
         public override float CoolDownRemaining { get => base.CoolDownRemaining; set => base.CoolDownRemaining = value; }
         public override AbilityBase Register(Player player)
         {
@@ -324,11 +297,17 @@ namespace NS_site27_heavy.heavy.Module.dage
         private static float audioLength = 0f; // 缓存音频时长
         public CoroutineHandle ch;
 
-        public override AbilityBase Register(Player player)
+        public override void Init(Player player)
         {
+                Log.Info($"Init {player}");
+            if(pass_player  == null)
+            {
+                Log.Info("pas  = pl");
+                pass_player = player;
+            }
             sid = DefaultAudioManager.Instance.PlayTrackingAudio<int>(
                 "dage",
-                () => player.Position,
+                () => { if (pass_player == null) { if (DefaultAudioManager.Instance.IsValidSession(sid)) { DefaultAudioManager.Instance.StopAudio(sid); } return Vector3.zero; } return pass_player.Position; },
                 () => true,
                 0,
                 (p, _) => p.IsReady,
@@ -338,28 +317,38 @@ namespace NS_site27_heavy.heavy.Module.dage
                 minDistance: 20
             );
             ch = Timing.RunCoroutine(replayer());
-            return base.Register(player);
+            base.Init(player);
         }
         public IEnumerator<float> replayer()
         {
             while (true)
             {
                 yield return Timing.WaitForSeconds(audioLength);
-                if (sid != -1)
+                try
                 {
-                    DefaultAudioManager.Instance.DestroySession(sid);
+                    if (sid != -1)
+                    {
+                        if (DefaultAudioManager.Instance.IsValidSession(sid))
+                        {
+                            DefaultAudioManager.Instance.StopAudio(sid);
+                        }
 
-                    sid = DefaultAudioManager.Instance.PlayTrackingAudio<int>(
-                        "dage",
-                        () => pass_player.Position,
-                        () => true,
-                        0,
-                        (p, _) => p.IsReady,
-                        priority: AudioPriority.Medium,
-                        lifespan: audioLength,
-                        maxDistance: 100,
-                        minDistance: 20
-                    );
+                        sid = DefaultAudioManager.Instance.PlayTrackingAudio<int>(
+                            "dage",
+                            () => { if (pass_player == null) { if (DefaultAudioManager.Instance.IsValidSession(sid)) { DefaultAudioManager.Instance.StopAudio(sid); } return Vector3.zero; } return pass_player.Position; },
+                            () => true,
+                            0,
+                            (p, _) => p.IsReady,
+                            priority: AudioPriority.Medium,
+                            lifespan: audioLength,
+                            maxDistance: 100,
+                            minDistance: 20
+                        );
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e);
                 }
             }
         }
@@ -368,14 +357,20 @@ namespace NS_site27_heavy.heavy.Module.dage
 
         }
 
-        public override void Unregister(Player player)
+        public override void Uninit(Player player)
         {
-            base.Unregister(player);
+            base.Uninit(player);
             if (sid != -1)
             {
-                DefaultAudioManager.Instance.DestroySession(sid);
+                if (DefaultAudioManager.Instance.IsValidSession(sid))
+                {
+                    DefaultAudioManager.Instance.StopAudio(sid);
+                }
             }
-            if (ch.IsRunning) Timing.KillCoroutines(ch);
+            if (ch.IsRunning)
+            {
+                _ = Timing.KillCoroutines(ch);
+            }
         }
         private float GetAudioDuration(string filePath)
         {

@@ -8,7 +8,7 @@ namespace NS_site27_heavy.heavy.Module.dage
     /// One-shot store of "the next bullet this player fires should go here".
     /// <para>
     /// Written from the Shooting event, consumed inside the RandomizeRay patch. Shooting ->
-    /// ProcessShot -> Fire -> RandomizeRay is one synchronous call stack in the same frame, so an
+    /// ProcessShot -> Fire -> RandomizeRay is one synchronous call stack in the same frame, DropSo an
     /// entry from an earlier frame means the shot never reached hitreg (cancelled by another
     /// plugin, rejected by a module) and must be discarded rather than applied to a later shot.
     /// </para>
@@ -21,12 +21,14 @@ namespace NS_site27_heavy.heavy.Module.dage
             public int Frame;
         }
 
-        private static readonly Dictionary<ReferenceHub, Entry> Pending = new Dictionary<ReferenceHub, Entry>();
+        private static readonly Dictionary<ReferenceHub, Entry> Pending = new();
 
         public static void Set(ReferenceHub shooter, HitboxIdentity target)
         {
             if (shooter == null || target == null)
+            {
                 return;
+            }
 
             Pending[shooter] = new Entry { Hitbox = target, Frame = Time.frameCount };
         }
@@ -44,19 +46,27 @@ namespace NS_site27_heavy.heavy.Module.dage
             dir = default;
 
             if (shooter == null || !Pending.TryGetValue(shooter, out Entry e))
+            {
                 return false;
+            }
 
-            Pending.Remove(shooter);
+            _ = Pending.Remove(shooter);
 
             if (e.Frame != Time.frameCount)
+            {
                 return false;
+            }
 
             if (e.Hitbox == null || e.Hitbox.TargetHub == null || !e.Hitbox.TargetHub.roleManager.CurrentRole.RoleTypeId.IsAlive())
+            {
                 return false;
+            }
 
             Vector3 delta = e.Hitbox.CenterOfMass - origin;
             if (delta.sqrMagnitude < 1e-6f)
+            {
                 return false;
+            }
 
             dir = delta.normalized;
             return true;
@@ -65,9 +75,14 @@ namespace NS_site27_heavy.heavy.Module.dage
         public static void Clear(ReferenceHub shooter)
         {
             if (shooter != null)
-                Pending.Remove(shooter);
+            {
+                _ = Pending.Remove(shooter);
+            }
         }
 
-        public static void ClearAll() => Pending.Clear();
+        public static void ClearAll()
+        {
+            Pending.Clear();
+        }
     }
 }

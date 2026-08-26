@@ -169,7 +169,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                     _ = player.ReferenceHub.TryOverridePosition(pos);
                                 }
                                 Vector3 playerEuler = player.Rotation.eulerAngles;
-                                TryLookDirection(player.ReferenceHub, PlayerCamera.transform.forward);
+                                _ = TryLookDirection(player.ReferenceHub, PlayerCamera.transform.forward);
                             }
                             catch (Exception e)
                             {
@@ -208,7 +208,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public static bool TryLookDirection(ReferenceHub hub, Vector3 dir)
         {
             if (dir.sqrMagnitude < 1e-8f)
+            {
                 return false;
+            }
 
             dir.Normalize();
 
@@ -219,13 +221,18 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             // horizontal: world yaw, 0..360
             float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             if (horizontal < 0f)
+            {
                 horizontal += 360f;
+            }
 
             return hub.TryOverrideRotation(new Vector2(vertical, horizontal));
         }
 
         public static bool TryLookAt(ReferenceHub hub, Vector3 worldPoint)
-            => TryLookDirection(hub, worldPoint - hub.PlayerCameraReference.position);
+        {
+            return TryLookDirection(hub, worldPoint - hub.PlayerCameraReference.position);
+        }
+
         public bool TryStartAnimation(List<Player> WaitingToSpawn, Action<SpecialWave, List<Player>> OnPlayDone)
         {
             OnRestartRound();
@@ -240,6 +247,11 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 SchematicName = "testHeli"
             };
+            if(hp  == null)
+            {
+                OnPlayDone?.Invoke(this,WaitingToSpawn);
+                return true;
+            }
             root = hp.SpawnOrUpdateObject();
             if (root != null)
             {

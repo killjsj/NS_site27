@@ -522,7 +522,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     v += $"<color=yellow>{PlayerHUDManager.dd}:dd数量</color>\n<color=#009900>{PlayerHUDManager.chaos}:混沌数量</color>";
                 }
             }
-            else if (player != null && player.IsScp)
+            else if (player != null && player.IsScp && !Round.IgnoredPlayers.Contains(player.ReferenceHub))
             {
                 v += "<size=17><align=right>";
                 var ZombieCount = 0;

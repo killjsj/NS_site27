@@ -237,7 +237,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             {
                 if (ability is IRegisiterNeeded<AbilityBase> reg)
                 {
-                    reg.Unregister(player);
+                    reg.Uninit(player);
                 }
             }
 
@@ -248,7 +248,6 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 RemoveAbilityMessage(player);
             }
         }
-
         private static void OnPlayerChangingRole(ChangingRoleEventArgs ev)
         {
             if (ev.Player == null)
@@ -279,6 +278,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
                 if (template is IRegisiterNeeded<AbilityBase> reg)
                 {
+                    Log.Info($"{instance.GetType().FullName} template is IRegisiterNeeded<AbilityBase> reg");
                     instance = reg.Register(player);
                 }
 
@@ -300,7 +300,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             {
                 if (ability is IRegisiterNeeded<AbilityBase> reg)
                 {
-                    reg.Unregister(player);
+                    reg.Uninit(player);
                 }
             }
 
@@ -747,7 +747,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 }
                 else if (template is IRegisiterNeeded<ItemAbilityBase> reg)
                 {
-                    reg.Unregister(player);
+                    reg.Uninit(player);
                 }
             }
             catch (Exception ex) { Log.Warn($"UnregisterInstanceForTemplate error: {ex}"); }
@@ -927,7 +927,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                     {
                         if (ability is IRegisiterNeeded<ItemAbilityBase> reg)
                         {
-                            reg.Unregister(player);
+                            reg.Uninit(player);
                         }
 
                         if (ability is IitemRegisiterNeeded<ItemAbilityBase> reg1)
@@ -1038,7 +1038,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                     {
                         if (ability is IRegisiterNeeded<ItemAbilityBase> reg)
                         {
-                            reg.Unregister(ev.Player);
+                            reg.Uninit(ev.Player);
                         }
 
                         if (ability is IitemRegisiterNeeded<ItemAbilityBase> reg1)

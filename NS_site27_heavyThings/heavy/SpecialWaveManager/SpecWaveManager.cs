@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 
+
 namespace NS_site27_heavy.heavy.SpecialWaveManager
 {
     public class SpecWaveManager : ModuleBase<SpecWaveManager.SPWConfig>
@@ -18,7 +19,8 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public static SpecWaveManager Ins;
         public static List<SpecialWave> RegWaves = new();
         public static bool IsInAnim = false;
-        public static bool CanStartSpawn => !IsInAnim && WaveSpawner.AnyPlayersAvailable;
+        private static bool StartingWave;
+        public static bool CanStartSpawn => !IsInAnim && Round.InProgress && WaveSpawner.AnyPlayersAvailable && !StartingWave;
         private CoroutineHandle loop;
         public override void OnDisable()
         {
@@ -129,7 +131,39 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             _ = AppendString.Append("</size></align>");
 
         }
+        public waveComp WaveComparer = new();
+        public class waveComp : IComparer<SpecialWave>
+        {
+            public int Compare(SpecialWave x, SpecialWave y)
+            {
+                return x.WaveWei.CompareTo(y.WaveWei);
+            }
+        }
 
+
+        public Dictionary<l, List<SpecialWave>> GetSort()
+        {
+            var re = new Dictionary<l, List<SpecialWave>>();
+
+            foreach (var item in RegWaves)
+            {
+                if (!re.TryGetValue(item.WaveLev, out var waves))
+                {
+                    waves = new List<SpecialWave>();
+                    re.Add(item.WaveLev, waves);
+                }
+
+                waves.Add(item);
+            }
+
+
+            foreach (var waves in re.Values)
+            {
+                waves.Sort(WaveComparer);
+            }
+
+            return re;
+        }
         public void WaitingForPlayers()
         {
             loop = Timing.RunCoroutine(MainLoop());
@@ -225,6 +259,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                                 if (success)
                                 {
                                     _ = StartWave(item);
+                                    break;
                                 }
                             }
                         }
@@ -258,6 +293,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
             Log.Info($"[SWM] spawning wave {wave.GetType().Name}");
             CurrentWave = wave;
             IsInAnim = true;
+            StartingWave = true;
             try
             {
                 var p = WaveSpawner.GetAvailablePlayers(PlayerRoles.Team.OtherAlive, wave.MaxSpawnedOnce).Select(Player.Get).ToList();
@@ -290,6 +326,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
                         timing.LastSpawnTime = Time.time;
                     }
                 }
+                StartingWave = false;
             }
         }
         public class SPWConfig : ModuleConfigBase

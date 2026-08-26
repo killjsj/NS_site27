@@ -130,6 +130,7 @@ namespace Next_generationSite_27.UnionP.Turret
                 }
             }
             turret.turretModel = SO;
+            turret.turretModelpos = pos;
             turret.Onwer = Onwer;
             turret.init = true;
             turret.hp = turret.maxhp;
@@ -163,6 +164,7 @@ namespace Next_generationSite_27.UnionP.Turret
         public ItemBase itemBase { get; private set; }
         private ItemType _Type;
         public SchematicObject turretModel;
+        private Vector3 turretModelpos;
         public GameObject Damager;
         public AdminToys.TextToy Text;
         public GameObject shotPoint;
@@ -246,6 +248,7 @@ namespace Next_generationSite_27.UnionP.Turret
         protected void OnDestroy()
         {
             PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+            Map.ExplodeEffect(turretModelpos, Exiled.API.Enums.ProjectileType.Flashbang);
         }
         private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevrole, PlayerRoleBase newrole)
         {

@@ -41,11 +41,20 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         {
             base.SubscribeEvents();
             Exiled.Events.Handlers.Player.ChangingRole += OnChangingRole;
+            Exiled.Events.Handlers.Player.PickingUpItem += PickingUpItem;
         }
         protected override void UnsubscribeEvents()
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
+            Exiled.Events.Handlers.Player.PickingUpItem -= PickingUpItem;
             base.UnsubscribeEvents();
+        }
+        public void PickingUpItem(PickingUpItemEventArgs ev)
+        {
+            if (ev.Pickup.Type == ItemType.Coin)
+            {
+                ev.Player.Inventory.UserInventory.ReserveAmmo[ItemType.Coin] = (ushort)(GetRemainAmmo(ev.Player) + 1);
+            }
         }
         public void OnChangingRole(ChangingRoleEventArgs ev)
         {
@@ -342,6 +351,11 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         }
         protected override void OnUsed(Player player, Item item)
         {
+            if (!Check(item))
+            {
+                return;
+            }
+
             base.OnUsed(player, item);
             if (GetRemainAmmo(player) == 0)
             {

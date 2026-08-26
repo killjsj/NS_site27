@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using CentralAuth;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.FpcSpoofing
@@ -11,7 +11,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
     /// The spun player's own view is untouched — the distributor never sends a player their own
     /// sync data, and the local client drives its camera from raw input.
     /// <para>
-    /// Only the yaw override is written, so pitch, position and movement state keep streaming the
+    /// Only the yaw override is written, DropSo pitch, position and movement state keep streaming the
     /// player's real values, and any position override you set separately survives.
     /// </para>
     /// </summary>
@@ -28,9 +28,9 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         }
 
         private static readonly Dictionary<ReferenceHub, SpinEntry> Spins
-            = new Dictionary<ReferenceHub, SpinEntry>();
+            = new();
 
-        private static readonly List<ReferenceHub> DeadTargets = new List<ReferenceHub>();
+        private static readonly List<ReferenceHub> DeadTargets = new();
 
         private static bool _hooked;
 
@@ -51,11 +51,11 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         /// </param>
         /// <param name="receivers">
         /// Who gets lied to. Null (default) means every other verified player, re-evaluated each
-        /// frame so late joiners are included automatically.
+        /// frame DropSo late joiners are included automatically.
         /// </param>
         /// <param name="startYaw">
         /// Initial yaw. Null keeps the current phase if already spinning, otherwise starts from the
-        /// player's real yaw so the spin begins without a visible snap.
+        /// player's real yaw DropSo the spin begins without a visible snap.
         /// </param>
         public static void Start(ReferenceHub target,
                                  float degreesPerSecond = DefaultDegreesPerSecond,
@@ -63,7 +63,9 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
                                  float? startYaw = null)
         {
             if (target == null)
+            {
                 return;
+            }
 
             EnsureHooked();
 
@@ -85,32 +87,42 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         public static void Stop(ReferenceHub target)
         {
             if (target == null || !Spins.TryGetValue(target, out SpinEntry entry))
+            {
                 return;
+            }
 
-            Spins.Remove(target);
+            _ = Spins.Remove(target);
 
             // Drop only the yaw override; leave any position/pitch/state overrides in place.
             if (entry.Receivers != null)
             {
                 foreach (ReferenceHub r in entry.Receivers)
+                {
                     FpcSpoofer.ClearRotation(r, target);
+                }
             }
             else
             {
                 foreach (ReferenceHub r in ReferenceHub.AllHubs)
+                {
                     FpcSpoofer.ClearRotation(r, target);
+                }
             }
         }
 
-        public static bool IsSpinning(ReferenceHub target) =>
-            target != null && Spins.ContainsKey(target);
+        public static bool IsSpinning(ReferenceHub target)
+        {
+            return target != null && Spins.ContainsKey(target);
+        }
 
         /// <summary>Stops every active spin. Call on plugin disable / round restart.</summary>
         public static void StopAll()
         {
             var targets = new List<ReferenceHub>(Spins.Keys);
             foreach (ReferenceHub t in targets)
+            {
                 Stop(t);
+            }
 
             Spins.Clear();
         }
@@ -118,10 +130,12 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         private static void EnsureHooked()
         {
             if (_hooked)
+            {
                 return;
+            }
 
             // Update runs before LateUpdate, and FpcServerPositionDistributor sends from
-            // LateUpdate, so the yaw written here is always fresh for this frame's packet.
+            // LateUpdate, DropSo the yaw written here is always fresh for this frame's packet.
             StaticUnityMethods.OnUpdate += OnUpdate;
             _hooked = true;
         }
@@ -129,7 +143,9 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         internal static void Unhook()
         {
             if (!_hooked)
+            {
                 return;
+            }
 
             StaticUnityMethods.OnUpdate -= OnUpdate;
             _hooked = false;
@@ -138,7 +154,9 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         private static void OnUpdate()
         {
             if (!NetworkServer.active || Spins.Count == 0)
+            {
                 return;
+            }
 
             float dt = Time.deltaTime;
             DeadTargets.Clear();
@@ -149,21 +167,23 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
                 SpinEntry entry = kv.Value;
 
                 // Role changes and disconnects both invalidate the target.
-                if (target == null || !(target.roleManager.CurrentRole is IFpcRole))
+                if (target == null || target.roleManager.CurrentRole is not IFpcRole)
                 {
                     DeadTargets.Add(target);
                     continue;
                 }
 
-                entry.Yaw = Wrap360(entry.Yaw + entry.DegreesPerSecond * dt);
-                FakeFpcState state = new FakeFpcState(yaw: entry.Yaw);
+                entry.Yaw = Wrap360(entry.Yaw + (entry.DegreesPerSecond * dt));
+                FakeFpcState state = new(yaw: entry.Yaw);
 
                 if (entry.Receivers != null)
                 {
                     foreach (ReferenceHub receiver in entry.Receivers)
                     {
                         if (IsValidReceiver(receiver, target))
+                        {
                             FpcSpoofer.Set(receiver, target, state);
+                        }
                     }
                 }
                 else
@@ -171,7 +191,9 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
                     foreach (ReferenceHub receiver in ReferenceHub.AllHubs)
                     {
                         if (IsValidReceiver(receiver, target))
+                        {
                             FpcSpoofer.Set(receiver, target, state);
+                        }
                     }
                 }
             }
@@ -179,24 +201,32 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             foreach (ReferenceHub dead in DeadTargets)
             {
                 if (dead == null)
-                    Spins.Remove(dead);
+                {
+                    _ = Spins.Remove(dead);
+                }
                 else
+                {
                     Stop(dead);
+                }
             }
 
             DeadTargets.Clear();
         }
 
-        private static bool IsValidReceiver(ReferenceHub receiver, ReferenceHub target) =>
-            receiver != null
+        private static bool IsValidReceiver(ReferenceHub receiver, ReferenceHub target)
+        {
+            return receiver != null
             && receiver != target
             && receiver.Mode != ClientInstanceMode.Unverified
             && !receiver.isLocalPlayer;
+        }
 
-        private static float CurrentRealYaw(ReferenceHub hub) =>
-            hub.roleManager.CurrentRole is IFpcRole fpc
+        private static float CurrentRealYaw(ReferenceHub hub)
+        {
+            return hub.roleManager.CurrentRole is IFpcRole fpc
                 ? fpc.FpcModule.MouseLook.CurrentHorizontal
                 : 0f;
+        }
 
         private static float Wrap360(float f)
         {

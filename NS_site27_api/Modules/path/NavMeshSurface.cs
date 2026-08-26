@@ -63,7 +63,7 @@ namespace UnityEngine.AI
         bool m_OverrideTileSize;
         public bool overrideTileSize { get { return m_OverrideTileSize; } set { m_OverrideTileSize = value; } }
         [SerializeField]
-        int m_TileSize = 256;
+        int m_TileSize = 128;
         public int tileSize { get { return m_TileSize; } set { m_TileSize = value; } }
         [SerializeField]
         bool m_OverrideVoxelSize;

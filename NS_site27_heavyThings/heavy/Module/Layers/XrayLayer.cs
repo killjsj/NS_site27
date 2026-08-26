@@ -1,6 +1,5 @@
 using DisplayKit.Elements;
 using Exiled.API.Features;
-using NS_site27_api.Core.UI;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using System;
@@ -16,19 +15,19 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
     /// Outlines nearby players through walls, one box per target.
     ///
     /// <para>
-    /// Unlike world-space markers, UI Toolkit elements are not part of the 3D scene, so nothing can
+    /// Unlike world-space markers, UI Toolkit elements are not part of the 3D scene, DropSo nothing can
     /// occlude them — that is what makes this an x-ray rather than an outline.
     /// </para>
     /// <para>
     /// DisplayKit positions elements in screen space only — <c>PositionData</c> is
-    /// Top/Bottom/Left/Right as <c>StyleLength</c>, with no world-space anchoring — so the server
+    /// Top/Bottom/Left/Right as <c>StyleLength</c>, with no world-space anchoring — DropSo the server
     /// projects. Both inputs are available per viewer: vertical FOV from
-    /// <c>70f / IZoomModifyingItem.ZoomAmount</c> (so scopes and ADS are exact), and aspect ratio
+    /// <c>70f / IZoomModifyingItem.ZoomAmount</c> (DropSo scopes and ADS are exact), and aspect ratio
     /// from <c>AspectRatioSync.AspectRatio</c>, which the client reports. Both are re-read every
-    /// tick so a scope going up or a resolution change is picked up immediately.
+    /// tick DropSo a scope going up or a resolution change is picked up immediately.
     /// </para>
     /// <para>
-    /// Boxes use <see cref="Length.Percent"/> against the canvas, so no pixel resolution is needed
+    /// Boxes use <see cref="Length.Percent"/> against the canvas, DropSo no pixel resolution is needed
     /// on either side.
     /// </para>
     /// </summary>
@@ -78,7 +77,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             }
 
             ReferenceHub viewer = target?.ReferenceHub;
-            if (viewer == null || !(viewer.roleManager.CurrentRole is IFpcRole viewerFpc))
+            if (viewer == null || viewer.roleManager.CurrentRole is not IFpcRole viewerFpc)
             {
                 HideFrom(pool, 0);
                 return;
@@ -87,7 +86,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             Vector3 origin = viewerFpc.FpcModule.Position;
             float sqrRange = Range * Range;
 
-            // Both resolved once per tick rather than cached, so a scope going up or a mid-round
+            // Both resolved once per tick rather than cached, DropSo a scope going up or a mid-round
             // resolution change is picked up on the next refresh.
             float fov = ScreenProjection.GetVerticalFov(viewer);
             float aspect = ScreenProjection.GetAspectRatio(viewer, FallbackAspectRatio);
@@ -107,7 +106,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
                     continue;
                 }
 
-                if (!(hub.roleManager.CurrentRole is IFpcRole otherFpc))
+                if (hub.roleManager.CurrentRole is not IFpcRole otherFpc)
                 {
                     continue;
                 }
@@ -131,7 +130,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
 
                 Rect rect = Pad(screen.ToUiRect(aspect));
 
-                // Fully off-screen: skip rather than clamp, so markers do not pile up at the edges.
+                // Fully off-screen: skip rather than clamp, DropSo markers do not pile up at the edges.
                 if (rect.xMax < 0f || rect.xMin > 1f || rect.yMax < 0f || rect.yMin > 1f)
                 {
                     continue;
@@ -179,7 +178,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
         {
             box.Display.Display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
 
-            // Percent resolves against the parent's box, which is the full-screen canvas — so these
+            // Percent resolves against the parent's box, which is the full-screen canvas — DropSo these
             // are literally viewport fractions and no pixel resolution is ever needed.
             box.Position.Left = new StyleLength(Length.Percent(r.xMin * 100f));
             box.Position.Top = new StyleLength(Length.Percent(r.yMin * 100f));
@@ -199,20 +198,17 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
 
         private static Color ColorFor(ReferenceHub target, bool enemy)
         {
-            if (!enemy)
-            {
-                return new Color(0.31f, 0.78f, 0.47f);
-            }
-
-            return target.GetTeam() switch
-            {
-                Team.SCPs => new Color(0.78f, 0.16f, 0.78f),
-                Team.FoundationForces => new Color(0.24f, 0.55f, 1f),
-                Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f),
-                Team.Scientists => new Color(0.94f, 0.90f, 0.55f),
-                Team.ClassD => new Color(1f, 0.55f, 0.16f),
-                _ => new Color(0.90f, 0.24f, 0.24f),
-            };
+            return !enemy
+                ? new Color(0.31f, 0.78f, 0.47f)
+                : target.GetTeam() switch
+                {
+                    Team.SCPs => new Color(0.78f, 0.16f, 0.78f),
+                    Team.FoundationForces => new Color(0.24f, 0.55f, 1f),
+                    Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f),
+                    Team.Scientists => new Color(0.94f, 0.90f, 0.55f),
+                    Team.ClassD => new Color(1f, 0.55f, 0.16f),
+                    _ => new Color(0.90f, 0.24f, 0.24f),
+                };
         }
     }
 }

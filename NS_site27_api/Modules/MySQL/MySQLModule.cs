@@ -41,8 +41,6 @@ namespace NS_site27_api.Modules.MySQL
                 return (0, null, 0, null, 0, null, null, null, null);
             }
 
-            await Awaitable.BackgroundThreadAsync();
-
             const string query = @"SELECT uid, name, experience, experience_multiplier, point, ip,
                                     last_time, total_duration, today_duration
                                    FROM user WHERE userid = @userid";
@@ -77,13 +75,11 @@ namespace NS_site27_api.Modules.MySQL
                     DateTime? lastTime = reader.IsDBNull(lastOrd) ? null : reader.GetDateTime(lastOrd);
                     TimeSpan? totalDur = reader.IsDBNull(totalDurOrd) ? null : ((MySqlDataReader)reader).GetTimeSpan(totalDurOrd);
                     TimeSpan? todayDur = reader.IsDBNull(todayDurOrd) ? null : ((MySqlDataReader)reader).GetTimeSpan(todayDurOrd);
-                    await Awaitable.MainThreadAsync();
 
                     return (uid, name, exp, expMul, point, ipStr, lastTime, totalDur, todayDur);
                 }
             }
             catch (Exception ex) { Log.Error($"QueryUser error: {ex}"); }
-            await Awaitable.MainThreadAsync();
 
             return (0, null, 0, null, 0, null, null, null, null);
         }
@@ -96,7 +92,6 @@ namespace NS_site27_api.Modules.MySQL
             }
 
             const string query = "SELECT total_kills, total_deaths, total_escapes FROM player_stats WHERE userid = @userid";
-            await Awaitable.BackgroundThreadAsync();
 
             try
             {
@@ -114,13 +109,12 @@ namespace NS_site27_api.Modules.MySQL
 
                     int kills = reader.IsDBNull(killsOrd) ? 0 : reader.GetInt32(killsOrd);
                     int deaths = reader.IsDBNull(deathsOrd) ? 0 : reader.GetInt32(deathsOrd);
-                    int escapes = reader.IsDBNull(escOrd) ? 0 : reader.GetInt32(escOrd); await Awaitable.MainThreadAsync();
+                    int escapes = reader.IsDBNull(escOrd) ? 0 : reader.GetInt32(escOrd);
 
                     return (kills, deaths, escapes);
                 }
             }
             catch (Exception ex) { Log.Error($"QueryPlayerStats error: {ex}"); }
-            await Awaitable.MainThreadAsync();
 
             return (0, 0, 0);
         }
@@ -132,7 +126,6 @@ namespace NS_site27_api.Modules.MySQL
                 return;
             }
 
-            await Awaitable.BackgroundThreadAsync();
 
             var current = await QueryPlayerStatsAsync(userid);
             int kills = TotalKills == -1 ? current.TotalKills : TotalKills;
@@ -168,7 +161,6 @@ namespace NS_site27_api.Modules.MySQL
                 return;
             }
 
-            await Awaitable.BackgroundThreadAsync();
             var p = await QueryUserAsync(userid);
             name ??= p.name;
             point = point == -1 ? p.point : point;
@@ -219,7 +211,6 @@ namespace NS_site27_api.Modules.MySQL
                 return;
             }
 
-            await Awaitable.BackgroundThreadAsync();
 
             const string sql = "INSERT INTO chat_log (userid, name, message, channel, time, port) VALUES (@userid, @name, @message, @channel, @time, @port)";
 
@@ -241,7 +232,6 @@ namespace NS_site27_api.Modules.MySQL
 
         public async Task<int> CountUserViolationsAsync(string userid)
         {
-            await Awaitable.BackgroundThreadAsync();
             if (!Connected || string.IsNullOrEmpty(userid))
             {
                 return 0;
@@ -256,12 +246,11 @@ namespace NS_site27_api.Modules.MySQL
                 _ = cmd.Parameters.AddWithValue("@userid", userid);
                 await conn.OpenAsync();
                 var result = await cmd.ExecuteScalarAsync();
-                await Awaitable.MainThreadAsync();
                 return Convert.ToInt32(result);
             }
             catch (Exception ex)
             {
-                Log.Error($"CountUserViolations: {ex}"); await Awaitable.MainThreadAsync();
+                Log.Error($"CountUserViolations: {ex}");
                 return 0;
             }
         }
@@ -275,7 +264,6 @@ namespace NS_site27_api.Modules.MySQL
                 return bans;
             }
 
-            await Awaitable.BackgroundThreadAsync();
 
             const string query = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port
                                    FROM ban WHERE userid = @userid";
@@ -312,7 +300,6 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"查询所有封禁记录失败: {ex}"); }
-            await Awaitable.MainThreadAsync();
             return bans;
         }
 
@@ -324,7 +311,6 @@ namespace NS_site27_api.Modules.MySQL
                 return false;
             }
 
-            await Awaitable.BackgroundThreadAsync();
 
             const string sql = @"INSERT INTO ban (issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port)
                                  VALUES (@issuer_name, @issuer_userid, @name, @userid, @reason, @start_time, @end_time, @port)";
@@ -345,13 +331,11 @@ namespace NS_site27_api.Modules.MySQL
                     await conn.OpenAsync();
                     _ = await cmd.ExecuteNonQueryAsync();
                 }
-                await Awaitable.MainThreadAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Error($"InsertBanRecord: {ex}");
-                await Awaitable.MainThreadAsync();
 
                 return false;
             }
@@ -365,7 +349,6 @@ namespace NS_site27_api.Modules.MySQL
                 return null;
             }
 
-            await Awaitable.BackgroundThreadAsync();
 
             const string sql = @"SELECT issuer_name, issuer_userid, name, userid, reason, start_time, end_time, port
                                  FROM ban WHERE userid = @userid AND end_time > NOW()
@@ -389,7 +372,7 @@ namespace NS_site27_api.Modules.MySQL
                     int startOrd = reader.GetOrdinal("start_time");
                     int endOrd = reader.GetOrdinal("end_time");
                     int portOrd = reader.GetOrdinal("port");
-                    await Awaitable.MainThreadAsync();
+                    
 
                     return (
                         reader.IsDBNull(issuerNameOrd) ? null : reader.GetString(issuerNameOrd),
@@ -404,7 +387,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"QueryBan: {ex}"); }
-            await Awaitable.MainThreadAsync();
+            
 
             return null;
         }
@@ -417,7 +400,7 @@ namespace NS_site27_api.Modules.MySQL
                 return result;
             }
 
-            await Awaitable.BackgroundThreadAsync();
+            
 
             const string sql = @"SELECT player_name, port, permissions, expiration_date, is_permanent, notes
                                  FROM admin WHERE userid = @userid
@@ -452,7 +435,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"QueryAdmin: {ex}"); }
-            await Awaitable.MainThreadAsync();
+            
 
             return result;
         }
@@ -469,7 +452,7 @@ namespace NS_site27_api.Modules.MySQL
                                    FROM badge WHERE userid = @userid
                                    AND (is_permanent = 1 OR expiration_date > NOW())
                                    ORDER BY is_permanent DESC, expiration_date ASC";
-            await Awaitable.BackgroundThreadAsync();
+            
 
             try
             {
@@ -499,7 +482,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"查询用户 {userid} 的徽章失败: {ex}"); }
-            await Awaitable.MainThreadAsync();
+            
 
             return badges;
         }
@@ -514,7 +497,7 @@ namespace NS_site27_api.Modules.MySQL
 
             const string sql = @"INSERT INTO admin_log (userid, name, operation_time, port, command_name, command_result, additional_info, admingroup)
                                  VALUES (@userid, @name, @operation_time, @port, @command_name, @command_result, @additional_info, @admingroup)";
-            await Awaitable.BackgroundThreadAsync();
+            
 
             try
             {

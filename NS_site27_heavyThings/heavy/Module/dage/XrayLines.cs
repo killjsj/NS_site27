@@ -1,5 +1,7 @@
 using CentralAuth;
-using DrawableLine;
+using Exiled.API.Extensions;
+using Exiled.API.Features.Toys;
+using Exiled.API.Structs;
 using Mirror;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
@@ -9,70 +11,15 @@ using UnityEngine;
 
 namespace NS_site27_api.Core.UI
 {
-    /// <summary>
-    /// Through-wall player markers built from <see cref="DrawableLineMessage"/>, which every stock
-    /// client already handles — no client mod, no DisplayKit.
-    ///
-    /// <para>
-    /// <c>DrawableLinesManager</c> renders with a depth-tested material, so a box drawn at the
-    /// target's real position is hidden by geometry. The fix is to keep the marker <b>in front of
-    /// the wall</b>: draw a flat rectangle a short distance along the direction to the target,
-    /// scaled by <c>anchorDistance / targetDistance</c> so it covers exactly the same angle of the
-    /// viewer's screen. Same apparent size and position, nothing in between to occlude it.
-    /// </para>
-    /// <para>
-    /// The anchor distance adapts per target: a raycast finds the nearest obstruction along that
-    /// direction and the marker is placed just in front of it, so the trick keeps working in tight
-    /// corridors where a fixed distance would put the rectangle inside the wall.
-    /// </para>
-    /// </summary>
     public static class LineXray
     {
-        public const float SendInterval = 0.016f;
-
-        /// <summary>
-        /// Lifetime per line. Slightly longer than <see cref="SendInterval"/> so the previous batch
-        /// is still alive when the next arrives, otherwise markers strobe.
-        /// </summary>
-        public const float LineDuration = SendInterval * 3.3f;
-
         public const float DefaultRange = 60f;
-
-        /// <summary>
-        /// Preferred anchor distance when nothing is in the way.
-        /// <para>
-        /// Line thickness is hardcoded to 0.05 world units in <c>DrawableLines.ClientGenerateLine</c>
-        /// and cannot be changed from the server, so the marker's apparent line weight is set purely
-        /// by how close it is drawn. At 4 m that is about 0.7 degrees, roughly 1% of screen height
-        /// at default FOV. Much below 2 m and the outline becomes a fat bar.
-        /// </para>
-        /// </summary>
-        public const float MaxAnchorDistance = 4f;
-
-        /// <summary>Never anchor closer than this — below it the lines are unreadably thick.</summary>
-        public const float MinAnchorDistance = 0.6f;
-
-        /// <summary>Fraction of the obstruction distance to sit in front of.</summary>
-        public const float ObstacleClearance = 0.85f;
-
         public const int MaxMarkers = 60;
 
-        /// <summary>Extra margin around the target, as a fraction of the projected rect.</summary>
-        public const float Padding = 0.08f;
+        // viewer -> (target -> cube transform)
+        private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, Primitive>> Cubes = new();
+        private static readonly List<ReferenceHub> DeadViewers = new();
 
-        private sealed class ViewerSettings
-        {
-            public float Range = DefaultRange;
-            public bool EnemiesOnly = true;
-        }
-
-        private static readonly Dictionary<ReferenceHub, ViewerSettings> Viewers = new();
-        private static readonly List<ReferenceHub> Dead = new();
-
-        // Closed rectangle: 4 corners plus a repeat of the first, so one message draws 4 segments.
-        private static readonly Vector3[] RectBuffer = new Vector3[5];
-
-        private static float _cooldown;
         private static bool _hooked;
 
         public static void Enable(ReferenceHub viewer, float range = DefaultRange, bool enemiesOnly = true)
@@ -83,30 +30,54 @@ namespace NS_site27_api.Core.UI
             }
 
             EnsureHooked();
-            Viewers[viewer] = new ViewerSettings { Range = range, EnemiesOnly = enemiesOnly };
+            if (Cubes.TryGetValue(viewer, out var oldDict))
+            {
+                foreach (var cube in oldDict.Values)
+                {
+                    cube?.Destroy();
+                }
+                _ = Cubes.Remove(viewer);
+            }
+            var settings = new ViewerSettings { Range = range, EnemiesOnly = enemiesOnly };
+            _viewerSettings[viewer] = settings;
+            Cubes[viewer] = new Dictionary<ReferenceHub, Primitive>();
         }
 
-        /// <summary>
-        /// Stops drawing. Lines already sent cannot be retracted — there is no such message — so
-        /// they fade after <see cref="LineDuration"/>. That is why the duration is kept short.
-        /// </summary>
         public static void Disable(ReferenceHub viewer)
         {
-            if (viewer != null)
+            if (viewer == null)
             {
-                _ = Viewers.Remove(viewer);
+                return;
             }
+
+            if (Cubes.TryGetValue(viewer, out var dict))
+            {
+                foreach (var cube in dict.Values)
+                {
+                    cube?.Destroy();
+                }
+                _ = Cubes.Remove(viewer);
+            }
+            _ = _viewerSettings.Remove(viewer);
         }
 
         public static bool IsEnabled(ReferenceHub viewer)
         {
-            return viewer != null && Viewers.ContainsKey(viewer);
+            return viewer != null && Cubes.ContainsKey(viewer);
         }
 
-        /// <summary>Call on round restart and plugin disable.</summary>
         public static void DisableAll()
         {
-            Viewers.Clear();
+            foreach (var viewerDict in Cubes.Values)
+            {
+                foreach (var cube in viewerDict.Values)
+                {
+                    cube?.Destroy();
+
+                }
+            }
+            Cubes.Clear();
+            _viewerSettings.Clear();
         }
 
         private static void EnsureHooked()
@@ -130,59 +101,70 @@ namespace NS_site27_api.Core.UI
             StaticUnityMethods.OnUpdate -= OnUpdate;
             _hooked = false;
         }
-
+        public const float MaxAnchorDistance = 4f;
+        public const float MinAnchorDistance = 0.6f;
+        public const float ObstacleClearance = 0.85f;
+        public const float Padding = 0.08f;
         private static void OnUpdate()
         {
-            if (!NetworkServer.active || Viewers.Count == 0)
+            if (!NetworkServer.active || Cubes.Count == 0)
             {
                 return;
             }
 
-            _cooldown -= Time.deltaTime;
-            if (_cooldown > 0f)
-            {
-                return;
-            }
+            DeadViewers.Clear();
 
-            _cooldown = SendInterval;
-            Dead.Clear();
-
-            foreach (KeyValuePair<ReferenceHub, ViewerSettings> kv in Viewers)
+            foreach (var viewerEntry in Cubes)
             {
-                if (!IsValidViewer(kv.Key))
+                ReferenceHub viewer = viewerEntry.Key;
+                if (!IsValidViewer(viewer))
                 {
-                    Dead.Add(kv.Key);
+                    DeadViewers.Add(viewer);
                     continue;
                 }
 
-                DrawFor(kv.Key, kv.Value);
-            }
+                if (!_viewerSettings.TryGetValue(viewer, out var settings))
+                {
+                    continue;
+                }
 
-            foreach (ReferenceHub dead in Dead)
+                UpdateViewerCubes(viewer, settings, viewerEntry.Value);
+            }
+            foreach (var deadViewer in DeadViewers)
             {
-                _ = Viewers.Remove(dead);
+                if (Cubes.TryGetValue(deadViewer, out var dict))
+                {
+                    foreach (var cube in dict.Values)
+                    {
+                        cube?.Destroy();
+                    }
+                    _ = Cubes.Remove(deadViewer);
+                }
+                _ = _viewerSettings.Remove(deadViewer);
             }
-
-            Dead.Clear();
+            DeadViewers.Clear();
         }
-
-        private static void DrawFor(ReferenceHub viewer, ViewerSettings settings)
+        private static void UpdateViewerCubes(ReferenceHub viewer, ViewerSettings settings,
+    Dictionary<ReferenceHub, Primitive> viewerCubes)
         {
-            if (!(viewer.roleManager.CurrentRole is IFpcRole viewerFpc))
+            HashSet<ReferenceHub> stillVisible = new();
+
+            if (viewer.roleManager.CurrentRole is not IFpcRole viewerFpc)
             {
                 return;
             }
+
+            Vector3 origin = viewerFpc.FpcModule.Position;
+            float sqrRange = settings.Range * settings.Range;
+            int drawn = 0;
 
             Transform cam = viewer.PlayerCameraReference;
             Vector3 camPos = cam.position;
             Quaternion camRot = cam.rotation;
             Quaternion invRot = Quaternion.Inverse(camRot);
-
-            Vector3 origin = viewerFpc.FpcModule.Position;
-            float sqrRange = settings.Range * settings.Range;
             float tanHalfV = Mathf.Tan(ScreenProjection.GetVerticalFov(viewer) * 0.5f * Mathf.Deg2Rad);
 
-            int drawn = 0;
+            Transform viewerTransform = viewer.transform; // 父物体
 
             foreach (ReferenceHub target in ReferenceHub.AllHubs)
             {
@@ -201,7 +183,7 @@ namespace NS_site27_api.Core.UI
                     continue;
                 }
 
-                if (!(target.roleManager.CurrentRole is IFpcRole targetFpc))
+                if (target.roleManager.CurrentRole is not IFpcRole targetFpc)
                 {
                     continue;
                 }
@@ -222,25 +204,114 @@ namespace NS_site27_api.Core.UI
                     continue;
                 }
 
-                if (TryBuildMarker(camPos, camRot, invRot, tanHalfV, bounds))
+                // 计算世界空间锚点
+                if (!TryGetAnchoredCubeTransform(camPos, camRot, invRot, tanHalfV, bounds,
+                        out Vector3 worldPos, out Quaternion worldRot, out Vector3 worldScale))
                 {
-                    Send(viewer, RectBuffer, ColorFor(target, enemy));
+                    continue;
+                }
+
+                _ = stillVisible.Add(target);
+                Vector3 localPos = viewerTransform.InverseTransformPoint(worldPos);
+                Quaternion localRot = Quaternion.Inverse(viewerTransform.rotation) * worldRot;
+                Vector3 localScale = worldScale;
+
+                if (viewerCubes.TryGetValue(target, out Primitive cube))
+                {
+                    if (cube == null)
+                    {
+                        _ = viewerCubes.Remove(target);
+                        continue;
+                    }
+                    cube.Color = ColorFor(viewer, target);
+                    cube.Transform.localPosition = localPos;
+                    cube.Transform.localRotation = localRot;
+                    cube.Transform.localScale = localScale;
+                }
+                else
+                {
+                    Primitive newCube = Primitive.Create(new PrimitiveSettings(
+                        PrimitiveType.Cube,
+                        ColorFor(viewer, target),
+                        worldPos,
+                        worldRot.eulerAngles,
+                        worldScale,
+                        false));
+
+                    if (newCube == null)
+                    {
+                        continue;
+                    }
+
+                    newCube.Base.syncInterval = 0;
+                    newCube.MovementSmoothing = 0;
+                    newCube.Transform.parent = viewerTransform;
+                    newCube.Transform.localPosition = localPos;
+                    newCube.Transform.localRotation = localRot;
+                    newCube.Transform.localScale = localScale;
+
+                    newCube.Flags = AdminToys.PrimitiveFlags.Visible;
+                    newCube.Spawn();
+
+                    viewerCubes[target] = newCube;
                     drawn++;
                 }
             }
-        }
 
-        /// <summary>
-        /// Fills <see cref="RectBuffer"/> with a camera-facing rectangle that covers the same screen
-        /// area as <paramref name="bounds"/>, but sits close enough to the camera that geometry
-        /// cannot occlude it.
-        /// </summary>
-        private static bool TryBuildMarker(Vector3 camPos,
-                                           Quaternion camRot,
-                                           Quaternion invRot,
-                                           float tanHalfV,
-                                           Bounds bounds)
+            List<ReferenceHub> toRemove = new();
+            foreach (var pair in viewerCubes)
+            {
+                if (!stillVisible.Contains(pair.Key))
+                {
+                    pair.Value?.Destroy();
+                    toRemove.Add(pair.Key);
+                }
+            }
+
+            foreach (var key in toRemove)
+            {
+                _ = viewerCubes.Remove(key);
+            }
+        }
+        private static Color ColorFor(ReferenceHub target, ReferenceHub enemyHub)
         {
+            if (enemyHub == null)
+            {
+                return Color.clear;
+            }
+
+            var dis = Mathf.Clamp(
+                Vector3.Distance(target.GetPosition(), enemyHub.GetPosition())
+                , 0.01f, 30f);
+            var a = Mathf.Lerp(0, 1, dis / 30f);
+            var enemy = HitboxIdentity.IsEnemy(target, enemyHub);
+            //Log.Info($"Vector3.Distance(target.GetPosition(), enemyHub.GetPosition()):{Vector3.Distance(target.GetPosition(), enemyHub.GetPosition())}, a:{a} enemy:{enemy}");
+            return !enemy
+                ? new Color(0.31f, 0.78f, 1f, a)
+                : target.GetTeam() switch
+                {
+                    Team.SCPs => new Color(0.78f, 0.16f, 0.78f, a),
+                    Team.FoundationForces => new Color(0.24f, 0.55f, 1f, a),
+                    Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f, a),
+                    Team.Scientists => new Color(0.94f, 0.90f, 0.55f, a),
+                    Team.ClassD => new Color(1f, 0.55f, 0.16f, a),
+                    _ => new Color(0.90f, 0.24f, 0.24f, a),
+                };
+        }
+        private static bool TryGetAnchoredCubeTransform(
+    Vector3 camPos,
+    Quaternion camRot,
+    Quaternion invRot,
+    float tanHalfV,
+    Bounds bounds,
+    out Vector3 pos,
+    out Quaternion rot,
+    out Vector3 scale)
+        {
+            pos = Vector3.zero;
+            rot = camRot;
+            scale = Vector3.one;
+
             Vector3 toTarget = bounds.center - camPos;
             float targetDistance = toTarget.magnitude;
 
@@ -251,58 +322,57 @@ namespace NS_site27_api.Core.UI
 
             Vector3 dir = toTarget / targetDistance;
 
-            // Angular extent of the target, measured in camera space. Both axes are divided by
-            // tanHalfV, so the result is in half-screen-height units and needs no aspect ratio —
-            // the client's own projection supplies that when it renders the world-space quad.
-            if (!TryGetAngularExtent(camPos, invRot, tanHalfV, bounds, out float hMin, out float hMax,
-                                     out float vMin, out float vMax))
+            if (!TryGetAngularExtent(camPos, invRot, tanHalfV, bounds,
+                    out float hMin, out float hMax, out float vMin, out float vMax))
             {
                 return false;
             }
 
-            // Sit in front of whatever is actually blocking the view, not at a fixed distance —
-            // otherwise the marker ends up inside the wall again in a tight corridor.
-            float anchor = MaxAnchorDistance;
+            float maxAnchor = Mathf.Min(MaxAnchorDistance, targetDistance);
+            float anchor = maxAnchor;
 
-            if (Physics.Raycast(camPos, dir, out RaycastHit hit, MaxAnchorDistance,
-                                VisionInformation.VisionLayerMask))
+            if (Physics.Raycast(camPos, dir, out RaycastHit hit, maxAnchor,
+                    VisionInformation.VisionLayerMask))
             {
                 anchor = hit.distance * ObstacleClearance;
             }
 
-            anchor = Mathf.Clamp(anchor, MinAnchorDistance, Mathf.Min(MaxAnchorDistance, targetDistance));
+            anchor = Mathf.Clamp(anchor, MinAnchorDistance, maxAnchor);
 
-            // Half of the screen's vertical extent, in world units, at the anchor plane. Everything
-            // in half-height units scales by this and lands on the correct screen position.
             float halfHeight = anchor * tanHalfV;
 
             if (Padding > 0f)
             {
                 float px = (hMax - hMin) * Padding;
                 float py = (vMax - vMin) * Padding;
-                hMin -= px; hMax += px;
-                vMin -= py; vMax += py;
+                hMin -= px;
+                hMax += px;
+                vMin -= py;
+                vMax += py;
             }
 
-            RectBuffer[0] = CameraToWorld(camPos, camRot, hMin, vMin, anchor, halfHeight);
-            RectBuffer[1] = CameraToWorld(camPos, camRot, hMax, vMin, anchor, halfHeight);
-            RectBuffer[2] = CameraToWorld(camPos, camRot, hMax, vMax, anchor, halfHeight);
-            RectBuffer[3] = CameraToWorld(camPos, camRot, hMin, vMax, anchor, halfHeight);
-            RectBuffer[4] = RectBuffer[0];
+            float centerH = (hMin + hMax) * 0.5f;
+            float centerV = (vMin + vMax) * 0.5f;
+            float width = (hMax - hMin) * halfHeight;
+            float height = (vMax - vMin) * halfHeight;
+            float depth = Mathf.Max(width, height) * 0.1f;
+
+            pos = camPos + (camRot * new Vector3(centerH * halfHeight, centerV * halfHeight, anchor));
+            rot = camRot;
+            scale = new Vector3(width, height, depth);
 
             return true;
         }
 
-        /// <summary>
-        /// Projects the 8 corners of the AABB into camera space and returns the angular bounding
-        /// box, in half-screen-height units on both axes.
-        /// </summary>
-        private static bool TryGetAngularExtent(Vector3 camPos,
-                                                Quaternion invRot,
-                                                float tanHalfV,
-                                                Bounds bounds,
-                                                out float hMin, out float hMax,
-                                                out float vMin, out float vMax)
+        private static bool TryGetAngularExtent(
+            Vector3 camPos,
+            Quaternion invRot,
+            float tanHalfV,
+            Bounds bounds,
+            out float hMin,
+            out float hMax,
+            out float vMin,
+            out float vMax)
         {
             hMin = vMin = float.MaxValue;
             hMax = vMax = float.MinValue;
@@ -320,7 +390,6 @@ namespace NS_site27_api.Core.UI
 
                 Vector3 local = invRot * (corner - camPos);
 
-                // Behind the camera the perspective divide flips sign and mirrors the corner.
                 if (local.z <= 0.01f)
                 {
                     continue;
@@ -330,39 +399,29 @@ namespace NS_site27_api.Core.UI
                 float v = local.y / local.z / tanHalfV;
 
                 any = true;
-                if (h < hMin) { hMin = h; }
-                if (h > hMax) { hMax = h; }
-                if (v < vMin) { vMin = v; }
-                if (v > vMax) { vMax = v; }
+                if (h < hMin)
+                {
+                    hMin = h;
+                }
+
+                if (h > hMax)
+                {
+                    hMax = h;
+                }
+
+                if (v < vMin)
+                {
+                    vMin = v;
+                }
+
+                if (v > vMax)
+                {
+                    vMax = v;
+                }
             }
 
             return any;
         }
-
-        private static Vector3 CameraToWorld(Vector3 camPos, Quaternion camRot,
-                                             float h, float v, float depth, float halfHeight)
-        {
-            return camPos + (camRot * new Vector3(h * halfHeight, v * halfHeight, depth));
-        }
-
-        private static Color ColorFor(ReferenceHub target, bool enemy)
-        {
-            if (!enemy)
-            {
-                return new Color(0.31f, 0.78f, 0.47f);
-            }
-
-            return target.GetTeam() switch
-            {
-                Team.SCPs => new Color(0.78f, 0.16f, 0.78f),
-                Team.FoundationForces => new Color(0.24f, 0.55f, 1f),
-                Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f),
-                Team.Scientists => new Color(0.94f, 0.90f, 0.55f),
-                Team.ClassD => new Color(1f, 0.55f, 0.16f),
-                _ => new Color(0.90f, 0.24f, 0.24f),
-            };
-        }
-
         private static bool IsValidViewer(ReferenceHub viewer)
         {
             return viewer != null
@@ -371,12 +430,14 @@ namespace NS_site27_api.Core.UI
                 && viewer.roleManager.CurrentRole is IFpcRole;
         }
 
-        private static void Send(ReferenceHub viewer, Vector3[] points, Color color)
+        // 存储每个 viewer 的设置
+        private sealed class ViewerSettings
         {
-            // Built by hand rather than via DrawableLines.ServerGenerateLine: that helper is gated
-            // behind IsDebugModeEnabled AND sends on hub.connectionToServer, which is null for a
-            // remote player on the server.
-            viewer.connectionToClient.Send(new DrawableLineMessage(LineDuration, color, points));
+            public float Range = DefaultRange;
+            public bool EnemiesOnly = true;
         }
+
+        private static readonly Dictionary<ReferenceHub, ViewerSettings> _viewerSettings = new();
     }
 }
+

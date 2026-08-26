@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Modules;
 using PlayerRoles;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
@@ -29,22 +29,19 @@ namespace NS_site27_heavy.heavy.Module.dage
             public float Dist;
         }
 
-        private static readonly Dictionary<ReferenceHub, float> PlayerScores = new Dictionary<ReferenceHub, float>();
-        private static readonly Dictionary<ReferenceHub, List<Candidate>> PlayerHitboxes = new Dictionary<ReferenceHub, List<Candidate>>();
-        private static readonly List<ReferenceHub> SortedPlayers = new List<ReferenceHub>();
+        private static readonly Dictionary<ReferenceHub, float> PlayerScores = new();
+        private static readonly Dictionary<ReferenceHub, List<Candidate>> PlayerHitboxes = new();
+        private static readonly List<ReferenceHub> SortedPlayers = new();
 
         /// <summary>
         /// True if this firearm's hitreg actually applies hitbox multipliers. Buckshot does not
         /// (<c>BuckshotHitreg.UseHitboxMultipliers</c> is false, and <c>FirearmDamageHandler</c>
-        /// then forces <c>HitboxType.Body</c>), so for shotguns a headshot is worth nothing and the
+        /// then forces <c>HitboxType.Body</c>), DropSo for shotguns a headshot is worth nothing and the
         /// bigger torso target is strictly better.
         /// </summary>
         public static bool PrefersHeadshot(Firearm firearm)
         {
-            if (firearm == null)
-                return true;
-
-            return !firearm.TryGetModule(out HitscanHitregModuleBase hitreg, true)
+            return firearm == null || !firearm.TryGetModule(out HitscanHitregModuleBase hitreg, true)
                 || hitreg.UseHitboxMultipliers;
         }
 
@@ -74,7 +71,9 @@ namespace NS_site27_heavy.heavy.Module.dage
             best = null;
 
             if (shooter == null)
+            {
                 return false;
+            }
 
             PlayerScores.Clear();
             PlayerHitboxes.Clear();
@@ -86,22 +85,33 @@ namespace NS_site27_heavy.heavy.Module.dage
             foreach (HitboxIdentity hb in HitboxIdentity.Instances)
             {
                 if (hb == null)
+                {
                     continue;
+                }
 
                 ReferenceHub owner = hb.TargetHub;
                 if (owner == null || owner == shooter || !owner.roleManager.CurrentRole.RoleTypeId.IsAlive())
+                {
                     continue;
+                }
+
                 if (!HitboxIdentity.IsEnemy(shooter, owner))
+                {
                     continue;
+                }
 
                 Vector3 delta = hb.CenterOfMass - origin;
                 float dist = delta.magnitude;
                 if (dist < 0.01f || dist > maxRange)
+                {
                     continue;
+                }
 
                 float dot = Vector3.Dot(forward, delta / dist);
                 if (dot < minDot)
+                {
                     continue;
+                }
 
                 if (!PlayerHitboxes.TryGetValue(owner, out List<Candidate> list))
                 {
@@ -118,7 +128,9 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
 
             if (SortedPlayers.Count == 0)
+            {
                 return false;
+            }
 
             int mask = losMask ?? HitscanHitregModuleBase.HitregMask;
 
@@ -140,8 +152,10 @@ namespace NS_site27_heavy.heavy.Module.dage
 
                 foreach (Candidate c in list)
                 {
-                    if (!HasLineOfSight(shooter,origin, c, owner, mask))
+                    if (!HasLineOfSight(shooter, origin, c, owner, mask))
+                    {
                         continue;
+                    }
 
                     best = c.Hitbox;
                     return true;
@@ -154,13 +168,13 @@ namespace NS_site27_heavy.heavy.Module.dage
         /// <summary>Higher is better. Mirrors FirearmDamageHandler.HitboxDamageMultipliers.</summary>
         private static int Rank(HitboxType type, bool preferHeadshot)
         {
-            switch (type)
+            return type switch
             {
-                case HitboxType.Headshot: return preferHeadshot ? 3 : 1;   // x2.0 damage
-                case HitboxType.Body: return 2;                            // x1.0
-                case HitboxType.Limb: return 0;                            // x0.7
-                default: return 0;
-            }
+                HitboxType.Headshot => preferHeadshot ? 3 : 1,// x2.0 damage
+                HitboxType.Body => 2,// x1.0
+                HitboxType.Limb => 0,// x0.7
+                _ => 0,
+            };
         }
 
         /// <summary>
@@ -176,7 +190,9 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             int count = Physics.RaycastNonAlloc(origin, dir, LosHits, candidate.Dist + 0.5f, mask);
             if (count == 0)
+            {
                 return true;
+            }
 
             // RaycastNonAlloc 不保证有序，手动找最近的非自身命中
             float nearest = float.MaxValue;
@@ -188,7 +204,9 @@ namespace NS_site27_heavy.heavy.Module.dage
 
                 // 自己的身体不算障碍物 —— 原版在 Fire() 里会把它关掉，但那时机在 Shooting 之后
                 if (h.collider.TryGetComponent(out HitboxIdentity self) && self.TargetHub == shooter)
+                {
                     continue;
+                }
 
                 if (h.distance < nearest)
                 {
@@ -197,11 +215,8 @@ namespace NS_site27_heavy.heavy.Module.dage
                 }
             }
 
-            if (blockerCol == null)
-                return true;
-
-            return blockerCol.TryGetComponent(out HitboxIdentity blocker)
-                && blocker.TargetHub == owner;
+            return blockerCol == null || (blockerCol.TryGetComponent(out HitboxIdentity blocker)
+                && blocker.TargetHub == owner);
         }
     }
 }

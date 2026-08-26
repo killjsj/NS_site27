@@ -8,6 +8,8 @@ using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Scp049;
 using Exiled.Events.EventArgs.Server;
 using Interactables.Interobjects;
+using InventorySystem;
+using InventorySystem.Items;
 using InventorySystem.Items.Firearms.Modules.Scp127;
 using MEC;
 using NS_site27_api.Core;
@@ -37,6 +39,8 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.Died += OnDied;
             PlayerHandlers.Escaped += OnEscaped;
             PlayerHandlers.Shot += Shot;
+            PlayerHandlers.DroppingAmmo += DroppingAmmo;
+            PlayerHandlers.ChangedItem += ChangedItem;
             PlayerHandlers.Left += OnLeft;
             PlayerHandlers.Hurting += Hurting;
             ServerHandlers.RestartingRound += OnRestarting;
@@ -48,12 +52,22 @@ namespace NS_site27_api.Modules.PlayerManagement
             Exiled.Events.Handlers.Player.UsedItem += UsedItem;
             Scp127TierManagerModule.ServerOnLevelledUp += Scp127TierManagerModule_ServerOnLevelledUp;
             PlayerHUDManager.Init();
+            StaticUnityMethods.OnUpdate += StaticUnityMethods_OnUpdate;
             _ = Timing.RunCoroutine(PlayerRefreshLoop());
+        }
+
+        private void StaticUnityMethods_OnUpdate()
+        {
+            foreach (var item in ReferenceHub.AllHubs)
+            {
+                item.inventory.Network_syncMovementLimiter = 9999f;
+            }
         }
 
         public override void OnDisable()
         {
             PlayerHandlers.ChangingRole -= OnChangingRole;
+            PlayerHandlers.DroppingAmmo -= DroppingAmmo;
             PlayerHandlers.Verified -= OnVerified;
             PlayerHandlers.Died -= OnDied;
             PlayerHandlers.Shot -= Shot;
@@ -61,16 +75,44 @@ namespace NS_site27_api.Modules.PlayerManagement
             PlayerHandlers.Escaped -= OnEscaped;
             Exiled.Events.Handlers.Player.UsedItem -= UsedItem;
             PlayerHandlers.Left -= OnLeft;
+            PlayerHandlers.ChangedItem -= ChangedItem;
             ServerHandlers.RestartingRound -= OnRestarting;
             ServerHandlers.WaitingForPlayers -= OnWaiting;
             ServerHandlers.RoundEnded -= OnRoundEnded;
             Exiled.Events.Handlers.Scp079.GainingExperience -= GainingExperience;
             Exiled.Events.Handlers.Scp049.FinishingRecall -= FinishingRecall;
             Scp127TierManagerModule.ServerOnLevelledUp -= Scp127TierManagerModule_ServerOnLevelledUp;
+            StaticUnityMethods.OnUpdate -= StaticUnityMethods_OnUpdate;
 
             MapHandlers.GeneratorActivating -= OnGeneratorActivating;
 
             PlayerHUDManager.Deinit();
+        }
+        public void DroppingAmmo(DroppingAmmoEventArgs ev)
+        {
+            ev.IsAllowed = false;
+        }
+        public void ChangedItem(ChangedItemEventArgs ev)
+        {
+
+                try
+                {
+                    if (ev.Player == null)
+                    {
+                        return;
+                    }
+                    if (allItems == null)
+                    {
+                        allItems = (ItemType[])Enum.GetValues(typeof(ItemType));
+                    }
+                    foreach (ItemType itemType in allItems)
+                    {
+                        if (GetItemBase(itemType)?.Category != ItemCategory.Ammo) { continue; }
+                        ev.Player.Inventory.ServerSetAmmo(itemType, 200);
+                    }
+                }
+                catch (Exception e) { Log.Warn($"[PM] ChangedItem: {e}"); }
+            
         }
         public void Hurting(HurtingEventArgs ev)
         {
@@ -152,7 +194,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             try
             {
-                if (ev.Player == null)
+                if (ev.Player == null || ev.Player.IsNPC)
                 {
                     return;
                 }
@@ -168,7 +210,16 @@ namespace NS_site27_api.Modules.PlayerManagement
             }
             catch (Exception ex) { Log.Error($"[PM] OnVerified: {ex}"); }
         }
+        public static ItemBase GetItemBase(ItemType type)
+        {
+            if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out var value))
+            {
+                return null;
+            }
 
+            return value;
+        }
+        public static ItemType[] allItems = null;
         private void OnChangingRole(ChangingRoleEventArgs ev)
         {
             _ = Timing.CallDelayed(0.4f, () =>
@@ -179,16 +230,14 @@ namespace NS_site27_api.Modules.PlayerManagement
                     {
                         return;
                     }
-
-                    foreach (AmmoType ammoType in Enum.GetValues(typeof(AmmoType)))
+                    if (allItems == null)
                     {
-                        int newAmmo = (int)Math.Floor(ev.Player.GetAmmo(ammoType) * 1.5f);
-                        if (newAmmo > ushort.MaxValue)
-                        {
-                            newAmmo = ushort.MaxValue;
-                        }
-
-                        ev.Player.SetAmmo(ammoType, (ushort)newAmmo);
+                        allItems = (ItemType[])Enum.GetValues(typeof(ItemType));
+                    }
+                    foreach (ItemType itemType in allItems)
+                    {
+                        if (GetItemBase(itemType)?.Category != ItemCategory.Ammo) { continue; }
+                        ev.Player.Inventory.ServerSetAmmo(itemType, 200);
                     }
                 }
                 catch (Exception e) { Log.Warn($"[PM] ChangingRole: {e}"); }
@@ -249,7 +298,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             try
             {
                 var sql = SQL;
-                if (sql == null)
+                if (sql == null ||  ev.Player.IsNPC)
                 {
                     return;
                 }
@@ -362,7 +411,8 @@ namespace NS_site27_api.Modules.PlayerManagement
                             continue;
                         }
 
-                        PlayerStateManager.HandleBadgeSync(player, player.ReferenceHub);
+                        if(!player.IsNPC)
+                            PlayerStateManager.HandleBadgeSync(player, player.ReferenceHub);
 
                         if (player.Role is SpectatorRole spectatorRole)
                         {
@@ -375,7 +425,8 @@ namespace NS_site27_api.Modules.PlayerManagement
 
                         try { PlayerStateManager.HandleScpStandHeal(player); }
                         catch (Exception e) { Log.Error($"[scpheal] {player?.Nickname ?? "Unknown"}: {e.GetType().Name} - {e.Message}"); }
-                        PlayerStateManager.HandlePlayerRenamer(player);
+                        if(!player.IsNPC)
+                            PlayerStateManager.HandlePlayerRenamer(player);
                     }
                 }
                 catch (Exception e) { Log.Error($"[PM] Refresh: {e}"); }

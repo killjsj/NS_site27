@@ -127,7 +127,7 @@ namespace NS_site27_api.Modules.Abilities
             int keyId = id + ((int)KeyCode * 7919);
             setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
                 keyId, Name, KeyCode, Des,
-                pressedPlayer =>
+                (pressedPlayer,isPressed) =>
                 {
                     if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
@@ -177,7 +177,7 @@ namespace NS_site27_api.Modules.Abilities
             _ = CorePlugin.RunCoroutine(CooldownReset());
         }
 
-        public virtual void Unregister(Player player)
+        public virtual void Uninit(Player player)
         {
             SettingManager.Instance?.UnregisterForPlayer(player, setting);
             if (activeAbilities.TryGetValue(player, out var list))

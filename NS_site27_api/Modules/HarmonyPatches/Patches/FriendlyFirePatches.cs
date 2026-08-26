@@ -43,7 +43,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             var ffManager = GetFFManager();
             if (ffManager == null)
             {
-                return IsEnemyDefault(attacker.GetTeam(), victim.GetTeam());
+                return IsEnemyDefault(attacker?.GetTeam() ?? Team.Dead, victim?.GetTeam() ?? Team.Dead);
             }
 
             if (attacker == Server.Host.ReferenceHub)

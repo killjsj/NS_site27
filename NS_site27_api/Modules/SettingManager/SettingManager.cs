@@ -92,7 +92,7 @@ namespace NS_site27_api.Modules.SettingManagement
             string name,
             KeyCode key,
             string desc,
-            Action<Player> onPressed)
+            Action<Player,bool> onPressed)
         {
             var existing = MenuCache.FirstOrDefault(x => x.Id == keyId);
             if (existing != null)
@@ -110,9 +110,9 @@ namespace NS_site27_api.Modules.SettingManagement
                     hintDescription: desc,
                     onChanged: (p, sb) =>
                     {
-                        if (sb is KeybindSetting kbs && kbs.IsPressed)
+                        if (sb is KeybindSetting kbs && kbs.Id == keyId)
                         {
-                            onPressed(p);
+                            onPressed(p, kbs.IsPressed);
                         }
                     });
                 MenuCache.Add(setting);

@@ -15,6 +15,10 @@ namespace NS_site27_api.Core
         public bool IsEnabled { get; set; } = true;
 
     }
+    public class NullModuleConfig : ModuleConfigBase
+    {
+
+    }
 
     public static class ModuleConfigManager
     {

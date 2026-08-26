@@ -7,6 +7,10 @@ using System.Collections.Generic;
 
 namespace NS_site27_heavy.heavy.SpecialWaveManager
 {
+    public enum l
+    {
+        l, m, h
+    }
     public abstract class SpecialWave : SpawnableWaveBase, IWaveConfig //SpawnableWaveBase -> event
     {
         public abstract (bool success, string output) CheckWaveConditions(bool isDebug = false);
@@ -17,6 +21,8 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
         public override IWaveConfig Configuration => this;
 
         public abstract string WaveName { get; }
+        public virtual l WaveLev => l.m;
+        public virtual int WaveWei => 1;
         public virtual int MaxSpawnedOnce => 999;
         public virtual string GetWaitingSpawningUIText()
         {

@@ -10,6 +10,7 @@ using NS_site27_api.Modules.MessageModule;
 using NS_site27_api.Modules.SettingManagement;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
+using PlayerRoles.PlayableScps.Scp079;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -68,13 +69,14 @@ namespace NS_site27_api.Modules.PlayerManagement
                     ScpToSpeaker[ev.Player] = null;
                 }
             }
-            if (ev.IsAllowed && ev.NewRole.IsScp() && ev.Player.Role.Team != Team.SCPs)
+            if (ev.IsAllowed && ev.NewRole.IsScp() && ev.Player.Role.Team != Team.SCPs && ev.NewRole != RoleTypeId.Scp079)
             {
                 _ = TalkTohumanScp.Remove(ev.Player);
                 SettingManager.Instance.RegisterForPlayer(ev.Player, VoiceSetting);
             }
         }
-        public static List<Player> TalkTohumanScp = new();
+        public static HashSet<Player> TalkTohumanScp = new();
+        public static HashSet<ReferenceHub> Scp079AllowIntercom = new();
         public static Dictionary<Player, LabApi.Features.Wrappers.SpeakerToy> ScpToSpeaker = new();
         private static readonly SpeakerToy _speakerPrefab;
         public static SettingBase VoiceSetting { get; private set; }
@@ -122,6 +124,23 @@ namespace NS_site27_api.Modules.PlayerManagement
                     }
                 }
 
+            }
+            else if(ev.Player.Role == RoleTypeId.Scp079)
+            {
+                if(ev.Message.Channel == VoiceChat.VoiceChatChannel.Proximity)
+                {
+                    if(ev.Player.ReferenceHub.roleManager.CurrentRole is Scp079Role s079)
+                    {
+                        if(s079.CurrentCamera?.Room.Name == MapGeneration.RoomName.EzIntercom && (s079?.CurrentCamera?.Label?.ToLower().Contains("panel") ?? false))
+                        {
+                            Scp079AllowIntercom.Add(ev.Player.ReferenceHub);
+                        }
+                        else
+                        {
+                            Scp079AllowIntercom.Remove(ev.Player.ReferenceHub);
+                        }
+                    }
+                }
             }
         }
     }

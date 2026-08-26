@@ -1,8 +1,11 @@
 using CommandSystem;
+using Exiled.API.Enums;
 using Exiled.API.Features;
+using Exiled.API.Features.Roles;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
+using PlayerRoles.Subroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -174,7 +177,51 @@ namespace NS_site27_api.Modules.Commands
             };
         }
     }
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    public class TPCommand : ICommand, IUsageProvider
+    {
+        public string Command => "tp";
+        public string[] Aliases => Array.Empty<string>();
+        public string Description => "tp";
+        public string[] Usage => new[] { "x","y","z" };
 
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            var player = Player.Get(sender);
+            if (player == null)
+            {
+                response = "Failed to find sender.";
+                return false;
+            }
+            var x = float.Parse(arguments.Array[1]);
+            var y = float.Parse(arguments.Array[2]);
+            var z = float.Parse(arguments.Array[3]);
+            player.Position = new Vector3(x, y, z);
+            response = "Success.";
+            return true;
+        }
+    }
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    [CommandHandler(typeof(ClientCommandHandler))]
+    public class DanceCommand : ICommand
+    {
+        public string Command => "dance";
+
+        public string[] Aliases => new[] { "" };
+
+        public string Description => "";
+
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            response = "done!\n";
+            var p = Player.Get(sender);
+            if (p.Role is Scp3114Role s3114)
+            {
+                s3114.StartDancing(DanceType.RunningMan);
+            }
+            return true;
+        }
+    }
     [CommandHandler(typeof(ClientCommandHandler))]
     public class KillCommand : ICommand, IUsageProvider
     {

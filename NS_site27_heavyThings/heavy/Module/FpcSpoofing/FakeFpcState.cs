@@ -37,14 +37,28 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             !Position.HasValue && !Yaw.HasValue && !Pitch.HasValue && !State.HasValue;
 
         /// <summary>Overlays <paramref name="other"/>'s set fields on top of this one.</summary>
-        public FakeFpcState With(FakeFpcState other) => new FakeFpcState(
+        public FakeFpcState With(FakeFpcState other)
+        {
+            return new FakeFpcState(
             other.Position ?? Position,
             other.Yaw ?? Yaw,
             other.Pitch ?? Pitch,
             other.State ?? State);
+        }
 
-        public FakeFpcState WithoutPosition() => new FakeFpcState(null, Yaw, Pitch, State);
-        public FakeFpcState WithoutRotation() => new FakeFpcState(Position, null, null, State);
-        public FakeFpcState WithoutState() => new FakeFpcState(Position, Yaw, Pitch, null);
+        public FakeFpcState WithoutPosition()
+        {
+            return new FakeFpcState(null, Yaw, Pitch, State);
+        }
+
+        public FakeFpcState WithoutRotation()
+        {
+            return new FakeFpcState(Position, null, null, State);
+        }
+
+        public FakeFpcState WithoutState()
+        {
+            return new FakeFpcState(Position, Yaw, Pitch, null);
+        }
     }
 }

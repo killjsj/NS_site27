@@ -1,7 +1,6 @@
 using InventorySystem.Items;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace NS_site27_api.Core.UI
@@ -15,7 +14,7 @@ namespace NS_site27_api.Core.UI
     /// <para>
     /// <b>H</b> is horizontal offset from screen centre measured in <i>half-screen-height</i> units,
     /// not half-widths. A Unity perspective camera keeps vertical FOV fixed and widens horizontally
-    /// with the aspect ratio, so the vertical axis is aspect-independent while the horizontal axis
+    /// with the aspect ratio, DropSo the vertical axis is aspect-independent while the horizontal axis
     /// needs exactly one division by the aspect ratio. Finish it with <see cref="ToUiRect"/>.
     /// </para>
     /// </summary>
@@ -53,7 +52,7 @@ namespace NS_site27_api.Core.UI
     }
 
     /// <summary>
-    /// World -> screen projection with no <see cref="Camera"/> involved, so it runs on a headless
+    /// World -> screen projection with no <see cref="Camera"/> involved, DropSo it runs on a headless
     /// server. The perspective divide is done by hand from the observer's camera transform.
     /// </summary>
     public static class ScreenProjection
@@ -109,13 +108,13 @@ namespace NS_site27_api.Core.UI
         /// Values at or below 1 are treated as "not reported yet" and replaced by
         /// <paramref name="fallback"/>: the property reads its constructor default of exactly 1f
         /// before the first command arrives, and the server clamps
-        /// <c>if (aspectRatio &lt; 1f) aspectRatio = 1f</c>, so a portrait window is
+        /// <c>if (aspectRatio &lt; 1f) aspectRatio = 1f</c>, DropSo a portrait window is
         /// indistinguishable from unset.
         /// </para>
         /// <para>
         /// Read only <c>AspectRatio</c> from that component. <c>XScreenEdge</c> and <c>XplusY</c>
         /// derive from <c>_defaultCameraFieldOfView</c>, which is only assigned in <c>Start()</c>
-        /// behind an <c>isLocalPlayer</c> check that never passes on a dedicated server, so they
+        /// behind an <c>isLocalPlayer</c> check that never passes on a dedicated server, DropSo they
         /// evaluate to 0 and 35 respectively.
         /// </para>
         /// </summary>
@@ -174,7 +173,7 @@ namespace NS_site27_api.Core.UI
         {
             bounds = default;
 
-            if (!(target.roleManager.CurrentRole is IFpcRole fpc))
+            if (target.roleManager.CurrentRole is not IFpcRole fpc)
             {
                 return false;
             }

@@ -1,11 +1,11 @@
 ﻿using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
-using Exiled.API.Features.Roles;
 using Exiled.API.Features.Toys;
 using Exiled.Events.EventArgs.Player;
 using HarmonyLib;
 using MEC;
 using NS_site27_api.Modules.CustomRolePlus;
+using NS_site27_heavy.heavy.Module.testing;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
@@ -13,13 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Policy;
 using UnityEngine;
-using UnityEngine.Windows.Speech;
 
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 {
-    [CustomRole(PlayerRoles.RoleTypeId.NtfCaptain)]
+    [CustomRole(PlayerRoles.RoleTypeId.FacilityGuard)]
     public class MainRole : CustomRolePlus
     {
         public override uint Id { get; set; } = 37198;
@@ -27,7 +25,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public override string Name { get; set; } = "testing";
         public override string Description { get; set; } = "1";
         public override string CustomInfo { get; set; } = "";
-        public override RoleTypeId Role { get; set; } = RoleTypeId.NtfCaptain;
+        public override RoleTypeId Role { get; set; } = RoleTypeId.FacilityGuard;
         public static MainRole r;
         public override void Init()
         {
@@ -43,6 +41,11 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         {
             if (Check(ev.Player))
             {
+                if (true)
+                {
+                    ModelAdd.Clear(ev.Player, "test-armor");
+                    return;
+                }
                 if (m.TryGetValue(ev.Player, out var primitives))
                 {
                     foreach (var primitive in primitives)
@@ -54,7 +57,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
             }
         }
-        
+
         public override void Destroy()
         {
             base.Destroy();
@@ -68,58 +71,10 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             player.Position = new UnityEngine.Vector3(123, 289, 21);
             _ = Timing.CallDelayed(1f, () =>
             {
-                if (player.Role.Base is IFpcRole fpc) {
-                    if(!m.TryGetValue(player,out var primitives))
-                    {
-                        primitives = new();
-                        m[player] = primitives;
-                    }
-                    foreach (var item in Enum.GetValues(typeof(HumanBodyBones)).Cast<HumanBodyBones>())
-                        {
-                        if (item == HumanBodyBones.LastBone || item < 0)
-                        {
-                            continue;
-                        }
-                        if (fpc.FpcModule.CharacterModelInstance is not AnimatedCharacterModel animatedCharacterModel)
-                        {
-                            continue;
-                        }
-                        if (anim_get != null) {
-                            Animator animator = (Animator)anim_get.Invoke(animatedCharacterModel,null);
-                            if (animator == null || animator.avatar == null || !animator.avatar.isValid || !animator.avatar.isHuman)
-                            {
-                                Log.Info("animator == null || animator.avatar == null || !animator.avatar.isValid || !animator.avatar.isHuman");
-                                continue;
-                            }
-                            Transform boneTransform = null;
-                            boneTransform = animator.GetBoneTransform(item);
-                            if (boneTransform != null)
-                            {
-                                var pr = Primitive.Create(PrimitiveType.Cube, spawn: false, scale: Vector3.one);
-                                var f = pr.GameObject.AddComponent<follower>();
-                                
-                                f.TargetFollower = boneTransform;
-
-                                pr.Base.syncInterval = 0;
-                                //pr.MovementSmoothing = 1;
-                                pr.Scale = Vector3.one;
-                                pr.Flags = AdminToys.PrimitiveFlags.Visible;
-
-                                primitives.Add(pr);
-                                
-                                pr.Spawn();
-                                //Log.Info($"Bone: {item} | Position: {boneTransform.position} | Rotation: {boneTransform.rotation} | localScale {boneTransform.localScale},cub;{pr.Position} rot {pr.Rotation} sca:{pr.Scale}");
-                            }
-                            else
-                            {
-                                Log.Info("boneTransform null");
-                            }
-                        }
-                    }
-                }
-                else
+                if (true)
                 {
-                    Log.Debug($"Not");
+                    ModelAdd.start(player, "test-armor");
+                    return;
                 }
             });
 
@@ -131,18 +86,18 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public Transform ThisFollower;
         public void Update()
         {
-            if(ThisFollower == null)
+            if (ThisFollower == null)
             {
-                ThisFollower = this.transform;
+                ThisFollower = transform;
             }
-            if(TargetFollower != null)
+            if (TargetFollower != null)
             {
                 ThisFollower.position = TargetFollower.position;
                 ThisFollower.rotation = TargetFollower.rotation;
             }
             else
             {
-                Destroy(this.gameObject);
+                Destroy(gameObject);
             }
         }
     }

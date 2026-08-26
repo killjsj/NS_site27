@@ -4,6 +4,7 @@ using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Utils;
 
 namespace NS_site27_api.Modules.BanSystem
@@ -14,7 +15,7 @@ namespace NS_site27_api.Modules.BanSystem
     {
         public string Command => "sban";
         public string[] Aliases => new[] { "site27ban" };
-        public string Description => "Ban a player with MySQL integration";
+        public string Description => "Ban a player";
         public string[] Usage => new[] { "%player%", "duration", "reason" };
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -90,12 +91,21 @@ namespace NS_site27_api.Modules.BanSystem
 
                 var targets = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out _);
                 string userId = targets == null || targets.Count == 0 ? arguments.At(0) : targets[0].authManager.UserId;
-                var bans = SqlQueryAllBan(sql, userId);
+                GetBans(sender, sql, userId);
+                response = "please wait...";
+                return true;
+            }
+
+            private static async void GetBans(ICommandSender sender, MySQLConnect sql, string userId)
+            {
+                var response = "";
+                var bans = await SqlQueryAllBan(sql, userId);
 
                 if (bans.Count == 0)
                 {
                     response = $"No ban records for {userId}.";
-                    return true;
+                    sender.Respond(response);
+                    return;
                 }
 
                 response = $"Ban records for {userId}:\n";
@@ -103,7 +113,8 @@ namespace NS_site27_api.Modules.BanSystem
                 {
                     response += $"- {name} banned by {issuer_name} ({start_time:yyyy-MM-dd} to {end_time:yyyy-MM-dd}): {reason}\n";
                 }
-                return true;
+                sender.Respond(response);
+                return;
             }
         }
 
@@ -112,9 +123,9 @@ namespace NS_site27_api.Modules.BanSystem
             return CorePlugin.Instance?.connect;
         }
 
-        private static List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)> SqlQueryAllBan(MySQLConnect sql, string userId)
+        private static async Task<List<(string issuer_name, string issuer_userid, string name, string userid, string reason, DateTime start_time, DateTime end_time, string port)>> SqlQueryAllBan(MySQLConnect sql, string userId)
         {
-            return GetSQL()?.QueryAllBanAsync(userId).GetAwaiter().GetResult();
+            return await sql.QueryAllBanAsync(userId);
         }
     }
 }

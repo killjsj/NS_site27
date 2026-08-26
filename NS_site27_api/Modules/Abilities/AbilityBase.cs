@@ -14,7 +14,7 @@ namespace NS_site27_api.Modules.Abilities
     public interface IRegisiterNeeded<T> where T : AbilityBase
     {
         T Register(Player player);
-        void Unregister(Player player);
+        void Uninit(Player player);
     }
     public interface IitemRegisiterNeeded<T>
     {
@@ -197,13 +197,6 @@ namespace NS_site27_api.Modules.Abilities
         public virtual float DoneRemaining { get => DoneCooldown.Remaining; set => DoneCooldown.Remaining = value; }
         public virtual bool Done => DoneCooldown.IsReady;
 
-        public CoolDownAbility() { }
-        public CoolDownAbility(Player player)
-        {
-            this.player = player;
-            count = TotalCount;
-        }
-
         public void OnTriggerInternal(Player player)
         {
             if (count <= 0 || !DoneCooldown.IsReady)
@@ -262,20 +255,18 @@ namespace NS_site27_api.Modules.Abilities
         public abstract bool OnTrigger();
         public virtual AbilityBase Register(Player player)
         {
-            var ctor = GetType().GetConstructor(new[] { typeof(Player) });
-            if (ctor == null)
-                return this;
-
-            var a = (CoolDownAbility)ctor.Invoke(new object[] { player });
-            a.InternalRegister();
-            return a;
+            var tmp = (CoolDownAbility)Activator.CreateInstance(GetType());
+            tmp.player = player;
+            tmp.InternalRegister();
+            return tmp;
         }
         public virtual void InternalRegister()
         {
             _ = CorePlugin.RunCoroutine(CooldownReset());
+            count = TotalCount;
         }
 
-        public virtual void Unregister(Player player) { }
+        public virtual void Uninit(Player player) { }
     }
 
     public abstract class KeyAbility : CoolDownAbility, IRegisiterNeeded<AbilityBase>
@@ -283,15 +274,6 @@ namespace NS_site27_api.Modules.Abilities
         public SettingBase setting = null;
         public abstract KeyCode KeyCode { get; }
         public static Dictionary<Player, List<KeyAbility>> activeAbilities = new();
-
-        public KeyAbility() : base()
-        {
-        }
-
-        public KeyAbility(Player player) : base(player)
-        {
-            InitSetting();
-        }
 
         private void InitSetting()
         {
@@ -303,9 +285,9 @@ namespace NS_site27_api.Modules.Abilities
             int keyId = id + ((int)KeyCode * 7919);
             setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
                 keyId, Name, KeyCode, Des,
-                pressedPlayer =>
+                (pressedPlayer,isPressed) =>
                 {
-                    if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
+                    if (isPressed && activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
                         foreach (var a in abilities.Where(x => x.KeyCode == KeyCode).ToList())
                         {
@@ -317,25 +299,7 @@ namespace NS_site27_api.Modules.Abilities
 
         public override AbilityBase Register(Player player)
         {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var type = GetType();
-            var ctor = type.GetConstructor(flags, null, new[] { typeof(Player) }, null);
-            if (ctor != null)
-            {
-                var a = (KeyAbility)ctor.Invoke(new object[] { player });
-                a.InternalRegisterPlayer(player);
-                return a;
-            }
-
-            // 退回无参构造函数
-            var parameterless = type.GetConstructor(flags, null, Type.EmptyTypes, null);
-            if (parameterless == null)
-            {
-                Log.Error($"{type.FullName} 缺少 (Player) 或无参构造函数，无法注册。");
-                return null;
-            }
-
-            var tmp = (KeyAbility)parameterless.Invoke(null);
+            var tmp = (KeyAbility)Activator.CreateInstance(GetType());
             tmp.player = player;
             tmp.InitSetting();
             tmp.InternalRegisterPlayer(player);
@@ -369,7 +333,7 @@ namespace NS_site27_api.Modules.Abilities
             base.InternalRegister();
         }
 
-        public override void Unregister(Player player)
+        public override void Uninit(Player player)
         {
             SettingManager.Instance?.UnregisterForPlayer(player, setting);
 
@@ -386,7 +350,7 @@ namespace NS_site27_api.Modules.Abilities
         public Player pass_player;
         public static Dictionary<Player, List<PassAbility>> activeAbilities = new();
         public virtual float checktime => 0.2f;
-        public void Init()
+        public virtual void Init(Player player)
         {
             _ = CorePlugin.RunCoroutine(Refresher());
         }
@@ -402,19 +366,16 @@ namespace NS_site27_api.Modules.Abilities
         }
 
         public virtual void OnCheck(Player player) { }
-        public virtual AbilityBase Register(Player player)
+        public AbilityBase Register(Player player)
         {
-            var ctor = GetType().GetConstructor(new[] { typeof(Player) });
-            if (ctor == null)
-                return this;
-
-            var a = (PassAbility)ctor.Invoke(new object[] { player });
+            var a = (PassAbility)Activator.CreateInstance(GetType());
             a.InternalRegister(player);
             return a;
         }
         public void InternalRegister(Player panel)
         {
             pass_player = panel;
+                Log.Info($"InternalRegister {panel}");
             if (!activeAbilities.ContainsKey(pass_player))
             {
                 activeAbilities.Add(pass_player, new List<PassAbility> { this });
@@ -423,11 +384,10 @@ namespace NS_site27_api.Modules.Abilities
             {
                 activeAbilities[pass_player].Add(this);
             }
-
-            Init();
+            Init(panel);
         }
 
-        public virtual void Unregister(Player player)
+        public virtual void Uninit(Player player)
         {
             if (activeAbilities.TryGetValue(player, out var list))
             {
@@ -436,10 +396,5 @@ namespace NS_site27_api.Modules.Abilities
         }
 
         public PassAbility() { }
-        public PassAbility(Player player)
-        {
-            this.pass_player = player;
-            Init();
-        }
     }
 }

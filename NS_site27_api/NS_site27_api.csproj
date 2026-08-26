@@ -112,8 +112,8 @@
     <Reference Include="K4os.Hash.xxHash, Version=1.0.8.0, Culture=neutral, PublicKeyToken=32cd54395057cec3, processorArchitecture=MSIL">
       <HintPath>..\packages\K4os.Hash.xxHash.1.0.8\lib\net462\K4os.Hash.xxHash.dll</HintPath>
     </Reference>
-    <Reference Include="LabApi">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\LabApi.dll</HintPath>
+    <Reference Include="LabApi, Version=1.1.7.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\ExMod.Exiled.9.14.2\lib\net48\LabApi.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.9, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.10.0.9\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
@@ -262,8 +262,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
-    <Reference Include="YamlDotNet, Version=18.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
-      <HintPath>..\packages\YamlDotNet.18.1.0\lib\net47\YamlDotNet.dll</HintPath>
+    <Reference Include="YamlDotNet, Version=11.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExMod.Exiled.9.14.2\lib\net48\YamlDotNet.dll</HintPath>
     </Reference>
     <Reference Include="ZstdSharp, Version=0.8.8.0, Culture=neutral, PublicKeyToken=8d151af33a4ad5cf, processorArchitecture=MSIL">
       <HintPath>..\packages\ZstdSharp.Port.0.8.8\lib\net462\ZstdSharp.dll</HintPath>
@@ -274,6 +274,7 @@
     <Compile Include="Core\UI\DisplayKit\baseclass.cs" />
     <Compile Include="Core\UI\DisplayKit\DisplayKitRunner.cs" />
     <Compile Include="Core\UI\DisplayKit\DisplayKitTempInterface.cs" />
+    <Compile Include="Extensions\cameraExt.cs" />
     <Compile Include="Modules\Abilities\AbilityBase.cs" />
     <Compile Include="Modules\Abilities\ItemAbilities.cs" />
     <Compile Include="Modules\Admin\AdminLoggerModule.cs" />
@@ -295,7 +296,10 @@
     <Compile Include="Modules\path\NavMeshModifier.cs" />
     <Compile Include="Modules\path\NavMeshModifierVolume.cs" />
     <Compile Include="Modules\path\NavMeshSurface.cs" />
-    <Compile Include="Modules\path\path.cs" />
+    <Compile Include="Modules\path\NavPathBuilder.cs" />
+    <Compile Include="Modules\path\PathModule.cs" />
+    <Compile Include="Modules\path\RoomGraph.cs" />
+    <Compile Include="Modules\path\RoomGraphTypes.cs" />
     <Compile Include="Modules\PlayerManagement\PlayerManagerDisplayKitHUD.cs" />
     <Compile Include="Modules\PlayerManagement\ScpToPlayerChat.cs" />
     <Compile Include="Modules\SettingManager\SettingManager.cs" />

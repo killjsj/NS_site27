@@ -1,8 +1,11 @@
 using Exiled.API.Features;
 using HarmonyLib;
+using NS_site27_api.Modules.PlayerManagement;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace NS_site27_api.Modules.HarmonyPatches.Patches
 {
@@ -83,6 +86,51 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
     //        return false;
     //    }
     //}
+
+    [HarmonyPatch(typeof(PlayerRoles.Voice.Intercom))]
+    public class IntercomPatch
+    {
+
+        [HarmonyPatch("CheckPlayer", typeof(ReferenceHub))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (
+                    codes[i].opcode == OpCodes.Call &&
+                    codes[i+1].opcode == OpCodes.Brfalse_S &&
+                    codes[i+2].opcode == OpCodes.Ldloc_0 &&
+                    codes[i+3].opcode == OpCodes.Isinst
+                    )
+                {
+                    codes[i] = new CodeInstruction(OpCodes.Call, typeof(IntercomPatch).Method(nameof(CheckScpAndHuman)));
+                    break;
+                }
+            }
+            return codes;
+        }
+        public static bool CheckScpAndHuman(ReferenceHub hub)
+        {
+            if (hub == null) return false;
+            if(hub.IsHuman()) return true;
+            if(Player.TryGet(hub,out var player))
+            {
+                return ScpToPlayerChat.TalkTohumanScp.Contains(player) || (player.Role.Type == RoleTypeId.Scp079 && ScpToPlayerChat.Scp079AllowIntercom.Contains(hub));
+            }
+            return false;
+        }
+        [HarmonyPatch("CheckRange")]
+        [HarmonyPostfix]
+        public static void Postfix(ReferenceHub hub,ref bool __result)
+        {
+            if (!__result)
+            {
+                __result = hub.roleManager.CurrentRole.RoleTypeId == RoleTypeId.Scp079 && ScpToPlayerChat.Scp079AllowIntercom.Contains(hub);
+            }
+        }
+    }
 
     [HarmonyPatch(typeof(Scp914.Scp914Upgrader))]
     public static class Scp914Patch

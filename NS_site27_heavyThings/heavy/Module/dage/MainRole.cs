@@ -1,18 +1,11 @@
-﻿using Exiled.API.Features;
+﻿using CommandSystem;
+using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
-using Exiled.API.Features.Roles;
-using Exiled.API.Features.Toys;
-using HarmonyLib;
 using MEC;
 using NS_site27_api.Modules.CustomRolePlus;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
-using PlayerRoles.FirstPersonControl.Thirdperson;
 using System;
-using System.Linq;
-using System.Reflection;
-using System.Security.Policy;
-using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
 {
@@ -46,8 +39,9 @@ namespace NS_site27_heavy.heavy.Module.dage
             player.Position = new UnityEngine.Vector3(123, 289, 21);
             _ = Timing.CallDelayed(1f, () =>
             {
-                if (player.Role.Base is IFpcRole fpc) {
-                    
+                if (player.Role.Base is IFpcRole fpc)
+                {
+
                 }
                 else
                 {
@@ -56,4 +50,61 @@ namespace NS_site27_heavy.heavy.Module.dage
 
         }
     }
+
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    public class ZhuxianCommand : ICommand
+    {
+        public string Command => "ZhuXian";
+        public string[] Aliases => Array.Empty<string>();
+        public string Description => "ZhuXian";
+        public string[] Usage => new[] { "zx" };
+
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (MainRole.r == null)
+            {
+                response = "The dage role is not registered.";
+                return false;
+            }
+
+            // Cleared first: a second run would otherwise keep the previous run's players, teleporting and
+            // killing them twice and inflating the announced count.
+            ZhuXian.guas.Clear();
+            foreach (var i in MainRole.r.TrackedPlayers)
+            {
+                ZhuXian.guas.Add(i);
+            }
+            ZhuXian.start();
+            response = "Success.";
+            return true;
+        }
+    }
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    public class SerialCommand : ICommand
+    {
+        public string Command => "serial";
+        public string[] Aliases => Array.Empty<string>();
+        public string Description => "";
+
+        public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (arguments.Count >= 1)
+            {
+                response = "args count error";
+                return false;
+            }
+            var player = Player.Get(sender);
+            response = "Success.Serial:";
+            if (player.CurrentItem != null)
+            {
+                response += player.CurrentItem.Serial;
+            }
+            else
+            {
+                response += "NULL";
+            }
+            return true;
+        }
+    }
+
 }

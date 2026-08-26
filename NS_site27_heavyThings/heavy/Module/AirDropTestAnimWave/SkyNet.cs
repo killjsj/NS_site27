@@ -53,6 +53,14 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             }
             return true;
         }
+        internal DebuggersAbility1(Player player) : base(player)
+        {
+            TotalCount = 1;
+        }
+        public DebuggersAbility1() : base()
+        {
+            TotalCount = 1;
+        }
     }
     public class DebuggersAbility2 : KeyAbility
     {
@@ -95,6 +103,14 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                 }
             }
             return false;
+        }
+        internal DebuggersAbility2(Player player) : base(player)
+        {
+            TotalCount = 1;
+        }
+        public DebuggersAbility2() : base()
+        {
+            TotalCount = 1;
         }
     }
 
@@ -150,6 +166,14 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             }
             return false;
         }
+        internal TPAbility(Player player) : base(player)
+        {
+            TotalCount = 3;
+        }
+        public TPAbility() : base()
+        {
+            TotalCount = 3;
+        }
     }
     public class DebuggersAbility3 : PassAbility, ITiming
     {
@@ -184,6 +208,10 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                     }
                 }
             }
+        }
+        internal DebuggersAbility3(Player player) : base(player)
+        {
+            //TotalCount = 1;
         }
         public DebuggersAbility3() : base()
         {

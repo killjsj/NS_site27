@@ -78,11 +78,11 @@ namespace DisplayKit
 
     internal static class ExternObjectCache
     {
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> _cache = new();
+        private static readonly Dictionary<string, object> _cache = new();
 
         public static T GetOrAdd<T>(string key, System.Func<T> factory)
         {
-            return (T)_cache.GetOrAdd(key, _ => factory());
+            return (T)_cache.GetOrAdd(key,() => factory());
         }
 
         public static void Set(string key, object value)
@@ -212,7 +212,7 @@ namespace DisplayKit.Elements
     {
         public static DisplayCanvas Create()
         {
-            return ExternObjectCache.GetOrAdd("DisplayCanvas.Create", () => new DisplayCanvas());
+            return ExternObjectCache.GetOrAdd($"DisplayCanvas.Create_{Time.time}", () => new DisplayCanvas());
         }
 
         public DisplayCanvas()

@@ -91,6 +91,9 @@
     <Reference Include="Exiled.Permissions, Version=9.14.2.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\ExMod.Exiled.9.14.2\lib\net48\Exiled.Permissions.dll</HintPath>
     </Reference>
+    <Reference Include="HintServiceMeow-Exiled, Version=5.5.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\HintServiceMeow-Exiled.5.5.0\lib\net48\HintServiceMeow-Exiled.dll</HintPath>
+    </Reference>
     <Reference Include="LabApi, Version=1.1.7.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\Northwood.LabAPI.1.1.7\lib\net48\LabApi.dll</HintPath>
     </Reference>
@@ -141,6 +144,7 @@
       <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Pipelines, Version=10.0.0.9, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IO.Pipelines.10.0.9\lib\net462\System.IO.Pipelines.dll</HintPath>
     </Reference>
@@ -182,6 +186,10 @@
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.AIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.AIModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
@@ -213,26 +221,37 @@
   <ItemGroup>
     <Compile Include="heavy\Core\Configs\ModuleConfigManager.cs" />
     <Compile Include="heavy\Core\HeavyCorePlugin.cs" />
+    <Compile Include="heavy\Module\AirDropTestAnimWave\MainItem.cs" />
     <Compile Include="heavy\Module\dage\Abi.cs" />
     <Compile Include="heavy\Module\dage\AimOverride.cs" />
     <Compile Include="heavy\Module\dage\AimTargeting.cs" />
     <Compile Include="heavy\Module\dage\AudioFileLoader.cs" />
     <Compile Include="heavy\Module\dage\ExactRayPatch.cs" />
+    <Compile Include="heavy\Module\dage\LightningBolt.cs" />
     <Compile Include="heavy\Module\dage\XrayLines.cs" />
+    <Compile Include="heavy\Module\dage\ZhuXian.cs" />
     <Compile Include="heavy\Module\FpcSpoofing\FakeFpcState.cs" />
     <Compile Include="heavy\Module\FpcSpoofing\FakeYawSpinController.cs" />
     <Compile Include="heavy\Module\FpcSpoofing\FpcSpoofer.cs" />
     <Compile Include="heavy\Module\FpcSpoofing\FpcSyncSpoofPatch.cs" />
     <Compile Include="heavy\Module\dage\MainItem.cs" />
     <Compile Include="heavy\Module\dage\MainRole.cs" />
-    <Compile Include="heavy\Module\dage\MainWave.cs" />
     <Compile Include="heavy\Module\dage\MicroHidAimPatch.cs" />
     <Compile Include="heavy\Module\Layers\ScreenProjection.cs" />
     <Compile Include="heavy\Module\Layers\XrayLayer.cs" />
+    <Compile Include="heavy\Module\Testing\BotZombie.cs" />
+    <Compile Include="heavy\Module\Testing\DummySwap.cs" />
+    <Compile Include="heavy\Module\Testing\S049Role.cs" />
+    <Compile Include="heavy\Module\Testing\PlayerFollower.cs" />
+    <Compile Include="heavy\Module\Testing\test_Fake079Ind.cs" />
+    <Compile Include="heavy\Module\Testing\test_modelAddition.cs" />
+    <Compile Include="heavy\Module\AirDropTestAnimWave\MainRole.cs" />
+    <Compile Include="heavy\Module\AirDropTestAnimWave\MainWave.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\MainItem.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\MainRole.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\MainWave.cs" />
     <Compile Include="heavy\Module\TestWaveAndRole\SkyNet.cs" />
+    <Compile Include="heavy\Module\Weapons\BetterHid.cs" />
     <Compile Include="heavy\Module\Weapons\BombGun\BombGunModule.cs" />
     <Compile Include="heavy\Module\Weapons\OnceTimeRailgun.cs" />
     <Compile Include="heavy\Module\Weapons\SpeedBuildItem\SpeedBuildItem.cs" />

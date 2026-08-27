@@ -21,21 +21,11 @@ namespace NS_site27_heavy.heavy.Module.dage
         public static PrimitiveObjectToy status = null;
         public static PrimitiveObjectToy cam = null;
         public static SchematicObject so = null;
-        /// <summary>
-        /// The "status" block's local scale is the animation's phase channel. ZhuxianAnim keys it at 0 for
-        /// the first 15.75s (buildup), 2 from 15.77s (struck), then 5 from 19.47s (finished). So the clip is
-        /// running while the channel is *below* the end value, not above it.
-        /// </summary>
-        private const float StrikePhase = 2f;
+                                                private const float StrikePhase = 2f;
 
         private const float EndPhase = 5f;
 
-        /// <summary>
-        /// Read straight off the transform, which is what the Animator writes. The synced
-        /// <see cref="AdminToyBase.Scale"/> is one LateUpdate behind and is not written at all while a toy
-        /// is <see cref="AdminToyBase.IsStatic"/>, DropSo the transform is the value that cannot go stale.
-        /// </summary>
-        public static float phase => status == null ? 0f : status.transform.localScale.x;
+                                                public static float phase => status == null ? 0f : status.transform.localScale.x;
 
         public static bool isPlaying => status != null && phase < EndPhase;
         public static readonly Dictionary<LightnLayer, Dictionary<int, LightningBolt>> bolts = new();
@@ -129,9 +119,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
             if (status == null)
             {
-                // Without the phase channel isPlaying is false, DropSo animer() would tear the schematic down
-                // on its first tick — which looks exactly like the schematic flashing for one frame.
-                Log.Error($"Failed to get the status block! The schematic will not play.");
+                                                Log.Error($"Failed to get the status block! The schematic will not play.");
             }
 
             foreach (var item in guas)
@@ -150,8 +138,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 yield return Timing.WaitForSeconds(0.2f);
             }
 
-            // The loop leaves without one last Update(), DropSo the teardown cannot live inside it.
-            Stop();
+                        Stop();
         }
         public static void Update()
         {
@@ -160,9 +147,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 return;
             }
 
-            // The channel only steps three times in the whole clip, DropSo logging every change is cheap and
-            // tells you at a glance whether the animator is actually running.
-            if (phase != _lastPhase)
+                                    if (phase != _lastPhase)
             {
                 _lastPhase = phase;
                 Log.Info($"ZhuXian phase -> {phase} (strike at {StrikePhase}, end at {EndPhase})");
@@ -206,8 +191,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
         }
 
-        /// <summary>Tears the schematic down and gives the survivors their gravity back.</summary>
-        public static void Stop()
+                public static void Stop()
         {
 
             guas.Clear();

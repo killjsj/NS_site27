@@ -203,8 +203,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                     _ = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
                 }
 
-                // 创建旋转：向前方向是投影后的玩家方向，向上方向是墙面法线
-                return Quaternion.LookRotation(projectedForward, wallNormal);
+                                return Quaternion.LookRotation(projectedForward, wallNormal);
             }
         }
 
@@ -332,21 +331,17 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 return hit;
             }
 
-            // 如果没有命中，可以手动设置一些值
-            hit.point = to;
+                        hit.point = to;
             hit.normal = Vector3.up;
             hit.distance = distance;
-            // 其他字段需要根据实际情况设置
-
+            
             return hit;
         }
         public class bunker : NetworkBehaviour, IDestructible, IBlockStaticBatching
         {
             public uint NetworkId => base.netId;
 
-            // Token: 0x17000016 RID: 22
-            // (get) Token: 0x06000043 RID: 67 RVA: 0x00002B88 File Offset: 0x00000D88
-            public Vector3 CenterOfMass => base.transform.position;
+                                    public Vector3 CenterOfMass => base.transform.position;
             private void ServerSendImpactDecal(RaycastHit hit, Vector3 origin, DecalPoolType decalType, ImpactEffectsModule impactEffectsModule)
             {
                 _ = typeof(ImpactEffectsModule).GetMethod("ServerSendImpactDecal", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(impactEffectsModule, new object[] { hit, origin, decalType });
@@ -399,21 +394,18 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 _prevStatus = true;
             }
 
-            // Token: 0x0600004B RID: 75 RVA: 0x00002D1B File Offset: 0x00000F1B
-            private IEnumerator BreakWindow()
+                        private IEnumerator BreakWindow()
             {
                 GameObject.Destroy(base.gameObject);
                 yield break;
             }
 
-            // Token: 0x0600004C RID: 76 RVA: 0x00002D2C File Offset: 0x00000F2C
-            private bool CheckDamagePerms(RoleTypeId roleType)
+                        private bool CheckDamagePerms(RoleTypeId roleType)
             {
                 return !_preventScpDamage || (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(roleType, out PlayerRoleBase playerRoleBase) && playerRoleBase.Team > Team.SCPs);
             }
 
-            // Token: 0x0600004D RID: 77 RVA: 0x00002D58 File Offset: 0x00000F58
-            [ServerCallback]
+                        [ServerCallback]
             private void ServerDamageWindow(float damage)
             {
                 if (!NetworkServer.active)

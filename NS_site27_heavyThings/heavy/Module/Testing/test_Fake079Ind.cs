@@ -55,8 +55,7 @@ namespace NS_site27_heavy.heavy.Module.Testing
                                 if (!f)
                                 {
                                     h = Spawn("", RoleTypeId.Scp079, true,Vector3.zero).ReferenceHub;
-                                    //ReferenceHub.TryGetHostHub(out h);
-                                    h.roleManager.ServerSetRole(RoleTypeId.Scp079,RoleChangeReason.None);
+                                                                        h.roleManager.ServerSetRole(RoleTypeId.Scp079,RoleChangeReason.None);
                                     Timing.CallDelayed(0.3f, () =>
                                     {
                                         writer.WriteReferenceHub(h);

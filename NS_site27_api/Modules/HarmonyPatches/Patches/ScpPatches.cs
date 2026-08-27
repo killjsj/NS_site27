@@ -33,60 +33,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         }
     }
 
-    //[HarmonyPatch(typeof(FpcServerPositionDistributor))]
-    //public static class FpcServerPositionDistributorPatch
-    //{
-    //    [HarmonyPatch("GetVisibleRole")]
-    //    [HarmonyPrefix]
-    //    public static bool Prefix(ReferenceHub receiver, ReferenceHub target, ref RoleTypeId __result)
-    //    {
-    //        RoleTypeId CurrentRole = target.GetRoleId();
-    //        if (target.isLocalPlayer || receiver.isLocalPlayer)
-    //        {
-    //            __result = CurrentRole;
-    //            return false;
-    //        }
-    //        if (target.roleManager.CurrentRole is IObfuscatedRole obfuscatedRole)
-    //        {
-    //            CurrentRole = obfuscatedRole.GetRoleForUser(receiver);
-    //        }
-    //        if (receiver == target)
-    //        {
-    //            __result = CurrentRole;
-    //            return false;
-    //        }
-    //        bool IsVisable = false;
-    //        if (receiver.roleManager.CurrentRole is ICustomVisibilityRole customVisibilityRole)
-    //        {
-    //            IsVisable = !customVisibilityRole.VisibilityController.ValidateVisibility(target);
-    //        }
-    //        float distant = Vector3.Distance(receiver.transform.position, target.transform.position);
-    //        if (receiver.roleManager.CurrentRole is Scp079Role scp079Role)
-    //        {
-    //            distant = Vector3.Distance(scp079Role.CameraPosition, target.transform.position);
-    //        }
-    //        bool RAPermission = PermissionsHandler.IsPermitted(receiver.serverRoles.Permissions, PlayerPermissions.GameplayData);
-    //        bool distantFlag = (receiver.GetTeam() == Team.SCPs) ? (distant <= 110f) : (distant <= 50f);
-    //        bool IsDied = receiver.GetRoleId() == RoleTypeId.Spectator;
-    //        if (target.GetTeam() == Team.SCPs)
-    //        {
-    //            __result = CurrentRole;
-    //            return false;
-    //        }
-    //        if (target.IsCommunicatingGlobally())
-    //        {
-    //            __result = CurrentRole;
-    //            return false;
-    //        }
-    //        if (IsVisable && !distantFlag && !RAPermission && !IsDied)
-    //        {
-    //            CurrentRole = RoleTypeId.Spectator;
-    //        }
-    //        __result = CurrentRole;
-    //        return false;
-    //    }
-    //}
-
+                                                                                                                                                                                                                    
     [HarmonyPatch(typeof(PlayerRoles.Voice.Intercom))]
     public class IntercomPatch
     {

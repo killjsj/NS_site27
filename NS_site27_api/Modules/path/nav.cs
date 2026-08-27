@@ -453,8 +453,7 @@ namespace Next_generationSite_27.UnionP
                 current = edge.From;
 
                 if (!guard.Add(current))
-                    break;  // cycle guard; should never trigger
-
+                    break;  
                 if (current == start)
                     break;
             }
@@ -588,8 +587,7 @@ namespace Next_generationSite_27.UnionP
         public T Dequeue()
         {
             if (_heap.Count == 0)
-                return null;  // was an unguarded heap[0] -> ArgumentOutOfRangeException
-
+                return null;  
             T top = _heap[0].item;
             var last = _heap[_heap.Count - 1];
             _heap.RemoveAt(_heap.Count - 1);

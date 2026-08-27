@@ -141,8 +141,7 @@ namespace NS_site27_api.Modules.Abilities
 
         public ItemAbilityBase Register(Player player)
         {
-            // create per-pass_player instance (try to use internal/public constructors taking ushort, fallback to parameterless)
-            ItemKeyAbility a = null;
+                        ItemKeyAbility a = null;
             try
             {
                 a = Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { (ushort)0 }, null) as ItemKeyAbility;
@@ -157,8 +156,7 @@ namespace NS_site27_api.Modules.Abilities
         public void InternalRegister(Player panel)
         {
             player = panel;
-            // ensure setting initialized and registered to pass_player UI
-            if (setting == null)
+                        if (setting == null)
             {
                 InitSetting();
             }

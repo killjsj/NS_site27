@@ -138,8 +138,7 @@ namespace NS_site27_heavy.heavy.Module.testing
             {
                 ThisFollower.position = TargetFollower.position + offset;
                 ThisFollower.rotation = TargetFollower.rotation;
-                //Log.Info($"pos:{ThisFollower.position}");
-            }
+                            }
         }
     }
     [CommandHandler(typeof(RemoteAdminCommandHandler))]

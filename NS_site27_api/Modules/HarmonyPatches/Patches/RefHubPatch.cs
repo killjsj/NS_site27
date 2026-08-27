@@ -31,9 +31,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
                     num++;
                 }
             }
-            //__result = num - RoundEventHandler.DoNotCountDummyHubs.Count;
-            //Log.Info($"__result={__result}");
-            return false;
+                                    return false;
         }
     }
 }

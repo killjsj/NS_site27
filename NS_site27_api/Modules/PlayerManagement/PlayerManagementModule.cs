@@ -247,8 +247,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         private void OnDied(DiedEventArgs ev)
         {
             _ = GetOrCreateStats(ev.Player);
-            //if (diedStats != null) { PlayerDataManager.AddPoint(ev.Player, -2); }
-
+            
             if (ev.Attacker == null)
             {
                 return;

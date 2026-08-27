@@ -14,8 +14,7 @@ namespace NS_site27_api.Modules.Lobby
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
-            // start define of VisualElement
-            DisplayElement VisualElement = canvas.AddElement();
+                        DisplayElement VisualElement = canvas.AddElement();
             VisualElement.BaseElement.name = "VisualElement";
             VisualElement.Position.Position = Position.Absolute;
             VisualElement.Size.Width = Length.Percent(100f);
@@ -24,8 +23,7 @@ namespace NS_site27_api.Modules.Lobby
             VisualElement.Position.Left = 0f;
             VisualElement.Position.Right = 0f;
 
-            // start define of LobbySong
-            DisplayElement LobbySong = VisualElement.AddElement();
+                        DisplayElement LobbySong = VisualElement.AddElement();
             LobbySong.BaseElement.name = "LobbySong";
             LobbySong.Flex.Grow = 1f;
             LobbySong.Position.Position = Position.Absolute;
@@ -34,14 +32,12 @@ namespace NS_site27_api.Modules.Lobby
             LobbySong.Position.Left = Length.Percent(85f);
             LobbySong.Position.Top = Length.Percent(0f);
 
-            // start define of Althrougth_it_not_be_long_here_but_how_cares
-            DisplayElement Althrougth_it_not_be_long_here_but_how_cares = LobbySong.AddElement();
+                        DisplayElement Althrougth_it_not_be_long_here_but_how_cares = LobbySong.AddElement();
             Althrougth_it_not_be_long_here_but_how_cares.BaseElement.name = "Althrougth_it_not_be_long_here_but_how_cares";
             Althrougth_it_not_be_long_here_but_how_cares.Flex.Grow = 1f;
             Althrougth_it_not_be_long_here_but_how_cares.Position.Position = Position.Absolute;
 
-            // start define of lyric
-            DisplayText lyric = LobbySong.AddText("");
+                        DisplayText lyric = LobbySong.AddText("");
             lyric.BaseElement.name = "lyric";
             lyric.Text.Color = new Color(0f, 1f, 0.9843137f, 1f);
             lyric.Position.Position = Position.Relative;

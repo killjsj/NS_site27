@@ -20,8 +20,7 @@ namespace NS_site27_heavy.Core
     {
         private static readonly IDeserializer Deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
-            //.IgnoreUnmatchedProperties()
-            .IncludeNonPublicProperties()
+                        .IncludeNonPublicProperties()
 
             .Build();
 

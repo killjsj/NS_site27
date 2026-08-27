@@ -6,20 +6,15 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.AI;
 
-#pragma warning disable IDE1006 // Unity-specific lower case public property names
-
+#pragma warning disable IDE1006 
 namespace Unity.AI.Navigation
 {
-    /// <summary> Component used to create a navigable link between two NavMesh locations. </summary>
-    [ExecuteAlways]
+        [ExecuteAlways]
     [DefaultExecutionOrder(-101)]
     [AddComponentMenu("Navigation/NavMesh Link", 33)]
     public partial class NavMeshLink : MonoBehaviour
     {
-        // Serialized version is used to upgrade older serialized data to the current format.
-        // Version 0: Initial version.
-        // Version 1: Added m_IsOverridingCost field and made m_CostModifier always positive.
-        [SerializeField, HideInInspector]
+                                [SerializeField, HideInInspector]
         byte m_SerializedVersion = 0;
 
         [SerializeField]
@@ -43,12 +38,7 @@ namespace Unity.AI.Navigation
         [SerializeField]
         float m_Width;
 
-        // This field's value in combination with m_IsOverridingCost determines the value of the costModifier property,
-        // where m_IsOverridingCost determines the sign of the value. The costModifier property is positive or zero when
-        // m_IsOverridingCost is true, and negative when m_IsOverridingCost is false.
-        // Note that when m_SerializedVersion >= 1, m_CostModifier will always become positive or zero. Newly created
-        // components are always upgraded to at least version 1 at initialization time.
-        [SerializeField]
+                                                [SerializeField]
         [Min(0f)]
         float m_CostModifier = -1f;
 
@@ -68,8 +58,7 @@ namespace Unity.AI.Navigation
         int m_LastArea;
 #endif
 
-        /// <summary> Gets or sets the type of agent that can use the link. </summary>
-        public int agentTypeID
+                public int agentTypeID
         {
             get => m_AgentTypeID;
             set
@@ -82,10 +71,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets the local position at the middle of the link's start edge, relative to the GameObject origin. </summary>
-        /// <remarks> This property determines the position of the link's start edge only when <see cref="startTransform"/> is `null`. Otherwise, it is the `startTransform` that determines the edge's position.  <br/>
-        /// The world scale of the GameObject is never used.</remarks>
-        public Vector3 startPoint
+                                public Vector3 startPoint
         {
             get => m_StartPoint;
             set
@@ -98,10 +84,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets the local position at the middle of the link's end edge, relative to the GameObject origin. </summary>
-        /// <remarks> This property determines the position of the link's end edge only when <see cref="endTransform"/> is `null`. Otherwise, it is the `endTransform` that determines the edge's position. <br/>
-        /// The world scale of the GameObject is never used.</remarks>
-        public Vector3 endPoint
+                                public Vector3 endPoint
         {
             get => m_EndPoint;
             set
@@ -114,9 +97,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets the <see cref="Transform"/> tracked by the middle of the link's start edge. </summary>
-        /// <remarks> The link places the start edge at the world position of the object referenced by this property. In that case <see cref="startPoint"/> is not used. Otherwise, when this property is `null`, the component applies the GameObject's translation and rotation as a transform to <see cref="startPoint"/> in order to establish the world position of the link's start edge. </remarks>
-        public Transform startTransform
+                        public Transform startTransform
         {
             get => m_StartTransform;
             set
@@ -130,9 +111,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets the <see cref="Transform"/> tracked by the middle of the link's end edge. </summary>
-        /// <remarks> The link places the end edge at the world position of the object referenced by this property. In that case <see cref="endPoint"/> is not used. Otherwise, when this property is `null`, the component applies the GameObject's translation and rotation as a transform to <see cref="endPoint"/> in order to establish the world position of the link's end edge. </remarks>
-        public Transform endTransform
+                        public Transform endTransform
         {
             get => m_EndTransform;
             set
@@ -146,9 +125,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> The width of the segments making up the ends of the link. </summary>
-        /// <remarks> The segments are created perpendicular to the line from start to end, in the XZ plane of the GameObject. </remarks>
-        public float width
+                        public float width
         {
             get => m_Width;
             set
@@ -161,10 +138,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets a value that determines the cost of traversing the link.</summary>
-        /// <remarks> A negative value implies that the cost of traversing the link is obtained based on the area type.<br/>
-        /// A positive or zero value overrides the cost associated with the area type.</remarks>
-        public float costModifier
+                                public float costModifier
         {
             get => m_IsOverridingCost ? m_CostModifier : -m_CostModifier;
             set
@@ -179,9 +153,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets whether agents can traverse the link in both directions. </summary>
-        /// <remarks> When a link connects to NavMeshes at both ends, agents can always traverse that link from the start position to the end position. When this property is set to `true` it allows the agents to traverse the link from the end position to the start position as well. When the value is `false` the agents will not traverse the link from the end position to the start position. </remarks>
-        public bool bidirectional
+                        public bool bidirectional
         {
             get => m_Bidirectional;
             set
@@ -194,9 +166,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets whether the world positions of the link's edges update whenever
-        /// the GameObject transform, the <see cref="startTransform"/> or the <see cref="endTransform"/> change at runtime. </summary>
-        public bool autoUpdate
+                        public bool autoUpdate
         {
             get => m_AutoUpdatePosition;
             set
@@ -213,8 +183,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> The area type of the link. </summary>
-        public int area
+                public int area
         {
             get => m_Area;
             set
@@ -227,9 +196,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Gets or sets whether the link can be traversed by agents. </summary>
-        /// <remarks> When this property is set to `true` it allows the agents to traverse the link. When the value is `false` no paths pass through this link and no agent can traverse it as part of their autonomous movement. </remarks>
-        public bool activated
+                        public bool activated
         {
             get => m_Activated;
             set
@@ -239,9 +206,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        /// <summary> Checks whether any agent occupies the link at this moment in time. </summary>
-        /// <remarks> This property evaluates the internal state of the link every time it is used. </remarks>
-        public bool occupied => NavMesh.IsLinkOccupied(m_LinkInstance);
+                        public bool occupied => NavMesh.IsLinkOccupied(m_LinkInstance);
 
         NavMeshLinkInstance m_LinkInstance;
 
@@ -287,8 +252,7 @@ namespace Unity.AI.Navigation
             }
         }
 
-        // ensures serialized version is up-to-date at run-time, in case it was not updated in the Editor
-        void Awake()
+                void Awake()
         {
             UpgradeSerializedVersion();
 #if UNITY_EDITOR
@@ -309,8 +273,7 @@ namespace Unity.AI.Navigation
             NavMesh.RemoveLink(m_LinkInstance);
         }
 
-        /// <summary> Replaces the link with a new one using the current settings. </summary>
-        public void UpdateLink()
+                public void UpdateLink()
         {
             if (!isActiveAndEnabled)
                 return;
@@ -344,10 +307,7 @@ namespace Unity.AI.Navigation
                 NavMesh.onPreUpdate -= UpdateTrackedInstances;
         }
 
-        /// <summary>Gets the world positions of the start and end points for the link.</summary>
-        /// <param name="worldStartPosition">Returns the world position of <see cref="startTransform"/> if it is not <c>null</c>; otherwise, <see cref="startPoint"/> transformed into world space.</param>
-        /// <param name="worldEndPosition">Returns the world position of <see cref="endTransform"/> if it is not <c>null</c>; otherwise, <see cref="endPoint"/> transformed into world space.</param>
-        internal void GetWorldPositions(
+                                internal void GetWorldPositions(
             out Vector3 worldStartPosition,
             out Vector3 worldEndPosition)
         {
@@ -359,10 +319,7 @@ namespace Unity.AI.Navigation
             worldEndPosition = endIsLocal ? toWorld.MultiplyPoint3x4(m_EndPoint) : m_EndTransform.position;
         }
 
-        /// <summary>Gets the positions of the start and end points in the local space of the link.</summary>
-        /// <param name="localStartPosition">Returns the local position of <see cref="startTransform"/> if it is not <c>null</c>; otherwise, <see cref="startPoint"/>.</param>
-        /// <param name="localEndPosition">Returns the local position of <see cref="endTransform"/> if it is not <c>null</c>; otherwise, <see cref="endPoint"/>.</param>
-        internal void GetLocalPositions(
+                                internal void GetLocalPositions(
             out Vector3 localStartPosition,
             out Vector3 localEndPosition)
         {
@@ -461,8 +418,7 @@ namespace Unity.AI.Navigation
 #if UNITY_EDITOR
         void OnValidate()
         {
-            // Ensures serialized version is up-to-date in the Editor irrespective of GameObject active state
-            UpgradeSerializedVersion();
+                        UpgradeSerializedVersion();
 
             m_Width = Mathf.Max(0.0f, m_Width);
 

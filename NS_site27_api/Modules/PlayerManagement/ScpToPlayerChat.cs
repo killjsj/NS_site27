@@ -29,8 +29,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
             VoiceSetting = null;
-            //Exiled.Events.Handlers.Player.VoiceChatting -= VoiceChatting/;
-            LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage -= VoiceChatting;
+                        LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage -= VoiceChatting;
         }
 
         public override void OnEnable()

@@ -103,27 +103,18 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             new DrawableLineMessage(1.1f, new Color(1, 1, 1, 0.5f), new Vector3[2] { p.CameraTransform.position - (Vector3.up * 0.3f) + (p.CameraTransform.forward * 0.2f), Info.point }).SendToAuthenticated();
         }
         public static float ExplosionRad = 1.2f;
-        private const float BaseDamage = 500f;          // 基础伤害
-        private const float DoorBaseDamage = 100f;
-        private const float MinDamage = 0.1f;           // 最小伤害阈值，低于此不造成伤害
-
-        /// <summary>
-        /// 爆炸入口方法
-        /// </summary>
-        public static void Explode(Footprint attacker, Vector3 position, ExplosionType explosionType)
+        private const float BaseDamage = 500f;                  private const float DoorBaseDamage = 100f;
+        private const float MinDamage = 0.1f;           
+                                public static void Explode(Footprint attacker, Vector3 position, ExplosionType explosionType)
         {
-            // 开启本地玩家的碰撞盒（用于伤害检测）
-            SetHostHitboxes(true);
+                        SetHostHitboxes(true);
 
-            // 从池中租用 HashSet 避免重复处理同一对象
-            HashSet<uint> processedDestructibles = HashSetPool<uint>.Shared.Rent();
+                        HashSet<uint> processedDestructibles = HashSetPool<uint>.Shared.Rent();
             HashSet<uint> processedDoors = HashSetPool<uint>.Shared.Rent();
             try
             {
-                float radius = ExplosionRad; // 若需要可变，可在此读取配置
-
-                // 获取所有可能受影响的碰撞体
-                Collider[] hitColliders = Physics.OverlapSphere(position, radius, HitscanHitregModuleBase.HitregMask);
+                float radius = ExplosionRad; 
+                                Collider[] hitColliders = Physics.OverlapSphere(position, radius, HitscanHitregModuleBase.HitregMask);
                 var p = Primitive.Create(position, null, new Vector3(radius, radius, radius), false);
                 p.Collidable = false;
                 p.Color = new Color(1, 1, 1, 0.25f);
@@ -134,21 +125,18 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 animator.duration = 0.4f;
 
                 _ = Timing.CallDelayed(0.4f, () => { p?.Destroy(); });
-                // 提前判断是否在服务器端运行（避免循环内重复检查）
-                bool isServer = NetworkServer.active;
+                                bool isServer = NetworkServer.active;
 
                 foreach (Collider collider in hitColliders)
                 {
                     if (isServer)
                     {
-                        // 触发爆炸响应接口
-                        if (collider.TryGetComponent<IExplosionTrigger>(out var trigger))
+                                                if (collider.TryGetComponent<IExplosionTrigger>(out var trigger))
                         {
                             trigger.OnExplosionDetected(attacker, position, radius);
                         }
 
-                        // 处理可破坏物体（IDestructible）
-                        if (collider.TryGetComponent<IDestructible>(out var destructible))
+                                                if (collider.TryGetComponent<IDestructible>(out var destructible))
                         {
                             if (!processedDestructibles.Contains(destructible.NetworkId) &&
                                 ExplodeDestructible(destructible, attacker, position, explosionType, radius))
@@ -156,8 +144,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                                 _ = processedDestructibles.Add(destructible.NetworkId);
                             }
                         }
-                        // 处理门（通过 InteractableCollider）
-                        else if (collider.TryGetComponent<InteractableCollider>(out var interactable) &&
+                                                else if (collider.TryGetComponent<InteractableCollider>(out var interactable) &&
                                  interactable.Target is DoorVariant door &&
                                  processedDoors.Add(door.netId))
                         {
@@ -165,8 +152,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                         }
                     }
 
-                    // 刚体物理（客户端和服务器都需处理）
-                    if (collider.attachedRigidbody != null)
+                                        if (collider.attachedRigidbody != null)
                     {
                         ExplodeRigidbody(collider.attachedRigidbody, position, radius);
                     }
@@ -174,15 +160,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
             finally
             {
-                // 归还池中资源
-                HashSetPool<uint>.Shared.Return(processedDestructibles);
+                                HashSetPool<uint>.Shared.Return(processedDestructibles);
                 HashSetPool<uint>.Shared.Return(processedDoors);
             }
 
             SetHostHitboxes(false);
         }
-        // 定义一个小脚本
-        public class ScaleAnimator : MonoBehaviour
+                public class ScaleAnimator : MonoBehaviour
         {
             public float duration = 0.4f;
             public Vector3 endScale;
@@ -201,14 +185,10 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 transform.localScale = Vector3.Lerp(startScale, endScale, t);
                 if (t >= 1f)
                 {
-                    Destroy(gameObject, 0.05f); // 动画完成后销毁自身
-                }
+                    Destroy(gameObject, 0.05f);                 }
             }
         }
-        /// <summary>
-        /// 启用/禁用本地玩家碰撞盒（避免自伤）
-        /// </summary>
-        private static void SetHostHitboxes(bool state)
+                                private static void SetHostHitboxes(bool state)
         {
             if (!NetworkServer.active)
             {
@@ -232,52 +212,40 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
         }
 
-        /// <summary>
-        /// 对刚体施加爆炸力（带遮挡检测）
-        /// </summary>
-        private static void ExplodeRigidbody(Rigidbody rb, Vector3 pos, float radius)
+                                private static void ExplodeRigidbody(Rigidbody rb, Vector3 pos, float radius)
         {
             if (rb.isKinematic)
             {
                 return;
             }
 
-            // 检测爆炸点与刚体之间是否有遮挡
-            if (Physics.Linecast(rb.gameObject.transform.position, pos, ThrownProjectile.HitBlockerMask))
+                        if (Physics.Linecast(rb.gameObject.transform.position, pos, ThrownProjectile.HitBlockerMask))
             {
                 return;
             }
 
-            // 质量影响冲击力（质量越大受力越小）
-            float massFactor = (Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius) + 1f;
+                        float massFactor = (Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius) + 1f;
             float force = 10f / massFactor;
 
-            // Unity 的 AddExplosionForce 自带距离衰减
-            rb.AddExplosionForce(force, pos, radius, force, ForceMode.VelocityChange);
+                        rb.AddExplosionForce(force, pos, radius, force, ForceMode.VelocityChange);
         }
 
-        /// <summary>
-        /// 对可破坏物体造成伤害（距离衰减 + 遮挡检测）
-        /// </summary>
-        private static bool ExplodeDestructible(IDestructible dest, Footprint attacker, Vector3 pos, ExplosionType explosionType, float radius)
+                                private static bool ExplodeDestructible(IDestructible dest, Footprint attacker, Vector3 pos, ExplosionType explosionType, float radius)
         {
             Vector3 delta = dest.CenterOfMass - pos;
             float magnitude = delta.magnitude;
 
-            // 防止除零 && 超出爆炸半径
-            if (magnitude < 0.001f || magnitude > radius)
+                        if (magnitude < 0.001f || magnitude > radius)
             {
                 return false;
             }
 
-            // 遮挡检测（从物体中心到爆炸点）
-            if (Physics.Linecast(dest.CenterOfMass, pos, ThrownProjectile.HitBlockerMask))
+                        if (Physics.Linecast(dest.CenterOfMass, pos, ThrownProjectile.HitBlockerMask))
             {
                 return false;
             }
 
-            // 伤害随距离线性衰减
-            float distanceFactor = Mathf.Clamp01(1f - (magnitude / radius));
+                        float distanceFactor = Mathf.Clamp01(1f - (magnitude / radius));
             float damage = BaseDamage * distanceFactor;
 
             if (damage < MinDamage)
@@ -285,19 +253,15 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 return false;
             }
 
-            // 计算冲击方向（带随机上方向）
-            Vector3 impulse = (delta / magnitude * distanceFactor * 10f) + Vector3.up;
+                        Vector3 impulse = (delta / magnitude * distanceFactor * 10f) + Vector3.up;
 
-            // 尝试造成伤害
-            bool damaged = dest.Damage(damage, new ExplosionDamageHandler(attacker, impulse, damage, 50, explosionType), dest.CenterOfMass);
+                        bool damaged = dest.Damage(damage, new ExplosionDamageHandler(attacker, impulse, damage, 50, explosionType), dest.CenterOfMass);
 
-            // 如果伤害成功且目标是一个 ReferenceHub（玩家）
-            if (damaged && ReferenceHub.TryGetHubNetID(dest.NetworkId, out ReferenceHub targetHub))
+                        if (damaged && ReferenceHub.TryGetHubNetID(dest.NetworkId, out ReferenceHub targetHub))
             {
                 bool isSelf = attacker.Hub == targetHub;
 
-                // 施加负面效果（仅当攻击者不是自己，或攻击者与目标在敌对阵营）
-                bool shouldApplyEffects = isSelf || HitboxIdentity.IsDamageable(attacker.Role, targetHub.GetRoleId());
+                                bool shouldApplyEffects = isSelf || HitboxIdentity.IsDamageable(attacker.Role, targetHub.GetRoleId());
                 if (shouldApplyEffects)
                 {
                     float duration = 0.3f;
@@ -307,8 +271,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                     TriggerEffect<Concussed>(targetHub, duration, minimal);
                 }
 
-                // 若不是自伤且攻击者有效，发送命中标记
-                if (!isSelf && attacker.Hub != null)
+                                if (!isSelf && attacker.Hub != null)
                 {
                     Hitmarker.SendHitmarkerDirectly(attacker.Hub, 1f, true, HitmarkerType.Regular);
                 }
@@ -317,10 +280,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             return damaged;
         }
 
-        /// <summary>
-        /// 对门造成伤害（距离衰减）
-        /// </summary>
-        private static void ExplodeDoor(DoorVariant door, Vector3 pos, Footprint attacker, float radius)
+                                private static void ExplodeDoor(DoorVariant door, Vector3 pos, Footprint attacker, float radius)
         {
             if (door is not IDamageableDoor damageableDoor)
             {
@@ -337,10 +297,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
         }
 
-        /// <summary>
-        /// 触发状态效果（带最小持续时间检查）
-        /// </summary>
-        private static void TriggerEffect<T>(ReferenceHub hub, float duration, float minimal) where T : StatusEffectBase
+                                private static void TriggerEffect<T>(ReferenceHub hub, float duration, float minimal) where T : StatusEffectBase
         {
             if (duration < minimal)
             {

@@ -452,8 +452,7 @@ namespace NS_site27_heavy.heavy.Module.AirDrop
             {
                 ThisFollower.position = TargetFollower.position + offset;
                 ThisFollower.rotation = TargetFollower.rotation;
-                //Log.Info($"pos:{ThisFollower.position}");
-            }
+                            }
         }
     }
 }

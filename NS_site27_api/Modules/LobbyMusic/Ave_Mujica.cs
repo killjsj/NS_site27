@@ -21,15 +21,13 @@ using Round = Exiled.API.Features.Round;
 
 namespace NS_site27_api.Modules.LobbyMusic
 {
-    // 点歌来源枚举
-    public enum SongSource
+        public enum SongSource
     {
         NeteaseCloud = 0,
         MonsterSiren = 1
     }
 
-    // 点歌请求结构体
-    public struct SongReq
+        public struct SongReq
     {
         public string id;
         public SongSource source;
@@ -53,13 +51,11 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-    // 模块配置（可按需扩展）
-    public class LobbyMusicConfig : ModuleConfigBase
+        public class LobbyMusicConfig : ModuleConfigBase
     {
     }
 
-    // 玩家点歌命令（网易云）
-    [CommandHandler(typeof(ClientCommandHandler))]
+        [CommandHandler(typeof(ClientCommandHandler))]
     public class OrderSongCommand : ICommand
     {
         public string Command => "orderSong";
@@ -99,8 +95,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-    // 管理员切换点歌开关
-    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+        [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class DisOrderSongCommand : ICommand
     {
         public string Command => "DisOrderSong";
@@ -122,8 +117,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-    // 管理员强制开启回合内点歌
-    [CommandHandler(typeof(RemoteAdminCommandHandler))]
+        [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class EnOrderSongCommand : ICommand
     {
         public string Command => "EnOrderSong";
@@ -139,8 +133,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-    // 主管理类
-    public class LobbyMusicManager
+        public class LobbyMusicManager
     {
         public static LobbyMusicManager Instance { get; set; }
 
@@ -171,8 +164,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             public string Text;
         }
 
-        // 初始化
-        public void Init()
+                public void Init()
         {
             Instance = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
@@ -181,8 +173,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             _cts = new CancellationTokenSource();
         }
 
-        // 清理
-        public void Cleanup()
+                public void Cleanup()
         {
             if (_processor.IsRunning)
             {
@@ -206,14 +197,12 @@ namespace NS_site27_api.Modules.LobbyMusic
             _tempFiles.Clear();
         }
 
-        // 回合开始
-        public void OnRoundStarted()
+                public void OnRoundStarted()
         {
             DestroySpeaker();
         }
 
-        // 回合重启
-        public void OnRestartingRound()
+                public void OnRestartingRound()
         {
             _readyToNext = true;
             _cts?.Cancel();
@@ -229,8 +218,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             _tempFiles.Clear();
         }
 
-        // 等待玩家时启动处理器
-        public void OnWaitingForPlayers()
+                public void OnWaitingForPlayers()
         {
             OnRestartingRound();
             if (_processor.IsRunning)
@@ -244,8 +232,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
 
 
-        // 创建SpeakerToy并获取VoicePlayerBase
-        public IEnumerator<float> MonitorPlaybackEnd()
+                public IEnumerator<float> MonitorPlaybackEnd()
         {
             int currentSid = sessionId;
             while (sessionId == currentSid && TotalTime > 0)
@@ -291,8 +278,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-        // 销毁SpeakerToy
-        public void DestroySpeaker()
+                public void DestroySpeaker()
         {
             StopLyrics();
             if (sessionId != 0)
@@ -310,11 +296,9 @@ namespace NS_site27_api.Modules.LobbyMusic
             _readyToNext = true;
         }
 
-        // 歌曲是否可播放
-        public bool SongPlayable => Round.IsLobby || AdminOverrideEnable;
+                public bool SongPlayable => Round.IsLobby || AdminOverrideEnable;
 
-        // 处理队列
-        public IEnumerator<float> ProcessQueue()
+                public IEnumerator<float> ProcessQueue()
         {
             Log.Info("start!");
             while (true)
@@ -333,8 +317,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-        // 异步处理歌曲
-        public async Awaitable ProcessSongAsync(long songId)
+                public async Awaitable ProcessSongAsync(long songId)
         {
             int retries = 2;
             CancellationToken ct = _cts.Token;
@@ -381,8 +364,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                             }
                         }
                     }
-                    else // MonsterSiren
-                    {
+                    else                     {
                         string apiUrl = $"https://monster-siren.hypergryph.com/api/song/{songId}";
                         using var http = new HttpClient();
                         var response = await http.GetStringAsync(apiUrl);
@@ -416,8 +398,7 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                     _processing.player?.SendConsoleMessage("歌曲解析完成，准备下载", "green");
                     await StartPlayback(downloadUrl, songName, lrcContent, ct);
-                    return; // 成功则退出重试循环
-                }
+                    return;                 }
                 catch (OperationCanceledException)
                 {
                     Log.Info($"歌曲 {songId} 被取消");
@@ -439,8 +420,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 }
             }
         }
-        // 下载并播放
-        public async Awaitable StartPlayback(string url, string name, string lrc, CancellationToken ct)
+                public async Awaitable StartPlayback(string url, string name, string lrc, CancellationToken ct)
         {
             await Awaitable.BackgroundThreadAsync();
             if (string.IsNullOrEmpty(url))
@@ -551,8 +531,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-        // 歌词解析与显示
-        public List<LrcLine> ParseLrc(string lrcContent)
+                public List<LrcLine> ParseLrc(string lrcContent)
         {
             var lines = new List<LrcLine>();
             if (!string.IsNullOrEmpty(lrcContent))
@@ -628,11 +607,9 @@ namespace NS_site27_api.Modules.LobbyMusic
             return $"{min:D2}:{sec:D2}";
         }
 
-        // 曲目结束回调
-    }
+            }
 
-    // 模块入口
-    public class LobbyMusicModule : ModuleBase<LobbyMusicConfig>
+        public class LobbyMusicModule : ModuleBase<LobbyMusicConfig>
     {
         public override string ModuleName => "LobbyMusic";
         public LobbyMusicManager _manager;

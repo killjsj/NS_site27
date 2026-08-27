@@ -236,12 +236,9 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                     break;
             }
         }
-        //单电炮最理想化最多伤害(Windup等也从这里扣)
-        public const float TotalDamage = 8000f;
-        //后摇
-        public const float RecoverTime = 0.3f;
-        //前摇
-        public const float WindupTime_L = 1f;
+                public const float TotalDamage = 8000f;
+                public const float RecoverTime = 0.3f;
+                public const float WindupTime_L = 1f;
         public const float WindupTime_H = 3f;
 
         public const float WindupEnergyForSecond = 60f;
@@ -382,8 +379,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 return length;
             }
 
-            return 1f; // 防止没有长度导致循环异常
-        }
+            return 1f;         }
         private void ChangeStatus(BHID_playerInfos info, BHID_status status)
         {
             if (info.Status == status)

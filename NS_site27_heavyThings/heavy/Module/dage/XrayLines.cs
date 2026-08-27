@@ -16,8 +16,7 @@ namespace NS_site27_api.Core.UI
         public const float DefaultRange = 60f;
         public const int MaxMarkers = 60;
 
-        // viewer -> (target -> cube transform)
-        private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, Primitive>> Cubes = new();
+                private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, Primitive>> Cubes = new();
         private static readonly List<ReferenceHub> DeadViewers = new();
 
         private static bool _hooked;
@@ -164,8 +163,7 @@ namespace NS_site27_api.Core.UI
             Quaternion invRot = Quaternion.Inverse(camRot);
             float tanHalfV = Mathf.Tan(ScreenProjection.GetVerticalFov(viewer) * 0.5f * Mathf.Deg2Rad);
 
-            Transform viewerTransform = viewer.transform; // 父物体
-
+            Transform viewerTransform = viewer.transform; 
             foreach (ReferenceHub target in ReferenceHub.AllHubs)
             {
                 if (drawn >= MaxMarkers)
@@ -204,8 +202,7 @@ namespace NS_site27_api.Core.UI
                     continue;
                 }
 
-                // 计算世界空间锚点
-                if (!TryGetAnchoredCubeTransform(camPos, camRot, invRot, tanHalfV, bounds,
+                                if (!TryGetAnchoredCubeTransform(camPos, camRot, invRot, tanHalfV, bounds,
                         out Vector3 worldPos, out Quaternion worldRot, out Vector3 worldScale))
                 {
                     continue;
@@ -285,8 +282,7 @@ namespace NS_site27_api.Core.UI
                 , 0.01f, 30f);
             var a = Mathf.Lerp(0, 1, dis / 30f);
             var enemy = HitboxIdentity.IsEnemy(target, enemyHub);
-            //Log.Info($"Vector3.Distance(target.GetPosition(), enemyHub.GetPosition()):{Vector3.Distance(target.GetPosition(), enemyHub.GetPosition())}, a:{a} enemy:{enemy}");
-            return !enemy
+                        return !enemy
                 ? new Color(0.31f, 0.78f, 1f, a)
                 : target.GetTeam() switch
                 {
@@ -430,8 +426,7 @@ namespace NS_site27_api.Core.UI
                 && viewer.roleManager.CurrentRole is IFpcRole;
         }
 
-        // 存储每个 viewer 的设置
-        private sealed class ViewerSettings
+                private sealed class ViewerSettings
         {
             public float Range = DefaultRange;
             public bool EnemiesOnly = true;

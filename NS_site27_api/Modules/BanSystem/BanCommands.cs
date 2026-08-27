@@ -59,8 +59,7 @@ namespace NS_site27_api.Modules.BanSystem
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
                 _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
-                //pass_player.Ban((uint)(duration * 60), reason);
-                player.Kick(reason, runner);
+                                player.Kick(reason, runner);
             }
 
             response = $"Banned {targets.Count} pass_player(s).";

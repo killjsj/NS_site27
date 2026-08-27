@@ -18,8 +18,7 @@ namespace NS_site27_api.Core.UI.DisplayKit
         }
         public virtual TimeSpan updateTime => TimeSpan.FromSeconds(0.2f);
 
-        // overrides
-        public virtual void OnEnable()
+                public virtual void OnEnable()
         {
             DisplayKitRunner.Instance.RegisterLayer(this);
         }

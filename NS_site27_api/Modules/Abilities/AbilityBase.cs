@@ -346,8 +346,7 @@ namespace NS_site27_api.Modules.Abilities
 
     public abstract class PassAbility : AbilityBase, IRegisiterNeeded<AbilityBase>
     {
-        //public static bool _initialized;
-        public Player pass_player;
+                public Player pass_player;
         public static Dictionary<Player, List<PassAbility>> activeAbilities = new();
         public virtual float checktime => 0.2f;
         public virtual void Init(Player player)

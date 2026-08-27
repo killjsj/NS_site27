@@ -110,8 +110,7 @@ namespace NS_site27_heavy.heavy.Module.dage
         [HarmonyPatch]
         internal static class ExactRayPatch
         {
-            // RandomizeRay is protected -> resolve manually
-            private static MethodBase TargetMethod()
+                        private static MethodBase TargetMethod()
             {
                 return AccessTools.Method(typeof(HitscanHitregModuleBase), "RandomizeRay");
             }
@@ -121,11 +120,9 @@ namespace NS_site27_heavy.heavy.Module.dage
                 ReferenceHub owner = __instance.Firearm?.Owner;
                 if (owner == null || !AimOverride.TryConsume(owner, ray.origin, out Vector3 dir))
                 {
-                    return true;                        // vanilla: spread as normal
-                }
+                    return true;                                        }
 
-                __result = new Ray(ray.origin, dir);    // exact, no cone
-                return false;
+                __result = new Ray(ray.origin, dir);                    return false;
             }
         }
 
@@ -194,8 +191,7 @@ namespace NS_site27_heavy.heavy.Module.dage
     }
     public class rot : PassAbility
     {
-        //public override KeyCode KeyCode => KeyCode.Mouse2;
-
+        
         public override string Name => "它转起来了!";
 
         public override string Des => "";
@@ -215,13 +211,11 @@ namespace NS_site27_heavy.heavy.Module.dage
         }
         public rot() : base()
         {
-            //TotalCount = 1;
-        }
+                    }
     }
     public class jum : KeyAbility
     {
-        //public override KeyCode KeyCode => KeyCode.Mouse2;
-
+        
         public override string Name => "跳两下起飞了";
 
         public override string Des => "";
@@ -259,8 +253,7 @@ namespace NS_site27_heavy.heavy.Module.dage
         public override string Name => "大哥忘关就是开?";
         public override string Des => "";
         public int sid = -1;
-        private static float audioLength = 0f; // 缓存音频时长
-        public CoroutineHandle ch;
+        private static float audioLength = 0f;         public CoroutineHandle ch;
 
         public override void Init(Player player)
         {

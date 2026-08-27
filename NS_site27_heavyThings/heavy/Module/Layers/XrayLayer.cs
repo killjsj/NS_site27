@@ -11,52 +11,25 @@ using Position = UnityEngine.UIElements.Position;
 
 namespace NS_site27_api.Core.UI.DisplayKit.Layers
 {
-    /// <summary>
-    /// Outlines nearby players through walls, one box per target.
-    ///
-    /// <para>
-    /// Unlike world-space markers, UI Toolkit elements are not part of the 3D scene, DropSo nothing can
-    /// occlude them — that is what makes this an x-ray rather than an outline.
-    /// </para>
-    /// <para>
-    /// DisplayKit positions elements in screen space only — <c>PositionData</c> is
-    /// Top/Bottom/Left/Right as <c>StyleLength</c>, with no world-space anchoring — DropSo the server
-    /// projects. Both inputs are available per viewer: vertical FOV from
-    /// <c>70f / IZoomModifyingItem.ZoomAmount</c> (DropSo scopes and ADS are exact), and aspect ratio
-    /// from <c>AspectRatioSync.AspectRatio</c>, which the client reports. Both are re-read every
-    /// tick DropSo a scope going up or a resolution change is picked up immediately.
-    /// </para>
-    /// <para>
-    /// Boxes use <see cref="Length.Percent"/> against the canvas, DropSo no pixel resolution is needed
-    /// on either side.
-    /// </para>
-    /// </summary>
-    public class XrayLayer : DisplayLayer
+                                                                                    public class XrayLayer : DisplayLayer
     {
         public override string Id { get; set; } = "xray";
 
         public override TimeSpan updateTime => TimeSpan.FromSeconds(0.05f);
 
-        /// <summary>Targets beyond this are not revealed.</summary>
-        public float Range { get; set; } = 60f;
+                public float Range { get; set; } = 60f;
 
-        /// <summary>When false, allies are outlined too, in their own colour.</summary>
-        public bool EnemiesOnly { get; set; } = true;
+                public bool EnemiesOnly { get; set; } = true;
 
-        /// <summary>Maximum simultaneous boxes. Elements are pooled up to this count.</summary>
-        public int MaxMarkers { get; set; } = 16;
+                public int MaxMarkers { get; set; } = 16;
 
-        /// <summary>Extra margin around each target, as a fraction of the projected box.</summary>
-        public float Padding { get; set; } = 0.08f;
+                public float Padding { get; set; } = 0.08f;
 
         public float BorderWidth { get; set; } = 2f;
 
-        /// <summary>Used only until the viewer's client has reported its real aspect ratio.</summary>
-        public const float FallbackAspectRatio = 16f / 9f;
+                public const float FallbackAspectRatio = 16f / 9f;
 
-        // One pool per canvas: the runner creates a canvas per (player, layer) pair, and the same
-        // layer instance is shared across all of them.
-        private readonly Dictionary<DisplayCanvas, List<DisplayElement>> _boxes = new();
+                        private readonly Dictionary<DisplayCanvas, List<DisplayElement>> _boxes = new();
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
@@ -86,9 +59,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             Vector3 origin = viewerFpc.FpcModule.Position;
             float sqrRange = Range * Range;
 
-            // Both resolved once per tick rather than cached, DropSo a scope going up or a mid-round
-            // resolution change is picked up on the next refresh.
-            float fov = ScreenProjection.GetVerticalFov(viewer);
+                                    float fov = ScreenProjection.GetVerticalFov(viewer);
             float aspect = ScreenProjection.GetAspectRatio(viewer, FallbackAspectRatio);
 
             int used = 0;
@@ -111,8 +82,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
                     continue;
                 }
 
-                // No line-of-sight check on purpose: seeing through geometry is the feature.
-                if ((otherFpc.FpcModule.Position - origin).sqrMagnitude > sqrRange)
+                                if ((otherFpc.FpcModule.Position - origin).sqrMagnitude > sqrRange)
                 {
                     continue;
                 }
@@ -130,8 +100,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
 
                 Rect rect = Pad(screen.ToUiRect(aspect));
 
-                // Fully off-screen: skip rather than clamp, DropSo markers do not pile up at the edges.
-                if (rect.xMax < 0f || rect.xMin > 1f || rect.yMax < 0f || rect.yMin > 1f)
+                                if (rect.xMax < 0f || rect.xMin > 1f || rect.yMax < 0f || rect.yMin > 1f)
                 {
                     continue;
                 }
@@ -154,11 +123,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             return new Rect(r.x - px, r.y - py, r.width + (px * 2f), r.height + (py * 2f));
         }
 
-        /// <summary>
-        /// Elements are created once and reused. Creating and removing them every tick would defeat
-        /// DisplayKit's caching and churn the client's visual tree.
-        /// </summary>
-        private DisplayElement GetBox(DisplayCanvas canvas, List<DisplayElement> pool, int index)
+                                        private DisplayElement GetBox(DisplayCanvas canvas, List<DisplayElement> pool, int index)
         {
             while (pool.Count <= index)
             {
@@ -178,9 +143,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
         {
             box.Display.Display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
 
-            // Percent resolves against the parent's box, which is the full-screen canvas — DropSo these
-            // are literally viewport fractions and no pixel resolution is ever needed.
-            box.Position.Left = new StyleLength(Length.Percent(r.xMin * 100f));
+                                    box.Position.Left = new StyleLength(Length.Percent(r.xMin * 100f));
             box.Position.Top = new StyleLength(Length.Percent(r.yMin * 100f));
             box.Size.Width = new StyleLength(Length.Percent(r.width * 100f));
             box.Size.Height = new StyleLength(Length.Percent(r.height * 100f));

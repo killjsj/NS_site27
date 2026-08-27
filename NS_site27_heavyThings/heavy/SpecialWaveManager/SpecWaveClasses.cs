@@ -11,8 +11,7 @@ namespace NS_site27_heavy.heavy.SpecialWaveManager
     {
         l, m, h
     }
-    public abstract class SpecialWave : SpawnableWaveBase, IWaveConfig //SpawnableWaveBase -> event
-    {
+    public abstract class SpecialWave : SpawnableWaveBase, IWaveConfig     {
         public abstract (bool success, string output) CheckWaveConditions(bool isDebug = false);
         public abstract (bool success, List<Player> spawnedPlayers) SpawnPlayers(List<Player> WaitingToSpawn);
         public abstract void OnRestartRound();

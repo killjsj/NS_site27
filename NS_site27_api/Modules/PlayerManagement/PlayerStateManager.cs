@@ -65,8 +65,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.Player != null && _scp106Catchers.TryGetValue(ev.Player, out _))
             {
-                //scp.ShowHint("<color=red>你抓到了一个目标!</color>", 5);
-                _ = _scp106Catchers.Remove(ev.Player);
+                                _ = _scp106Catchers.Remove(ev.Player);
             }
         }
         public static void HandleScpStandHeal(Player player)

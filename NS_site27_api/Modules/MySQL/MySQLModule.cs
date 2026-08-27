@@ -55,8 +55,7 @@ namespace NS_site27_api.Modules.MySQL
                 using var reader = await cmd.ExecuteReaderAsync();
                 if (await reader.ReadAsync())
                 {
-                    // 获取所有列序号
-                    int uidOrd = reader.GetOrdinal("uid");
+                                        int uidOrd = reader.GetOrdinal("uid");
                     int nameOrd = reader.GetOrdinal("name");
                     int expOrd = reader.GetOrdinal("experience");
                     int mulOrd = reader.GetOrdinal("experience_multiplier");

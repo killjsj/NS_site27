@@ -13,8 +13,7 @@ namespace NS_site27_api.Modules.Lobby
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
-            // start define of VisualElement
-            DisplayElement VisualElement = canvas.AddElement();
+                        DisplayElement VisualElement = canvas.AddElement();
             VisualElement.BaseElement.name = "VisualElement";
             VisualElement.Position.Position = Position.Absolute;
             VisualElement.Size.Width = Length.Percent(100f);
@@ -23,8 +22,7 @@ namespace NS_site27_api.Modules.Lobby
             VisualElement.Position.Left = 0f;
             VisualElement.Position.Right = 0f;
 
-            // start define of PlayerCount
-            DisplayElement PlayerCount = VisualElement.AddElement();
+                        DisplayElement PlayerCount = VisualElement.AddElement();
             PlayerCount.BaseElement.name = "PlayerCount";
             PlayerCount.Position.Position = Position.Absolute;
             PlayerCount.Position.Left = Length.Percent(40f);
@@ -35,8 +33,7 @@ namespace NS_site27_api.Modules.Lobby
             PlayerCount.Text.FontSize = 27f;
             PlayerCount.Text.Color = new Color(1f, 0.7529412f, 0f, 1f);
 
-            // start define of PlayerCountText
-            DisplayText PlayerCountText = PlayerCount.AddText("");
+                        DisplayText PlayerCountText = PlayerCount.AddText("");
             PlayerCountText.BaseElement.name = "PlayerCountText";
             PlayerCountText.Text.Color = new Color(0.4666667f, 0f, 1f, 1f);
 

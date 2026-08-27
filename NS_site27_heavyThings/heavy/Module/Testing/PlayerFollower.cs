@@ -18,8 +18,7 @@ namespace Next_generationSite_27.UnionP
         private const float DefaultSpeed = 30f;
 
         private const float RepathInterval = 0.4f;
-        private const float LookAheadDistance = 2.5f; // 前瞻距离，大于路径点间距可防止震荡
-        private const float StuckCheckInterval = 0.8f;
+        private const float LookAheadDistance = 2.5f; private const float StuckCheckInterval = 0.8f;
         private const float StuckMoveThreshold = 0.25f;
         private const int MaxStuckAttempts = 3;
 
@@ -38,7 +37,7 @@ namespace Next_generationSite_27.UnionP
         private Vector3 _lastStuckSample;
         private float _stuckTimer;
         private int _stuckAttempts;
-        public Func<ReferenceHub,Vector3> TargetPos = null;
+        public Func<ReferenceHub, Vector3> TargetPos = null;
 
         public void Init(ReferenceHub playerToFollow, float maxDistance = 20f, float minDistance = 0.6f, float speed = 30f)
         {
@@ -60,8 +59,7 @@ namespace Next_generationSite_27.UnionP
                 Destroy(this);
                 return;
             }
-            if (
-                !(_hubToFollow.roleManager.CurrentRole is IFpcRole))
+            if (!(_hubToFollow.roleManager.CurrentRole is IFpcRole))
             {
                 _hubToFollow = OwnerHub;
             }
@@ -127,7 +125,6 @@ namespace Next_generationSite_27.UnionP
 
             if (PathModule.TryFindPathAtoB(from, to, out List<Vector3> corners, out _))
             {
-                // 跳过第一个点（通常就是起点），避免原地抖动
                 for (int i = 1; i < corners.Count; i++)
                     _waypoints.Add(corners[i]);
             }
@@ -139,16 +136,11 @@ namespace Next_generationSite_27.UnionP
                 Draw.Path(_waypoints.ToArray(), Color.red, RepathInterval + 0.001f);
         }
 
-        /// <summary>
-        /// 计算路径上距离角色前方 LookAheadDistance 处的目标点。
-        /// 该方法从根本上避免在两个路径点间来回震荡。
-        /// </summary>
         private Vector3 GetLookAheadPoint(Vector3 pos, Vector3 fallbackGoal)
         {
             if (_waypoints.Count == 0)
                 return fallbackGoal;
 
-            // 从角色当前位置开始，沿路径累加距离，找到第一个超过前瞻距离的点
             float accumulated = 0f;
             Vector3 previousPoint = pos;
 
@@ -160,7 +152,6 @@ namespace Next_generationSite_27.UnionP
 
                 if (accumulated >= LookAheadDistance)
                 {
-                    // 在当前线段上插值得到精确目标点
                     float overshoot = accumulated - LookAheadDistance;
                     float t = 1f - overshoot / segmentLength;
                     return Vector3.Lerp(previousPoint, currentPoint, t);
@@ -169,13 +160,9 @@ namespace Next_generationSite_27.UnionP
                 previousPoint = currentPoint;
             }
 
-            // 路径剩余长度不足前瞻距离，直接返回最终目标
             return _waypoints[_waypoints.Count - 1];
         }
 
-        /// <summary>
-        /// 移动角色并使其始终面向玩家。
-        /// </summary>
         private void Step(IFpcRole fpc, Vector3 pos, Vector3 targetPos, float speed, Vector3 faceTarget)
         {
             if (DebugDrawPath)
@@ -194,9 +181,6 @@ namespace Next_generationSite_27.UnionP
             FaceTarget(fpc, faceTarget);
         }
 
-        /// <summary>
-        /// 设置角色水平朝向，使其面向指定目标位置。
-        /// </summary>
         private void FaceTarget(IFpcRole fpc, Vector3 targetPos)
         {
             Vector3 dirToTarget = targetPos - transform.position;
@@ -235,7 +219,6 @@ namespace Next_generationSite_27.UnionP
             {
                 if (OwnerHub != null)
                 {
-                    // 切换跟随目标为主人
                     _hubToFollow = OwnerHub;
 
                     if (_hub.roleManager.CurrentRole is IFpcRole fpcr)
@@ -264,7 +247,6 @@ namespace Next_generationSite_27.UnionP
             {
                 Vector3 toWp = wp - pos;
                 toWp.y = 0f;
-                // 只考虑前方（点积大于0）
                 if (Vector3.Dot(transform.forward, toWp.normalized) > 0.2f)
                 {
                     float sqr = toWp.sqrMagnitude;

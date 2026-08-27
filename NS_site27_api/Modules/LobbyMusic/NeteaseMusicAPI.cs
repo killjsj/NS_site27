@@ -12,15 +12,7 @@ namespace NeteaseMusicAPI
 {
     public enum QualityLevel
     {
-        STANDARD,   // 标准音质
-        EXHIGH,     // 极高音质
-        LOSSLESS,   // 无损音质
-        HIRES,      // Hi-Res音质
-        SKY,        // 沉浸环绕声
-        JYEFFECT,   // 高清环绕声
-        JYMASTER,   // 超清母带
-        DOLBY       // 杜比全景声
-    }
+        STANDARD,           EXHIGH,             LOSSLESS,           HIRES,              SKY,                JYEFFECT,           JYMASTER,           DOLBY           }
 
     public class APIConstants
     {
@@ -37,8 +29,7 @@ namespace NeteaseMusicAPI
         public static readonly string QR_UNIKEY_API = "https://interface3.music.163.com/eapi/login/qrcode/unikey";
         public static readonly string QR_LOGIN_API = "https://interface3.music.163.com/eapi/login/qrcode/client/login";
 
-        // 默认配置
-        public static readonly Dictionary<string, string> DEFAULT_CONFIG = new()
+                public static readonly Dictionary<string, string> DEFAULT_CONFIG = new()
         {
             {"os", "pc"},
             {"appver", ""},
@@ -115,37 +106,23 @@ namespace NeteaseMusicAPI
     {
         public long id { get; set; }
         public string url { get; set; }
-        public int br { get; set; }           // 比特率
-        public long size { get; set; }        // 文件大小
-        public string md5 { get; set; }
+        public int br { get; set; }                   public long size { get; set; }                public string md5 { get; set; }
         public int code { get; set; }
-        public int expi { get; set; }         // 过期时间（秒）
-        public string type { get; set; }      // 文件类型（如mp3）
-        public double gain { get; set; }      // 增益
-        public double peak { get; set; }      // 峰值
-        public double closedGain { get; set; }
+        public int expi { get; set; }                 public string type { get; set; }              public double gain { get; set; }              public double peak { get; set; }              public double closedGain { get; set; }
         public double closedPeak { get; set; }
-        public int fee { get; set; }          // 费用类型（0:免费,1:会员,4:付费,8:不存在）
-        public object uf { get; set; }        // 用户付费信息
-        public int payed { get; set; }        // 是否已付费（0:否,1:是）
-        public int flag { get; set; }
-        public bool canExtend { get; set; }   // 是否可扩展
-        public object freeTrialInfo { get; set; }
-        public string level { get; set; }     // 音质等级
-        public string encodeType { get; set; }// 编码类型
-        public object channelLayout { get; set; }
+        public int fee { get; set; }                  public object uf { get; set; }                public int payed { get; set; }                public int flag { get; set; }
+        public bool canExtend { get; set; }           public object freeTrialInfo { get; set; }
+        public string level { get; set; }             public string encodeType { get; set; }        public object channelLayout { get; set; }
         public FreeTrialPrivilege freeTrialPrivilege { get; set; }
         public FreeTimeTrialPrivilege freeTimeTrialPrivilege { get; set; }
         public int urlSource { get; set; }
         public int rightSource { get; set; }
         public object podcastCtrp { get; set; }
         public object effectTypes { get; set; }
-        public int time { get; set; }         // 歌曲时长（毫秒）
-        public object message { get; set; }
+        public int time { get; set; }                 public object message { get; set; }
         public object levelConfuse { get; set; }
         public object accompany { get; set; }
-        public int sr { get; set; }           // 采样率
-        public object auEff { get; set; }
+        public int sr { get; set; }                   public object auEff { get; set; }
         public object immerseType { get; set; }
         public int beatType { get; set; }
         public string musicId { get; set; }

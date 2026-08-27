@@ -4,16 +4,13 @@ using UnityEngine.AI;
 
 namespace Unity.AI.Navigation
 {
-    /// <summary> Component used by the NavMesh building process to assign a different area type to the region inside the specified volume.</summary>
-    [ExecuteAlways]
+        [ExecuteAlways]
     [AddComponentMenu("Navigation/NavMesh Modifier Volume", 31)]
     public class NavMeshModifierVolume : MonoBehaviour
     {
 #pragma warning disable 0414
 
-        // Serialized version is used to upgrade older serialized data to the current format.
-        // Version 0: Initial version.
-        [SerializeField, HideInInspector]
+                        [SerializeField, HideInInspector]
         byte m_SerializedVersion = 0;
 #pragma warning restore 0414
 
@@ -26,28 +23,17 @@ namespace Unity.AI.Navigation
         [SerializeField]
         int m_Area;
 
-        /// <summary> Gets or sets the dimensions of the cuboid modifier volume. </summary>
-        /// <remarks> The dimensions apply in the local space of the GameObject. </remarks>
-        public Vector3 size { get { return m_Size; } set { m_Size = value; } }
+                        public Vector3 size { get { return m_Size; } set { m_Size = value; } }
 
-        /// <summary> Gets or sets the center position of the modifier volume. </summary>
-        /// <remarks> The position is relative to the GameObject transform. </remarks>
-        public Vector3 center { get { return m_Center; } set { m_Center = value; } }
+                        public Vector3 center { get { return m_Center; } set { m_Center = value; } }
 
-        /// <summary> Gets or sets the area type that will be enforced by the volume during the generation of the NavMesh. </summary>
-        /// <remarks> The range of useful values is from 0 to 31. Higher values always take precedence over lower values in the case when more volumes intersect each other. A value of 1 has the highest priority over all the other types and it means "not walkable". Consequently, a volume with an <c>area</c> of 1 produces a hole in the NavMesh. This property has the same meaning as <see cref="NavMeshBuildSource.area"/>.</remarks>
-        /// <seealso href="https://docs.unity3d.com/Manual/nav-AreasAndCosts.html"/>
-        public int area { get { return m_Area; } set { m_Area = value; } }
+                                public int area { get { return m_Area; } set { m_Area = value; } }
 
-        // List of agent types the modifier is applied for.
-        // Special values: empty == None, m_AffectedAgents[0] =-1 == All.
-        [SerializeField]
-        List<int> m_AffectedAgents = new List<int>(new int[] { -1 }); // Default value is All
-
+                        [SerializeField]
+        List<int> m_AffectedAgents = new List<int>(new int[] { -1 }); 
         static readonly List<NavMeshModifierVolume> s_NavMeshModifiers = new List<NavMeshModifierVolume>();
 
-        /// <summary> Gets the list of all the <see cref="NavMeshModifierVolume"/> components that are currently active in the scene. </summary>
-        public static List<NavMeshModifierVolume> activeModifiers
+                public static List<NavMeshModifierVolume> activeModifiers
         {
             get { return s_NavMeshModifiers; }
         }
@@ -69,10 +55,7 @@ namespace Unity.AI.Navigation
             s_NavMeshModifiers.Remove(this);
         }
 
-        /// <summary> Verifies whether this modifier volume can affect in any way the generation of a NavMesh for a given agent type. </summary>
-        /// <param name="agentTypeID"> The identifier of an agent type that originates from <see cref="NavMeshBuildSettings.agentTypeID"/>. </param>
-        /// <returns> <c>true</c> if this component can affect the NavMesh built for the given agent type; otherwise <c>false</c>. </returns>
-        public bool AffectsAgentType(int agentTypeID)
+                                public bool AffectsAgentType(int agentTypeID)
         {
             if (m_AffectedAgents.Count == 0)
                 return false;

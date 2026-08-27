@@ -11,38 +11,30 @@ using Time = UnityEngine.Time;
 
 namespace NS_site27_api.Modules.Chat
 {
-    // ==================== 配置 ====================
-    public class ChatConfig : ModuleConfigBase
+        public class ChatConfig : ModuleConfigBase
     {
-        // 原有
-        public float ChatFontSize { get; set; } = 23f;
+                public float ChatFontSize { get; set; } = 23f;
 
-        // 公共聊天
-        public int MaxPublicChatLines { get; set; } = 3;
+                public int MaxPublicChatLines { get; set; } = 3;
         public float PublicChatDuration { get; set; } = 3f;
 
-        // 团队聊天
-        public int MaxTeamChatLines { get; set; } = 3;
+                public int MaxTeamChatLines { get; set; } = 3;
         public float TeamChatDuration { get; set; } = 3f;
 
-        // 管理反馈
-        public int MaxAdminChatLines { get; set; } = 5;
+                public int MaxAdminChatLines { get; set; } = 5;
         public float AdminChatDuration { get; set; } = 5f;
 
         public int MaxServerBroadcastLines { get; set; } = 3;
         public float ServerBroadcastDuration { get; set; } = 10f;
 
-        // 冷却
-        public int MaxMessagesPerCooldown { get; set; } = 3;
+                public int MaxMessagesPerCooldown { get; set; } = 3;
         public float CooldownWindow { get; set; } = 10f;
         public float CooldownDuration { get; set; } = 10f;
     }
 
-    // ==================== 消息结构 ====================
-    public struct ChatMessage
+        public struct ChatMessage
     {
-        public string InputText;  // 已格式化好（含颜色）的完整行
-        public float StartTime;
+        public string InputText;          public float StartTime;
         public Player player;
         public bool isFirstProcess = true;
         public ChatMessage(string text, Player player)
@@ -59,8 +51,7 @@ namespace NS_site27_api.Modules.Chat
         Admin,
         ServerBroadcast
     }
-    // ==================== 管理器 ====================
-    public static class ChatManager
+        public static class ChatManager
     {
         public static ChatConfig _cfg;
         public class TimeSorter : IComparer<ChatMessage>
@@ -71,8 +62,7 @@ namespace NS_site27_api.Modules.Chat
             }
         }
         public static TimeSorter _timeSorter = new();
-        // 显示列表
-        public static List<ChatMessage> ChatList = new();
+                public static List<ChatMessage> ChatList = new();
         public static List<ChatMessage> AdminList = new();
         public static List<ChatMessage> ServerList = new();
         public static Dictionary<Team, List<ChatMessage>> TeamList = new()
@@ -85,18 +75,15 @@ namespace NS_site27_api.Modules.Chat
             { Team.OtherAlive, new List<ChatMessage>() },
         };
 
-        // 冷却相关
-        public static readonly Dictionary<string, float> cooldownEndTimes = new();
+                public static readonly Dictionary<string, float> cooldownEndTimes = new();
         public static readonly Dictionary<string, List<float>> recentMessageTimes = new();
         public static readonly List<ChatMessage> FirstProcesses = new();
 
-        // 阵营颜色
-        public static readonly Dictionary<Team, string> teamColors = new()
+                public static readonly Dictionary<Team, string> teamColors = new()
         {
             { Team.SCPs, "#FF0000" },
             { Team.FoundationForces, "#0096FF" },
-            { Team.Scientists, "#00FFFF" },        // 与MTF同色
-            { Team.ChaosInsurgency, "#00AA00" },
+            { Team.Scientists, "#00FFFF" },                    { Team.ChaosInsurgency, "#00AA00" },
             { Team.ClassD, "#FF8C00" },
             { Team.Dead, "#808080" },
             { Team.Flamingos, "#FF69B4" },
@@ -108,21 +95,18 @@ namespace NS_site27_api.Modules.Chat
             _cfg = config;
         }
 
-        // ---------- 冷却检查 ----------
-        public static bool CanSendMessage(Player player, out float cooldownRemaining)
+                public static bool CanSendMessage(Player player, out float cooldownRemaining)
         {
             string userId = player.UserId;
             float now = Time.time;
 
-            // 检查是否在硬冷却期
-            if (cooldownEndTimes.TryGetValue(userId, out float endTime) && now < endTime)
+                        if (cooldownEndTimes.TryGetValue(userId, out float endTime) && now < endTime)
             {
                 cooldownRemaining = endTime - now;
                 return false;
             }
 
-            // 清理过期记录并统计最近窗口内的次数
-            if (!recentMessageTimes.TryGetValue(userId, out var times))
+                        if (!recentMessageTimes.TryGetValue(userId, out var times))
             {
                 times = new List<float>();
                 recentMessageTimes[userId] = times;

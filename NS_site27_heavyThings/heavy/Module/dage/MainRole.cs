@@ -67,9 +67,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 return false;
             }
 
-            // Cleared first: a second run would otherwise keep the previous run's players, teleporting and
-            // killing them twice and inflating the announced count.
-            ZhuXian.guas.Clear();
+                                    ZhuXian.guas.Clear();
             foreach (var i in MainRole.r.TrackedPlayers)
             {
                 ZhuXian.guas.Add(i);

@@ -40,8 +40,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             /*
             canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) 
             */
-            // start define of VisualElement
-            DisplayElement VisualElement = canvas.AddElement();
+                        DisplayElement VisualElement = canvas.AddElement();
             VisualElement.BaseElement.name = "VisualElement";
             VisualElement.Flex.Grow = 1f;
             VisualElement.Position.Position = Position.Absolute;
@@ -53,8 +52,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             /*
             canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) -> specUiText(Label - id:2, 1th child of VisualElement) 
             */
-            // start define of specUiText
-            DisplayText specUiText = VisualElement.AddText("");
+                        DisplayText specUiText = VisualElement.AddText("");
             specUiText.BaseElement.name = "specUiText";
             specUiText.Background.Color = new Color(0.6509804f, 1f, 0.6666667f, 0.471f);
             specUiText.Text.Color = Color.black;
@@ -80,8 +78,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                         if (!string.IsNullOrEmpty(p.UniqueRole))
                         {
                             var r = CustomRole.Get(p.UniqueRole);
-                            // 修复：防止 CustomRole.Get 返回 null 导致空引用
-                            if (r != null)
+                                                        if (r != null)
                             {
                                 showing += $"你是: {p.UniqueRole}\n{r.Description}\n";
                             }
@@ -163,8 +160,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
     }
     public abstract class CustomRolePlus : CustomRole
     {
-        // 所有玩家共享的能力模板
-        public List<AbilityBase> abilities = new();
+                public List<AbilityBase> abilities = new();
 
         protected override void ShowMessage(Player player)
         {
@@ -468,8 +464,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         protected virtual void OnChangingAttachment(ChangingAttachmentsEventArgs ev) { }
 
-        // 修复：实现基于 ClipSize 的手动装填，避免完全无法装弹
-        private void OnInternalReloading(ReloadingWeaponEventArgs ev)
+                private void OnInternalReloading(ReloadingWeaponEventArgs ev)
         {
             if (!Check(ev.Item))
             {
@@ -478,8 +473,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             if (ClipSize > 0)
             {
-                ev.IsAllowed = false; // 阻止原版装填，手动控制弹匣容量
-
+                ev.IsAllowed = false; 
                 int currentMag = ev.Firearm.MagazineAmmo;
                 int ammoAvailable = ev.Player.GetAmmo(ev.Firearm.AmmoType);
                 int needed = ClipSize - currentMag;
@@ -489,8 +483,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                     int loadAmount = Mathf.Min(needed, ammoAvailable);
                     ev.Firearm.MagazineAmmo = (byte)(currentMag + loadAmount);
                     ev.Player.SetAmmo(ev.Firearm.AmmoType, (ushort)(ammoAvailable - loadAmount));
-                    OnReloading(ev); // 触发自定义装填事件
-                }
+                    OnReloading(ev);                 }
             }
             else
             {
@@ -498,8 +491,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             }
         }
 
-        // 保留原有逻辑，以备在某些特殊情形下仍被触发（如通过命令强制装填）
-        private void OnInternalReloaded(ReloadedWeaponEventArgs ev)
+                private void OnInternalReloaded(ReloadedWeaponEventArgs ev)
         {
             if (!Check(ev.Item))
             {
@@ -546,8 +538,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             }
         }
 
-        // 修复：移除对 CurrentItem 的检查，仅依赖 DamageHandler 中的物品信息
-        private void OnInternalHurting(HurtingEventArgs ev)
+                private void OnInternalHurting(HurtingEventArgs ev)
         {
             if (ev.Attacker == null || ev.Player == null)
             {
@@ -556,8 +547,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             if (ev.Attacker == ev.Player)
             {
-                return; // 防止自伤触发自定义伤害
-            }
+                return;             }
 
             if (ev.DamageHandler == null)
             {
@@ -598,8 +588,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
         private static bool _availabilityCheckerStarted = false;
         private static bool _staticEventsSubscribed = false;
 
-        // 静态方法用于回合重启清理，避免每个实例重复订阅
-        private static void OnRoundRestart()
+                private static void OnRoundRestart()
         {
             ItemMapping.Clear();
             PlayerAbilitySet.PlayerAbilities.Clear();
@@ -773,8 +762,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
         protected override void ShowPickedUpMessage(Player player) { }
 
-        // 修复：IsAvailable 现在基于传入的 item 参数，而不是玩家的当前手持物品
-        public virtual bool IsAvailable(Player player, Item item)
+                public virtual bool IsAvailable(Player player, Item item)
         {
             return Check(item);
         }
@@ -795,8 +783,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
         {
             base.SubscribeEvents();
 
-            // 修复：静态事件只订阅一次，避免重复清理
-            if (!_staticEventsSubscribed)
+                        if (!_staticEventsSubscribed)
             {
                 Exiled.Events.Handlers.Server.RestartingRound += OnRoundRestart;
                 _staticEventsSubscribed = true;
@@ -812,8 +799,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
         protected override void UnsubscribeEvents()
         {
             base.UnsubscribeEvents();
-            // 静态事件不在此取消，保持全局存活，由插件卸载时处理
-            ItemPickupBase.OnPickupDestroyed -= ItemPickupBase_OnPickupDestroyed;
+                        ItemPickupBase.OnPickupDestroyed -= ItemPickupBase_OnPickupDestroyed;
             InventoryExtensions.OnItemRemoved -= ItemBase_OnItemRemoved;
             PlayerEvents.PickingUpItem -= PlayerEvents_PickingUpItem;
             PlayerEvents.UsedItem -= OnUsingItem;
@@ -1027,8 +1013,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 return;
             }
 
-            // 1. 清理掉落物品对应的所有能力实例
-            if (ItemAbilities.TryGetValue(ev.Item.Serial, out var itemAbilities))
+                        if (ItemAbilities.TryGetValue(ev.Item.Serial, out var itemAbilities))
             {
                 List<ItemAbilityBase> toRemove = new(itemAbilities);
                 foreach (var ability in toRemove)
@@ -1058,8 +1043,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
             RefreshPlayersItems(ev.Player);
             RemoveSerialFromAllPlayerItems(ev.Item.Serial);
 
-            // 2. 判断是否还有需要显示 UI 的理由（剩余物品或能力）
-            bool hasVisible = false;
+                        bool hasVisible = false;
             if (PlayerItems.TryGetValue(ev.Player, out var pItems) && pItems.Any(t => t.Item1 != ev.Item.Serial))
             {
                 hasVisible = true;
@@ -1069,15 +1053,13 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 hasVisible = true;
             }
 
-            // 3. 强制刷新 UI：先移除，若仍有可见内容则重新添加
-            CustomRolePlus.RemoveAbilityMessage(ev.Player);
+                        CustomRolePlus.RemoveAbilityMessage(ev.Player);
             if (hasVisible)
             {
                 CustomRolePlus.AddAbilityMessage(ev.Player);
             }
 
-            // 4. 在物品真正从玩家背包移除后再刷新一次，避免掉落事件触发时库存状态仍旧包含该物品
-            _ = Timing.CallDelayed(0.1f, () =>
+                        _ = Timing.CallDelayed(0.1f, () =>
             {
                 RefreshPlayersItems(ev.Player);
                 RefreshAbilityMessage(ev.Player);
@@ -1136,8 +1118,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                 armor.AmmoLimits = AmmoLimits;
             }
 
-            // 修复：正确判断 CategoryLimits 是否非空
-            if (CategoryLimits.Count != 0)
+                        if (CategoryLimits.Count != 0)
             {
                 armor.CategoryLimits = CategoryLimits;
             }

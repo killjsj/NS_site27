@@ -296,8 +296,7 @@ namespace NS_site27_api.Modules.Duel
                 bt = BattleType.Gun;
             }
 
-            //BUG: possible duplicate request
-            DuelManager.BattleReqs.Add(new BattleReq { From = player, FromBackup = player.UserId, To = target, ToBackup = target.UserId, Type = bt, stopwatch = Stopwatch.StartNew() });
+                        DuelManager.BattleReqs.Add(new BattleReq { From = player, FromBackup = player.UserId, To = target, ToBackup = target.UserId, Type = bt, stopwatch = Stopwatch.StartNew() });
             target.AddHint("FlightRequest", 10f, x => new MsgUpdateResult() { Content = $"<size=27>{player.Nickname}发起决斗!类型:{bt}\n.acceptBattle .refuseBattle</size>", Title = "决斗", NoticeCircleColor = Color.green });
             response = $"已发送,类型:{bt}"; return true;
         }

@@ -99,8 +99,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
                 return true;
             }
 
-            //BUG: Spawn protect check may not properly disable damage under certain edge cases
-            return false;
+                        return false;
         }
 
         private static IFFManager GetFFManager()

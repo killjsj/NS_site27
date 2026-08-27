@@ -8,20 +8,7 @@ using System.IO;
 
 namespace NS_site27_heavy.heavy.Module.audio
 {
-    /// <summary>
-    /// Loads an audio file from disk into the PCM format LabApi's speaker wants:
-    /// mono, non-interleaved, <see cref="AudioTransmitter.SampleRate"/> Hz, samples in [-1, 1].
-    ///
-    /// <para>
-    /// Everything here is pure managed, DropSo it works on a Linux/Mono server. That is why MP3 goes
-    /// through <see cref="MpegFile"/> (NLayer) rather than NAudio: NAudio's <c>Mp3FileReader</c>
-    /// and <c>AudioFileReader</c> decode via the Windows ACM subsystem, and
-    /// <c>MediaFoundationReader</c> via Media Foundation — both throw on Linux.
-    /// <c>WaveFileReader</c> and <c>WdlResamplingSampleProvider</c> live in NAudio.Core and are
-    /// managed, DropSo they are fine.
-    /// </para>
-    /// </summary>
-    public static class AudioFileLoader
+                                                        public static class AudioFileLoader
     {
         public const int TargetSampleRate = AudioTransmitter.SampleRate;
 
@@ -30,14 +17,7 @@ namespace NS_site27_heavy.heavy.Module.audio
 
         private static readonly object Sync = new();
 
-        /// <summary>
-        /// Decodes <paramref name="path"/> into mono PCM at <see cref="TargetSampleRate"/>.
-        /// Results are cached by path; the returned array is shared and must be treated as
-        /// read-only (LabApi only reads from it).
-        /// </summary>
-        /// <exception cref="FileNotFoundException"/>
-        /// <exception cref="InvalidDataException"/>
-        public static float[] LoadMono(string path)
+                                                                public static float[] LoadMono(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -84,8 +64,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return result;
         }
 
-        /// <summary>Same as <see cref="LoadMono"/> but returns false instead of throwing.</summary>
-        public static bool TryLoadMono(string path, out float[] samples, out string error)
+                public static bool TryLoadMono(string path, out float[] samples, out string error)
         {
             samples = null;
             error = null;
@@ -102,8 +81,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             }
         }
 
-        /// <summary>Drops every decoded clip. Call on plugin disable.</summary>
-        public static void Reset()
+                public static void Reset()
         {
             lock (Sync)
             {
@@ -111,32 +89,25 @@ namespace NS_site27_heavy.heavy.Module.audio
             }
         }
 
-        // ---------------------------------------------------------------- decoding
-
-        /// <summary>WAV via NAudio. Handles 8/16/24/32-bit PCM and IEEE float transparently.</summary>
-        private static float[] DecodeWav(string path, out int sampleRate, out int channels)
+        
+                private static float[] DecodeWav(string path, out int sampleRate, out int channels)
         {
             using WaveFileReader reader = new(path);
             ISampleProvider provider = reader.ToSampleProvider();
             sampleRate = provider.WaveFormat.SampleRate;
             channels = provider.WaveFormat.Channels;
 
-            // Length is in bytes; 4 bytes per float sample after conversion.
-            int estimate = (int)Math.Min((reader.Length / 2) + 1024, int.MaxValue);
+                        int estimate = (int)Math.Min((reader.Length / 2) + 1024, int.MaxValue);
             return ReadAll(provider, estimate);
         }
 
-        /// <summary>MP3 via NLayer. Managed decoder, no ACM / Media Foundation dependency.</summary>
-        private static float[] DecodeMp3(string path, out int sampleRate, out int channels)
+                private static float[] DecodeMp3(string path, out int sampleRate, out int channels)
         {
             using MpegFile mp3 = new(path);
             sampleRate = mp3.SampleRate;
             channels = mp3.Channels;
 
-            // StereoMode.DownmixToMono exists, but Channels keeps reporting the file's real
-            // channel count, DropSo downmixing here would double-apply. Read interleaved instead
-            // and let Downmix handle it.
-            float[] buffer = new float[16384];
+                                                float[] buffer = new float[16384];
             float[] result = new float[Math.Max(16384, (int)Math.Min(mp3.Length, 1 << 24))];
             int total = 0;
 
@@ -196,8 +167,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             Array.Resize(ref array, size);
         }
 
-        // ---------------------------------------------------------------- shaping
-
+        
         private static float[] Downmix(float[] interleaved, int channels)
         {
             int frames = interleaved.Length / channels;
@@ -219,11 +189,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return mono;
         }
 
-        /// <summary>
-        /// Resamples with NAudio's WDL resampler — managed, and much better quality than the
-        /// linear interpolation you would otherwise hand-roll.
-        /// </summary>
-        private static float[] Resample(float[] mono, int sourceRate)
+                                        private static float[] Resample(float[] mono, int sourceRate)
         {
             ISampleProvider source = new FloatArraySampleProvider(mono, sourceRate, 1);
             ISampleProvider resampler = new WdlResamplingSampleProvider(source, TargetSampleRate);
@@ -232,8 +198,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return ReadAll(resampler, estimate);
         }
 
-        /// <summary>Feeds an existing float buffer into the NAudio pipeline.</summary>
-        private sealed class FloatArraySampleProvider : ISampleProvider
+                private sealed class FloatArraySampleProvider : ISampleProvider
         {
             private readonly float[] _data;
             private int _position;

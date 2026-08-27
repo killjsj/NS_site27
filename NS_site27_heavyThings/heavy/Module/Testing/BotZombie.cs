@@ -94,26 +94,17 @@ null
             );
         }
         private Player _currentFollowTarget;
-        //
-        // 摘要:
-        //     Follow a specific player.
-        //
-        // 参数:
-        //   player:
-        //     the Player to follow.
-        public void Follow(Player player)
+                                                                public void Follow(Player player)
         {
             if(Zombie.GameObject == null) return;
             var follower = Zombie.GameObject.GetComponent<PlayerFollower>();
             if (follower == null)
                 follower = Zombie.GameObject.AddComponent<PlayerFollower>();
 
-            // 每次设置主人和卡死回调（确保最新）
-            follower.OwnerHub = Owner.ReferenceHub;
+                        follower.OwnerHub = Owner.ReferenceHub;
             follower.OnStuck = HandleStuck;
             follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
-            // 只有当目标改变或组件尚未初始化时才重新 Init
-            if (_currentFollowTarget != player || !follower.enabled)
+                        if (_currentFollowTarget != player || !follower.enabled)
             {
                 follower.Init(player.ReferenceHub);
                 _currentFollowTarget = player;
@@ -128,8 +119,7 @@ null
         {
             if (Zombie == null || Zombie.GameObject == null) return;
 
-            // 若有正在追踪的目标，先放弃
-            if (tracking)
+                        if (tracking)
             {
                 tracking = false;
                 if (CurrentTarget != null)
@@ -152,10 +142,8 @@ null
             follower.OnStuck = HandleStuck;
             follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
 
-            // 使用 Owner 作为虚拟目标，确保 PlayerFollower 内部检查通过
-            follower.Init(Owner.ReferenceHub, LockOut + 10f, BiteRange, GetZombieSpeed());
-            _currentFollowTarget = null; // 表示当前不是跟随具体玩家
-        }
+                        follower.Init(Owner.ReferenceHub, LockOut + 10f, BiteRange, GetZombieSpeed());
+            _currentFollowTarget = null;         }
 
         private float GetZombieSpeed()
         {
@@ -164,8 +152,7 @@ null
             return 4f;
         }
 
-        // 修改 HandleStuck
-        private void HandleStuck()
+                private void HandleStuck()
         {
             tracking = false;
             if (CurrentTarget != null)
@@ -174,43 +161,24 @@ null
                 CurrentTarget = null;
             }
             _currentFollowTarget = Owner;
-            // 取消移动模式
-            _movingToPosition = false;
+                        _movingToPosition = false;
             _moveTargetPosition = null;
             Follow(Owner);
         }
         public MethodInfo serverSendRpcMethod;
-        //
-        // 摘要:
-        //     Follow a specific player.
-        //
-        // 参数:
-        //   player:
-        //     the Player to follow.
-        //
-        //   maxDistance:
-        //     the max distance the npc will go.
-        //
-        //   minDistance:
-        //     the min distance the npc will go.
-        //
-        //   speed:
-        //     the speed the npc will go.
-        public void Follow(Player player, float maxDistance, float minDistance, float speed = 4f)
+                                                                                                                                        public void Follow(Player player, float maxDistance, float minDistance, float speed = 4f)
         {
             if (player.GameObject == null|| Zombie == null || Zombie.GameObject == null) return;
             var follower = Zombie.GameObject.GetComponent<PlayerFollower>();
             if (follower == null)
                 follower = Zombie.GameObject.AddComponent<PlayerFollower>();
 
-            // 每次设置主人和卡死回调（确保最新）
-            follower.OwnerHub = Owner.ReferenceHub;
+                        follower.OwnerHub = Owner.ReferenceHub;
             follower.OnStuck = HandleStuck;
             follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
 
 
-            // 只有当目标改变或组件尚未初始化时才重新 Init
-            if (_currentFollowTarget != player || !follower.enabled)
+                        if (_currentFollowTarget != player || !follower.enabled)
             {
                 follower.Init(player.ReferenceHub, maxDistance, minDistance, speed);
                 _currentFollowTarget = player;
@@ -221,12 +189,10 @@ null
         {
             while (Zombie.Role.Type == RoleTypeId.Scp0492)
             {
-                // Lock instance
-            if(Zombie.GameObject == null) yield break;
+                            if(Zombie.GameObject == null) yield break;
                 if (_movingToPosition)
                 {
-                    // 检查超时或主人离开过远
-                    try
+                                        try
                     {
                         if (Time.time - _moveStartTime > MaxMoveDuration ||
                             Vector3.Distance(Zombie.Position, Owner.Position) > OwnerMaxDistance)
@@ -237,8 +203,7 @@ null
                             continue;
                         }
 
-                        // 移动模式下继续积累仇恨，逻辑与 !tracking 分支类似
-                        foreach (var item in Player.Enumerable.Where(x => HitboxIdentity.IsEnemy(this.Zombie.ReferenceHub, x.ReferenceHub)))
+                                                foreach (var item in Player.Enumerable.Where(x => HitboxIdentity.IsEnemy(this.Zombie.ReferenceHub, x.ReferenceHub)))
                         {
                             if (Vector3.Distance(item.Position, Zombie.Position) <= 20f ||
                                 VisionInformation.GetVisionInformation(Zombie.ReferenceHub, Zombie.CameraTransform, item.Position, 0.02f, 50f, true, true, 0, true).IsLooking ||
@@ -252,8 +217,7 @@ null
 
                             if (Hatreds.TryGetValue(item, out var n) && n > LockIn)
                             {
-                                // 仇恨达标，切换为追踪
-                                Hatreds[item] = LockIn;
+                                                                Hatreds[item] = LockIn;
                                 _movingToPosition = false;
                                 _moveTargetPosition = null;
                                 tracking = true;
@@ -264,12 +228,10 @@ null
                             }
                         }
 
-                        // 若因触发追踪而取消移动，跳过本次剩余逻辑
-                        if (!_movingToPosition)
+                                                if (!_movingToPosition)
                             continue;
 
-                        // 移动模式下保持开门能力
-                        if (Zombie.CurrentRoom != null)
+                                                if (Zombie.CurrentRoom != null)
                         {
                             foreach (var door in Zombie.CurrentRoom.Doors)
                             {
@@ -436,4 +398,3 @@ null
     }
 }
 
-// i dont want to do this

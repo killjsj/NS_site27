@@ -6,25 +6,10 @@ using System.Reflection;
 
 namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 {
-    /// <summary>
-    /// Hooks <c>FpcServerPositionDistributor.GetNewSyncData(receiver, target, fpmm, isInvisible)</c>.
-    /// <para>
-    /// That method is the only place in the sync pipeline that sees both the receiver and the target,
-    /// DropSo it is where "show player X differently to client Y" belongs. It reads four values off the
-    /// live module; the prefix swaps in the fake ones, the original builds the packet, the finalizer
-    /// puts the real ones back.
-    /// </para>
-    /// <para>
-    /// Per-receiver delta compression is handled for free: the original writes whatever it built into
-    /// <c>PreviouslySent[receiver][target]</c>, DropSo the _bitPosition / _bitMouseLook dirty flags stay
-    /// consistent with what that specific client was actually sent.
-    /// </para>
-    /// </summary>
-    [HarmonyPatch]
+                                                            [HarmonyPatch]
     internal static class FpcSyncSpoofPatch
     {
-        // RelativePosition's setter is private and fires waypoint-change side effects, DropSo write the field.
-        private static readonly AccessTools.FieldRef<FirstPersonMovementModule, RelativePosition> RelPos =
+                private static readonly AccessTools.FieldRef<FirstPersonMovementModule, RelativePosition> RelPos =
             AccessTools.FieldRefAccess<FirstPersonMovementModule, RelativePosition>("_relativePosition");
 
         private static bool _swapped;
@@ -42,12 +27,10 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         private static void Prefix(ReferenceHub receiver, ReferenceHub target,
                                    FirstPersonMovementModule fpmm, bool isInvisible)
         {
-            Restore();               // defensive: a previous call that bailed before the finalizer
-
+            Restore();               
             if (fpmm == null || isInvisible)
             {
-                return;              // invisible targets are sent default(FpcSyncData) regardless
-            }
+                return;                          }
 
             if (!FpcSpoofer.TryGet(receiver, target, out FakeFpcState fake) || fake.IsEmpty)
             {
@@ -61,31 +44,25 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             _savedState = fpmm.SyncMovementState;
             _swapped = true;
 
-            // Position first: FpcSyncData encodes yaw relative to the position's waypoint
-            // (mLook.GetSyncValues(pos.WaypointId, ...)), DropSo the two must be swapped in this order.
-            if (fake.Position.HasValue)
+                                    if (fake.Position.HasValue)
             {
                 RelPos(fpmm) = new RelativePosition(fake.Position.Value);
             }
 
             if (fake.Yaw.HasValue)
             {
-                fpmm.MouseLook.CurrentHorizontal = fake.Yaw.Value;      // setter wraps into 0..360
-            }
+                fpmm.MouseLook.CurrentHorizontal = fake.Yaw.Value;                  }
 
             if (fake.Pitch.HasValue)
             {
-                fpmm.MouseLook.CurrentVertical = fake.Pitch.Value;      // setter clamps to +/-88
-            }
+                fpmm.MouseLook.CurrentVertical = fake.Pitch.Value;                  }
 
             if (fake.State.HasValue)
             {
-                fpmm.CurrentMovementState = fake.State.Value;           // public setter -> SyncMovementState
-            }
+                fpmm.CurrentMovementState = fake.State.Value;                       }
         }
 
-        // Runs like a finally block: also fires if the original throws.
-        private static void Finalizer()
+                private static void Finalizer()
         {
             Restore();
         }

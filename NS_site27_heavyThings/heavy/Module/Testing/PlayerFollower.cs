@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Exiled.API.Features;
 using FacilityNavigation;
@@ -13,7 +14,7 @@ namespace Next_generationSite_27.UnionP
     public class PlayerFollower : MonoBehaviour
     {
         private const float DefaultMaxDistance = 20f;
-        private const float DefaultMinDistance = 1.75f;
+        private const float DefaultMinDistance = 0.6f;
         private const float DefaultSpeed = 30f;
 
         private const float RepathInterval = 0.4f;
@@ -37,8 +38,9 @@ namespace Next_generationSite_27.UnionP
         private Vector3 _lastStuckSample;
         private float _stuckTimer;
         private int _stuckAttempts;
+        public Func<ReferenceHub,Vector3> TargetPos = null;
 
-        public void Init(ReferenceHub playerToFollow, float maxDistance = 20f, float minDistance = 1.75f, float speed = 30f)
+        public void Init(ReferenceHub playerToFollow, float maxDistance = 20f, float minDistance = 0.6f, float speed = 30f)
         {
             _hub = GetComponent<ReferenceHub>();
             _hubToFollow = playerToFollow;
@@ -70,32 +72,36 @@ namespace Next_generationSite_27.UnionP
                 consume.IsInProgress)
                 return;
 
-            Vector3 goal = _hubToFollow.transform.position;
+            Vector3 goal = TargetPos?.Invoke(_hubToFollow) ?? _hubToFollow.transform.position;
             Vector3 pos = transform.position;
             float dist = Vector3.Distance(pos, goal);
 
             if (dist > _maxDistance)
             {
-                fpc.FpcModule.ServerOverridePosition(goal);
+                _hubToFollow = OwnerHub;
+
+                if (_hub.roleManager.CurrentRole is IFpcRole fpcr)
+                    fpcr.FpcModule.ServerOverridePosition(OwnerHub.transform.position);
+
                 ResetPath();
-                FaceTarget(fpc, goal); // 传送后立即面向玩家
+                _stuckAttempts = 0;
+                _nextRepathTime = 0f;
+                _lastStuckSample = OwnerHub.transform.position;
+
+                OnStuck?.Invoke();
                 return;
             }
 
             if (dist < _minDistance)
             {
                 ResetPath();
-                FaceTarget(fpc, goal); // 距离过近时仍然面向玩家
+                FaceTarget(fpc, goal);
                 return;
             }
 
             float speed = _speed;
-            if (_hub.roleManager.CurrentRole is ZombieRole zr &&
-                zr.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out var consumeAbility) &&
-                consumeAbility.IsInProgress)
-            {
-                speed = fpc.FpcModule.MaxMovementSpeed;
-            }
+            speed = fpc.FpcModule.VelocityForState(PlayerMovementState.Sprinting, false);
+
 
             if (Time.time >= _nextRepathTime)
             {
@@ -103,9 +109,8 @@ namespace Next_generationSite_27.UnionP
                 RebuildPath(pos, goal);
             }
 
-            // 使用前瞻点作为实际移动目标
             Vector3 moveTarget = GetLookAheadPoint(pos, goal);
-            Step(fpc, pos, moveTarget, speed, goal); // 传入玩家位置用于朝向
+            Step(fpc, pos, moveTarget, speed, goal);
             DetectStuck(pos);
         }
 
@@ -186,8 +191,6 @@ namespace Next_generationSite_27.UnionP
                 Vector3 next = pos + dir * (speed * Time.deltaTime);
                 fpc.FpcModule.Motor.ReceivedPosition = new RelativePosition(next);
             }
-
-            // 朝向玩家（无论是否移动）
             FaceTarget(fpc, faceTarget);
         }
 

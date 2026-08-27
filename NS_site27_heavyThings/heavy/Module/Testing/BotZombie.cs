@@ -52,6 +52,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AI;
 using Utils;
+using Utils.NonAllocLINQ;
 using static NS_site27_heavy.Modules.Weapons.SpeedBuildItem.SpeedBuilditem;
 using static UnityEngine.GraphicsBuffer;
 namespace Next_generationSite_27.UnionP
@@ -73,12 +74,19 @@ namespace Next_generationSite_27.UnionP
         public bool tracking = false;
         public float LockIn = 1f;
         public float DoorOpenRange = 2f;
-        public float BiteRange = 2f;
+        public float BiteRange = 1f;
         public float LockOut = 40f;
         public BetterZombie(Npc zombie, Player owner)
         {
             Zombie = zombie;
             Owner = owner;
+            serverSendRpcMethod = typeof(KeySubroutine<ZombieRole>).GetMethod(
+"OnKeyDown",
+BindingFlags.NonPublic | BindingFlags.Instance,
+null,
+new Type[] { },
+null
+);
             Timing.CallDelayed(0.05f, () =>
             {
                 Timing.RunCoroutine(Update());
@@ -95,6 +103,7 @@ namespace Next_generationSite_27.UnionP
         //     the Player to follow.
         public void Follow(Player player)
         {
+            if(Zombie.GameObject == null) return;
             var follower = Zombie.GameObject.GetComponent<PlayerFollower>();
             if (follower == null)
                 follower = Zombie.GameObject.AddComponent<PlayerFollower>();
@@ -102,7 +111,7 @@ namespace Next_generationSite_27.UnionP
             // 每次设置主人和卡死回调（确保最新）
             follower.OwnerHub = Owner.ReferenceHub;
             follower.OnStuck = HandleStuck;
-
+            follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
             // 只有当目标改变或组件尚未初始化时才重新 Init
             if (_currentFollowTarget != player || !follower.enabled)
             {
@@ -110,16 +119,67 @@ namespace Next_generationSite_27.UnionP
                 _currentFollowTarget = player;
             }
         }
+        private bool _movingToPosition = false;
+        private Vector3? _moveTargetPosition = null;
+        private float _moveStartTime = 0f;
+        private const float MaxMoveDuration = 10f;
+        private const float OwnerMaxDistance = 20f; 
+        public void MoveToPosition(Vector3 position)
+        {
+            if (Zombie == null || Zombie.GameObject == null) return;
+
+            // 若有正在追踪的目标，先放弃
+            if (tracking)
+            {
+                tracking = false;
+                if (CurrentTarget != null)
+                {
+                    Hatreds[CurrentTarget] = 0f;
+                    CurrentTarget = null;
+                }
+            }
+
+            _movingToPosition = true;
+            _moveTargetPosition = position;
+            _moveStartTime = Time.time;
+
+
+            var follower = Zombie.GameObject.GetComponent<PlayerFollower>();
+            if (follower == null)
+                follower = Zombie.GameObject.AddComponent<PlayerFollower>();
+
+            follower.OwnerHub = Owner.ReferenceHub;
+            follower.OnStuck = HandleStuck;
+            follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
+
+            // 使用 Owner 作为虚拟目标，确保 PlayerFollower 内部检查通过
+            follower.Init(Owner.ReferenceHub, LockOut + 10f, BiteRange, GetZombieSpeed());
+            _currentFollowTarget = null; // 表示当前不是跟随具体玩家
+        }
+
+        private float GetZombieSpeed()
+        {
+            if (Zombie.Role is Scp0492Role role)
+                return role.MovementSpeed;
+            return 4f;
+        }
+
+        // 修改 HandleStuck
         private void HandleStuck()
         {
             tracking = false;
             if (CurrentTarget != null)
             {
-                Hatreds[CurrentTarget] = 0f; // 清空仇恨，避免立即重新锁定
+                Hatreds[CurrentTarget] = 0f;
                 CurrentTarget = null;
             }
-            _currentFollowTarget = Owner; // 同步当前跟随目标为主人
+            _currentFollowTarget = Owner;
+            // 取消移动模式
+            _movingToPosition = false;
+            _moveTargetPosition = null;
+            Follow(Owner);
         }
+        public MethodInfo serverSendRpcMethod;
         //
         // 摘要:
         //     Follow a specific player.
@@ -138,7 +198,6 @@ namespace Next_generationSite_27.UnionP
         //     the speed the npc will go.
         public void Follow(Player player, float maxDistance, float minDistance, float speed = 4f)
         {
-            // 获取或添加 PlayerFollower 组件
             if (player.GameObject == null|| Zombie == null || Zombie.GameObject == null) return;
             var follower = Zombie.GameObject.GetComponent<PlayerFollower>();
             if (follower == null)
@@ -147,6 +206,8 @@ namespace Next_generationSite_27.UnionP
             // 每次设置主人和卡死回调（确保最新）
             follower.OwnerHub = Owner.ReferenceHub;
             follower.OnStuck = HandleStuck;
+            follower.TargetPos = (hub) => { return _moveTargetPosition ?? hub.GetPosition(); };
+
 
             // 只有当目标改变或组件尚未初始化时才重新 Init
             if (_currentFollowTarget != player || !follower.enabled)
@@ -155,13 +216,84 @@ namespace Next_generationSite_27.UnionP
                 _currentFollowTarget = player;
             }
         }
+        public AbilityCooldown AttackCooldown = new();
         public IEnumerator<float> Update()
         {
             while (Zombie.Role.Type == RoleTypeId.Scp0492)
             {
                 // Lock instance
+            if(Zombie.GameObject == null) yield break;
+                if (_movingToPosition)
+                {
+                    // 检查超时或主人离开过远
+                    try
+                    {
+                        if (Time.time - _moveStartTime > MaxMoveDuration ||
+                            Vector3.Distance(Zombie.Position, Owner.Position) > OwnerMaxDistance)
+                        {
+                            _movingToPosition = false;
+                            _moveTargetPosition = null;
+                            Follow(Owner);
+                            continue;
+                        }
+
+                        // 移动模式下继续积累仇恨，逻辑与 !tracking 分支类似
+                        foreach (var item in Player.Enumerable.Where(x => HitboxIdentity.IsEnemy(this.Zombie.ReferenceHub, x.ReferenceHub)))
+                        {
+                            if (Vector3.Distance(item.Position, Zombie.Position) <= 20f ||
+                                VisionInformation.GetVisionInformation(Zombie.ReferenceHub, Zombie.CameraTransform, item.Position, 0.02f, 50f, true, true, 0, true).IsLooking ||
+                                VisionInformation.GetVisionInformation(Owner.ReferenceHub, Owner.CameraTransform, item.Position, 0.02f, 50f, true, true, 0, true).IsLooking)
+                            {
+                                if (Hatreds.TryGetValue(item, out var h))
+                                    Hatreds[item] += tick;
+                                else
+                                    Hatreds[item] = tick;
+                            }
+
+                            if (Hatreds.TryGetValue(item, out var n) && n > LockIn)
+                            {
+                                // 仇恨达标，切换为追踪
+                                Hatreds[item] = LockIn;
+                                _movingToPosition = false;
+                                _moveTargetPosition = null;
+                                tracking = true;
+                                CurrentTarget = item;
+                                var r = Zombie.Role as Scp0492Role;
+                                Follow(item, LockOut + 10f, 1f, r.MovementSpeed);
+                                break;
+                            }
+                        }
+
+                        // 若因触发追踪而取消移动，跳过本次剩余逻辑
+                        if (!_movingToPosition)
+                            continue;
+
+                        // 移动模式下保持开门能力
+                        if (Zombie.CurrentRoom != null)
+                        {
+                            foreach (var door in Zombie.CurrentRoom.Doors)
+                            {
+                                if (!door.IsLocked && !door.IsMoving && !door.IsOpen &&
+                                    Vector3.Distance(door.Position, Zombie.Position) <= DoorOpenRange)
+                                {
+                                    if (door.PermissionsPolicy.CheckPermissions(Zombie.ReferenceHub, door.Base, out _) || !door.IsKeycardDoor)
+                                        door.IsOpen = true;
+                                }
+                            }
+                        }
+                    }catch(Exception e)
+                    {
+                        Zombie.Destroy();
+                        Log.Info(e.ToString());
+                        yield break;
+                    }
+
+                    yield return Timing.WaitForSeconds(tick);
+                    continue;
+                }
                 try
                 {
+                    
                     if (!tracking)
                     {
                         Follow(Owner);
@@ -183,11 +315,7 @@ namespace Next_generationSite_27.UnionP
                             {
                                 if (n > LockIn)
                                 {
-                                    Hatreds[item] = LockIn;
-                                    tracking = true;
-                                    CurrentTarget = item;
-                                    var r = Zombie.Role as Scp0492Role;
-                                    Follow(item, LockOut + 10f, 1f, r.MovementSpeed);
+                                    LockTo(item);
                                 }
                             }
                         }
@@ -209,27 +337,19 @@ namespace Next_generationSite_27.UnionP
                             Follow(Owner);
                             continue;
                         }
-                        if (Vector3.Distance(CurrentTarget.Position, Zombie.Position) <= BiteRange)
+                        if (ReferenceHub.AllHubs.TryGetFirst(x=> Vector3.Distance(x.GetPosition(), Zombie.Position) <= BiteRange && HitboxIdentity.IsEnemy(Zombie.ReferenceHub,x),out var t))
                         {
                             var Zr = Zombie.Role.Base as ZombieRole;
-                            Zr.LookAtPoint(CurrentTarget.Position);
+                            Zr.LookAtPoint(t.GetPosition());
                             var r = Zombie.Role as Scp0492Role;
-                            MethodInfo serverSendRpcMethod = typeof(KeySubroutine<ZombieRole>).GetMethod(
-    "OnKeyDown",
-    BindingFlags.NonPublic | BindingFlags.Instance,
-    null,
-    new Type[] { },
-    null
-);
                             if (serverSendRpcMethod != null)
                             {
+                                if (r.AttackAbility.Cooldown.IsReady)
+                                {
+                                    Owner.ShowHitMarker();
+                                }
                                 serverSendRpcMethod.Invoke(r.AttackAbility, new object[] { });
                             }
-                            //if (r != null && r.AttackAbility.Cooldown.IsReady)
-                            //{
-                            //    r.AttackAbility.Cooldown.Trigger(r.AttackCooldown);
-                            //    CurrentTarget.Hurt(new Scp049DamageHandler(Zombie.ReferenceHub, r.AttackDamage, Scp049DamageHandler.AttackType.Scp0492));
-                            //}
                         }
                         if (Zombie.CurrentRoom != null)
                         {
@@ -258,6 +378,15 @@ namespace Next_generationSite_27.UnionP
                 yield return Timing.WaitForSeconds(tick);
             }
             Zombie.Destroy();
+        }
+
+        public void LockTo(Player item)
+        {
+            Hatreds[item] = LockIn;
+            tracking = true;
+            CurrentTarget = item;
+            var r = Zombie.Role as Scp0492Role;
+            Follow(item, LockOut + 5f, 1f, r.MovementSpeed);
         }
     }
     [CommandHandler(typeof(RemoteAdminCommandHandler))]

@@ -72,7 +72,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             MicroHIDItem micro = __instance.MicroHid;
             ReferenceHub owner = micro?.Owner;
 
-            if (owner == null || !DageAbi1.IsOwner(owner))
+            if (owner == null || !DageAbi1.vaild.Contains(owner))
             {
                 return;
             }

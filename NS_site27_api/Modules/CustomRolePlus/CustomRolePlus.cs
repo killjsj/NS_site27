@@ -628,7 +628,6 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
                             foreach (var template in custom.abilities.ToArray())
                             {
-                                // 修复：不再调用 template.IsAvailable，避免其检查 CurrentItem 导致护甲能力被错误注销
                                 bool shouldBe;
                                 try
                                 {

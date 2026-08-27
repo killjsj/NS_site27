@@ -31,53 +31,18 @@ namespace NS_site27_heavy.heavy.Module.dage
 
         public bool IsEnabled => true;
         public static List<ReferenceHub> vaild = new();
-        internal static bool IsOwner(Player hub)
-        {
-            return hub != null && vaild.Contains(hub.ReferenceHub);
-        }
-
-        internal static bool IsOwner(ReferenceHub hub)
-        {
-            return hub != null && vaild.Contains(hub);
-        }
-
-        private Vector3 lastPos;
-        private float lastVer, lastHo;
         public override float checktime => 0.005f;
         public override void OnCheck(Player player)
         {
+            if (!vaild.Contains(player.ReferenceHub)) return;
             if (player.Role.Base is not IFpcRole fpc)
             {
                 return;
             }
-
-            var module = fpc.FpcModule;
-            Vector3 pos = module.Position;
-            float ver = module.MouseLook.CurrentVertical;
-            float ho = module.MouseLook.CurrentHorizontal;
-
-            bool still =
-                true;
-            //(pos - lastPos).sqrMagnitude < 0.0001f
-            //         && !module.Motor.RotationDetected
-            //         && Mathf.Abs(Mathf.DeltaAngle(lastVer, ver)) < 0.1f
-            //         && Mathf.Abs(Mathf.DeltaAngle(lastHo, ho)) < 0.1f;
-
-            lastPos = pos;
-            lastVer = ver;
-            lastHo = ho;
-
-            if (still)
-            {
                 if (!LineXray.IsEnabled(player.ReferenceHub))
                 {
                     LineXray.Enable(player.ReferenceHub, 200);
                 }
-            }
-            else if (LineXray.IsEnabled(player.ReferenceHub))
-            {
-                LineXray.Disable(player.ReferenceHub);
-            }
         }
         public void restart()
         {
@@ -86,11 +51,11 @@ namespace NS_site27_heavy.heavy.Module.dage
         public override void Uninit(Player player)
         {
             base.Uninit(player);
+            _ = vaild.Remove(player.ReferenceHub);
             if (LineXray.IsEnabled(player.ReferenceHub))
             {
                 LineXray.Disable(player.ReferenceHub);
             }
-            _ = vaild.Remove(player.ReferenceHub);
         }
         public override void Init(Player player)
         {
@@ -107,7 +72,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
 
             ReferenceHub hub = ev.Player?.ReferenceHub;
-            if (!IsOwner(ev.Player))
+            if (!vaild.Contains(ev.Player.ReferenceHub))
             {
                 return;
             }

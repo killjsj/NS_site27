@@ -8,7 +8,7 @@ using System.IO;
 
 namespace NS_site27_heavy.heavy.Module.audio
 {
-                                                        public static class AudioFileLoader
+    public static class AudioFileLoader
     {
         public const int TargetSampleRate = AudioTransmitter.SampleRate;
 
@@ -17,7 +17,7 @@ namespace NS_site27_heavy.heavy.Module.audio
 
         private static readonly object Sync = new();
 
-                                                                public static float[] LoadMono(string path)
+        public static float[] LoadMono(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -64,7 +64,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return result;
         }
 
-                public static bool TryLoadMono(string path, out float[] samples, out string error)
+        public static bool TryLoadMono(string path, out float[] samples, out string error)
         {
             samples = null;
             error = null;
@@ -81,7 +81,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             }
         }
 
-                public static void Reset()
+        public static void Reset()
         {
             lock (Sync)
             {
@@ -89,25 +89,25 @@ namespace NS_site27_heavy.heavy.Module.audio
             }
         }
 
-        
-                private static float[] DecodeWav(string path, out int sampleRate, out int channels)
+
+        private static float[] DecodeWav(string path, out int sampleRate, out int channels)
         {
             using WaveFileReader reader = new(path);
             ISampleProvider provider = reader.ToSampleProvider();
             sampleRate = provider.WaveFormat.SampleRate;
             channels = provider.WaveFormat.Channels;
 
-                        int estimate = (int)Math.Min((reader.Length / 2) + 1024, int.MaxValue);
+            int estimate = (int)Math.Min((reader.Length / 2) + 1024, int.MaxValue);
             return ReadAll(provider, estimate);
         }
 
-                private static float[] DecodeMp3(string path, out int sampleRate, out int channels)
+        private static float[] DecodeMp3(string path, out int sampleRate, out int channels)
         {
             using MpegFile mp3 = new(path);
             sampleRate = mp3.SampleRate;
             channels = mp3.Channels;
 
-                                                float[] buffer = new float[16384];
+            float[] buffer = new float[16384];
             float[] result = new float[Math.Max(16384, (int)Math.Min(mp3.Length, 1 << 24))];
             int total = 0;
 
@@ -167,7 +167,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             Array.Resize(ref array, size);
         }
 
-        
+
         private static float[] Downmix(float[] interleaved, int channels)
         {
             int frames = interleaved.Length / channels;
@@ -189,7 +189,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return mono;
         }
 
-                                        private static float[] Resample(float[] mono, int sourceRate)
+        private static float[] Resample(float[] mono, int sourceRate)
         {
             ISampleProvider source = new FloatArraySampleProvider(mono, sourceRate, 1);
             ISampleProvider resampler = new WdlResamplingSampleProvider(source, TargetSampleRate);
@@ -198,7 +198,7 @@ namespace NS_site27_heavy.heavy.Module.audio
             return ReadAll(resampler, estimate);
         }
 
-                private sealed class FloatArraySampleProvider : ISampleProvider
+        private sealed class FloatArraySampleProvider : ISampleProvider
         {
             private readonly float[] _data;
             private int _position;

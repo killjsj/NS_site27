@@ -5,10 +5,10 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
 {
-                                                                                            [HarmonyPatch]
+    [HarmonyPatch]
     internal static class ExactRayPatch
     {
-                private static MethodBase TargetMethod()
+        private static MethodBase TargetMethod()
         {
             return AccessTools.Method(typeof(HitscanHitregModuleBase), "RandomizeRay");
         }
@@ -19,9 +19,10 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             if (owner == null || !AimOverride.TryConsume(owner, ray.origin, out Vector3 dir))
             {
-                return true;                                    }
+                return true;
+            }
 
-            __result = new Ray(ray.origin, dir);                return false;
+            __result = new Ray(ray.origin, dir); return false;
         }
     }
 }

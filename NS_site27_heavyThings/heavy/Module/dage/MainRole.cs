@@ -67,7 +67,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 return false;
             }
 
-                                    ZhuXian.guas.Clear();
+            ZhuXian.guas.Clear();
             foreach (var i in MainRole.r.TrackedPlayers)
             {
                 ZhuXian.guas.Add(i);

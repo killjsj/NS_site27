@@ -11,25 +11,25 @@ namespace NS_site27_api.Modules.EventHandle.Handlers
 {
     public static class RoundEventHandler
     {
-                public static void OnWaitingForPlayers()
+        public static void OnWaitingForPlayers()
         {
             BroadcastHandler.Start();
         }
         public static void OnRoundTryEnding(RoundEndingConditionsCheckEventArgs ev)
         {
-                        
-                                    
-                                                
-                                                                                                                                                                                                                                                                                                            
-                                    
-                                                                                                                                }
+
+
+
+
+
+        }
         public static void OnRoundStarted()
         {
-                    }
+        }
 
         public static void OnRespawningTeam(RespawningTeamEventArgs ev)
         {
-                        if (!ev.Wave.IsMiniWave)
+            if (!ev.Wave.IsMiniWave)
             {
                 return;
             }

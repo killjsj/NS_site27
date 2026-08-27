@@ -127,7 +127,7 @@ namespace NS_site27_api.Modules.Abilities
             int keyId = id + ((int)KeyCode * 7919);
             setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
                 keyId, Name, KeyCode, Des,
-                (pressedPlayer,isPressed) =>
+                (pressedPlayer, isPressed) =>
                 {
                     if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
@@ -141,7 +141,7 @@ namespace NS_site27_api.Modules.Abilities
 
         public ItemAbilityBase Register(Player player)
         {
-                        ItemKeyAbility a = null;
+            ItemKeyAbility a = null;
             try
             {
                 a = Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new object[] { (ushort)0 }, null) as ItemKeyAbility;
@@ -156,7 +156,7 @@ namespace NS_site27_api.Modules.Abilities
         public void InternalRegister(Player panel)
         {
             player = panel;
-                        if (setting == null)
+            if (setting == null)
             {
                 InitSetting();
             }

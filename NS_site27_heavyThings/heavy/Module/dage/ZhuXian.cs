@@ -21,11 +21,11 @@ namespace NS_site27_heavy.heavy.Module.dage
         public static PrimitiveObjectToy status = null;
         public static PrimitiveObjectToy cam = null;
         public static SchematicObject so = null;
-                                                private const float StrikePhase = 2f;
+        private const float StrikePhase = 2f;
 
         private const float EndPhase = 5f;
 
-                                                public static float phase => status == null ? 0f : status.transform.localScale.x;
+        public static float phase => status == null ? 0f : status.transform.localScale.x;
 
         public static bool isPlaying => status != null && phase < EndPhase;
         public static readonly Dictionary<LightnLayer, Dictionary<int, LightningBolt>> bolts = new();
@@ -119,7 +119,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
             if (status == null)
             {
-                                                Log.Error($"Failed to get the status block! The schematic will not play.");
+                Log.Error($"Failed to get the status block! The schematic will not play.");
             }
 
             foreach (var item in guas)
@@ -138,7 +138,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 yield return Timing.WaitForSeconds(0.2f);
             }
 
-                        Stop();
+            Stop();
         }
         public static void Update()
         {
@@ -147,7 +147,7 @@ namespace NS_site27_heavy.heavy.Module.dage
                 return;
             }
 
-                                    if (phase != _lastPhase)
+            if (phase != _lastPhase)
             {
                 _lastPhase = phase;
                 Log.Info($"ZhuXian phase -> {phase} (strike at {StrikePhase}, end at {EndPhase})");
@@ -191,7 +191,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             }
         }
 
-                public static void Stop()
+        public static void Stop()
         {
 
             guas.Clear();

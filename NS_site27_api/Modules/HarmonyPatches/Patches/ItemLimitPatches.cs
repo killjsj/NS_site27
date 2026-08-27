@@ -38,8 +38,8 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             var codes = new List<CodeInstruction>(instructions);
             for (int i = 1; i < codes.Count; i++)
             {
-                
-                if (codes[i - 1].opcode == OpCodes.Call && codes[i  - 1].operand is MethodInfo m && m.Name.Contains("NetworkServer"))
+
+                if (codes[i - 1].opcode == OpCodes.Call && codes[i - 1].operand is MethodInfo m && m.Name.Contains("NetworkServer"))
                 {
                     codes[i].opcode = OpCodes.Brtrue_S;
                     break;

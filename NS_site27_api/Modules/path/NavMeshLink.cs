@@ -9,101 +9,109 @@ using UnityEngine.AI;
 #pragma warning disable IDE1006 
 namespace Unity.AI.Navigation
 {
-        [ExecuteAlways]
+    [ExecuteAlways]
     [DefaultExecutionOrder(-101)]
     [AddComponentMenu("Navigation/NavMesh Link", 33)]
     public partial class NavMeshLink : MonoBehaviour
     {
-                                [SerializeField, HideInInspector]
-        byte m_SerializedVersion = 0;
+        [SerializeField, HideInInspector]
+        private byte m_SerializedVersion = 0;
 
         [SerializeField]
-        int m_AgentTypeID;
+        private int m_AgentTypeID;
 
         [SerializeField]
-        Vector3 m_StartPoint = new(0.0f, 0.0f, -2.5f);
+        private Vector3 m_StartPoint = new(0.0f, 0.0f, -2.5f);
 
         [SerializeField]
-        Vector3 m_EndPoint = new(0.0f, 0.0f, 2.5f);
+        private Vector3 m_EndPoint = new(0.0f, 0.0f, 2.5f);
 
         [SerializeField]
-        Transform m_StartTransform;
+        private Transform m_StartTransform;
 
         [SerializeField]
-        Transform m_EndTransform;
+        private Transform m_EndTransform;
 
         [SerializeField]
-        bool m_Activated = true;
+        private bool m_Activated = true;
 
         [SerializeField]
-        float m_Width;
+        private float m_Width;
 
-                                                [SerializeField]
+        [SerializeField]
         [Min(0f)]
-        float m_CostModifier = -1f;
+        private float m_CostModifier = -1f;
 
         [SerializeField]
-        bool m_IsOverridingCost = false;
+        private bool m_IsOverridingCost = false;
 
         [SerializeField]
-        bool m_Bidirectional = true;
+        private bool m_Bidirectional = true;
 
         [SerializeField]
-        bool m_AutoUpdatePosition;
+        private bool m_AutoUpdatePosition;
 
         [SerializeField]
-        int m_Area;
+        private int m_Area;
 
 #if UNITY_EDITOR
         int m_LastArea;
 #endif
 
-                public int agentTypeID
+        public int agentTypeID
         {
             get => m_AgentTypeID;
             set
             {
                 if (value == m_AgentTypeID)
+                {
                     return;
+                }
 
                 m_AgentTypeID = value;
                 UpdateLink();
             }
         }
 
-                                public Vector3 startPoint
+        public Vector3 startPoint
         {
             get => m_StartPoint;
             set
             {
                 if (value == m_StartPoint)
+                {
                     return;
+                }
 
                 m_StartPoint = value;
                 UpdateLink();
             }
         }
 
-                                public Vector3 endPoint
+        public Vector3 endPoint
         {
             get => m_EndPoint;
             set
             {
                 if (value == m_EndPoint)
+                {
                     return;
+                }
 
                 m_EndPoint = value;
                 UpdateLink();
             }
         }
 
-                        public Transform startTransform
+        public Transform startTransform
         {
             get => m_StartTransform;
             set
             {
                 if (value == m_StartTransform)
+                {
                     return;
+                }
 
                 m_StartTransform = value;
 
@@ -111,13 +119,15 @@ namespace Unity.AI.Navigation
             }
         }
 
-                        public Transform endTransform
+        public Transform endTransform
         {
             get => m_EndTransform;
             set
             {
                 if (value == m_EndTransform)
+                {
                     return;
+                }
 
                 m_EndTransform = value;
 
@@ -125,27 +135,31 @@ namespace Unity.AI.Navigation
             }
         }
 
-                        public float width
+        public float width
         {
             get => m_Width;
             set
             {
                 if (value.Equals(m_Width))
+                {
                     return;
+                }
 
                 m_Width = value;
                 UpdateLink();
             }
         }
 
-                                public float costModifier
+        public float costModifier
         {
             get => m_IsOverridingCost ? m_CostModifier : -m_CostModifier;
             set
             {
                 var shouldOverride = value >= 0f;
                 if (value.Equals(costModifier) && shouldOverride == m_IsOverridingCost)
+                {
                     return;
+                }
 
                 m_IsOverridingCost = shouldOverride;
                 m_CostModifier = Mathf.Abs(value);
@@ -153,50 +167,60 @@ namespace Unity.AI.Navigation
             }
         }
 
-                        public bool bidirectional
+        public bool bidirectional
         {
             get => m_Bidirectional;
             set
             {
                 if (value == m_Bidirectional)
+                {
                     return;
+                }
 
                 m_Bidirectional = value;
                 UpdateLink();
             }
         }
 
-                        public bool autoUpdate
+        public bool autoUpdate
         {
             get => m_AutoUpdatePosition;
             set
             {
                 if (value == m_AutoUpdatePosition)
+                {
                     return;
+                }
 
                 m_AutoUpdatePosition = value;
 
                 if (m_AutoUpdatePosition)
+                {
                     AddTracking(this);
+                }
                 else
+                {
                     RemoveTracking(this);
+                }
             }
         }
 
-                public int area
+        public int area
         {
             get => m_Area;
             set
             {
                 if (value == m_Area)
+                {
                     return;
+                }
 
                 m_Area = value;
                 UpdateLink();
             }
         }
 
-                        public bool activated
+        public bool activated
         {
             get => m_Activated;
             set
@@ -206,19 +230,19 @@ namespace Unity.AI.Navigation
             }
         }
 
-                        public bool occupied => NavMesh.IsLinkOccupied(m_LinkInstance);
+        public bool occupied => NavMesh.IsLinkOccupied(m_LinkInstance);
 
-        NavMeshLinkInstance m_LinkInstance;
+        private NavMeshLinkInstance m_LinkInstance;
 
-        bool m_StartTransformWasEmpty = true;
-        bool m_EndTransformWasEmpty = true;
+        private bool m_StartTransformWasEmpty = true;
+        private bool m_EndTransformWasEmpty = true;
 
-        Vector3 m_LastStartWorldPosition = Vector3.positiveInfinity;
-        Vector3 m_LastEndWorldPosition = Vector3.positiveInfinity;
-        Vector3 m_LastPosition = Vector3.positiveInfinity;
-        Quaternion m_LastRotation = Quaternion.identity;
+        private Vector3 m_LastStartWorldPosition = Vector3.positiveInfinity;
+        private Vector3 m_LastEndWorldPosition = Vector3.positiveInfinity;
+        private Vector3 m_LastPosition = Vector3.positiveInfinity;
+        private Quaternion m_LastRotation = Quaternion.identity;
 
-        static readonly List<NavMeshLink> s_Tracked = new();
+        private static readonly List<NavMeshLink> s_Tracked = new();
 
 #if UNITY_EDITOR
         bool m_DelayEndpointUpgrade;
@@ -226,13 +250,13 @@ namespace Unity.AI.Navigation
         static double s_NextPrefabWarningTime;
 #endif
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void ClearTrackedList()
+        private static void ClearTrackedList()
         {
             NavMesh.onPreUpdate -= UpdateTrackedInstances;
             s_Tracked.Clear();
         }
 
-        void UpgradeSerializedVersion()
+        private void UpgradeSerializedVersion()
         {
             if (m_SerializedVersion < 1)
             {
@@ -245,14 +269,18 @@ namespace Unity.AI.Navigation
                 m_CostModifier = Mathf.Abs(m_CostModifier);
 
                 if (m_StartTransform == gameObject.transform)
+                {
                     m_StartTransform = null;
+                }
 
                 if (m_EndTransform == gameObject.transform)
+                {
                     m_EndTransform = null;
+                }
             }
         }
 
-                void Awake()
+        private void Awake()
         {
             UpgradeSerializedVersion();
 #if UNITY_EDITOR
@@ -260,29 +288,33 @@ namespace Unity.AI.Navigation
 #endif
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             AddLink();
             if (m_AutoUpdatePosition && NavMesh.IsLinkValid(m_LinkInstance))
+            {
                 AddTracking(this);
+            }
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             RemoveTracking(this);
             NavMesh.RemoveLink(m_LinkInstance);
         }
 
-                public void UpdateLink()
+        public void UpdateLink()
         {
             if (!isActiveAndEnabled)
+            {
                 return;
+            }
 
             NavMesh.RemoveLink(m_LinkInstance);
             AddLink();
         }
 
-        static void AddTracking(NavMeshLink link)
+        private static void AddTracking(NavMeshLink link)
         {
 #if UNITY_EDITOR
             if (s_Tracked.Contains(link))
@@ -292,24 +324,28 @@ namespace Unity.AI.Navigation
             }
 #endif
             if (s_Tracked.Count == 0)
+            {
                 NavMesh.onPreUpdate += UpdateTrackedInstances;
+            }
 
             s_Tracked.Add(link);
 
             link.RecordEndpointTransforms();
         }
 
-        static void RemoveTracking(NavMeshLink link)
+        private static void RemoveTracking(NavMeshLink link)
         {
-            s_Tracked.Remove(link);
+            _ = s_Tracked.Remove(link);
 
             if (s_Tracked.Count == 0)
+            {
                 NavMesh.onPreUpdate -= UpdateTrackedInstances;
+            }
         }
 
-                                internal void GetWorldPositions(
-            out Vector3 worldStartPosition,
-            out Vector3 worldEndPosition)
+        internal void GetWorldPositions(
+out Vector3 worldStartPosition,
+out Vector3 worldEndPosition)
         {
             var startIsLocal = m_StartTransform == null;
             var endIsLocal = m_EndTransform == null;
@@ -319,9 +355,9 @@ namespace Unity.AI.Navigation
             worldEndPosition = endIsLocal ? toWorld.MultiplyPoint3x4(m_EndPoint) : m_EndTransform.position;
         }
 
-                                internal void GetLocalPositions(
-            out Vector3 localStartPosition,
-            out Vector3 localEndPosition)
+        internal void GetLocalPositions(
+out Vector3 localStartPosition,
+out Vector3 localEndPosition)
         {
             var startIsLocal = m_StartTransform == null;
             var endIsLocal = m_EndTransform == null;
@@ -331,7 +367,7 @@ namespace Unity.AI.Navigation
             localEndPosition = endIsLocal ? m_EndPoint : toLocal.MultiplyPoint3x4(m_EndTransform.position);
         }
 
-        void AddLink()
+        private void AddLink()
         {
 #if UNITY_EDITOR
             if (NavMesh.IsLinkValid(m_LinkInstance))
@@ -382,13 +418,17 @@ namespace Unity.AI.Navigation
             if (startIsLocal && endIsLocal &&
                 m_StartTransformWasEmpty && m_EndTransformWasEmpty &&
                 transform.position == m_LastPosition && transform.rotation == m_LastRotation)
+            {
                 return false;
+            }
 
             var toWorld = startIsLocal || endIsLocal ? LocalToWorldUnscaled() : Matrix4x4.identity;
 
             var startWorldPos = startIsLocal ? toWorld.MultiplyPoint3x4(m_StartPoint) : m_StartTransform.position;
             if (startWorldPos != m_LastStartWorldPosition)
+            {
                 return true;
+            }
 
             var endWorldPos = endIsLocal ? toWorld.MultiplyPoint3x4(m_EndPoint) : m_EndTransform.position;
             return endWorldPos != m_LastEndWorldPosition;
@@ -399,17 +439,19 @@ namespace Unity.AI.Navigation
             return Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
         }
 
-        void OnDidApplyAnimationProperties()
+        private void OnDidApplyAnimationProperties()
         {
             UpdateLink();
         }
 
-        static void UpdateTrackedInstances()
+        private static void UpdateTrackedInstances()
         {
             foreach (var instance in s_Tracked)
             {
                 if (instance.HaveTransformsChanged())
+                {
                     instance.UpdateLink();
+                }
 
                 instance.RecordEndpointTransforms();
             }

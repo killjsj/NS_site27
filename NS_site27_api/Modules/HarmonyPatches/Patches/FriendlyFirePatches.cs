@@ -89,17 +89,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         public static bool ProcessDamagePrefix(AttackerDamageHandler __instance, ReferenceHub ply)
         {
             var ffManager = GetFFManager();
-            if (ffManager == null)
-            {
-                return true;
-            }
-
-            if (__instance.Attacker.Hub == null || ply == null)
-            {
-                return true;
-            }
-
-                        return false;
+            return ffManager == null || __instance.Attacker.Hub == null || ply == null;
         }
 
         private static IFFManager GetFFManager()

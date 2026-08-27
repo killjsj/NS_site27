@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Exiled.API.Features;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,7 +9,7 @@ namespace FacilityNavigation
     {
         public const float MaxSampleDistance = 6f;
 
-        private static readonly NavMeshPath SharedPath = new NavMeshPath();
+        private static readonly NavMeshPath SharedPath = new();
 
         public static bool TryBuildFullPath(Vector3 from, Vector3 to,
             out List<Vector3> corners, out List<RoomNode> rooms)
@@ -17,7 +17,9 @@ namespace FacilityNavigation
             corners = new List<Vector3>();
 
             if (!RoomGraph.TryBuildWaypoints(from, to, out rooms, out List<Vector3> waypoints))
+            {
                 return false;
+            }
 
             NudgeWaypointsOntoRoute(waypoints);
 
@@ -49,7 +51,9 @@ namespace FacilityNavigation
 
                 float magnitude = forward.magnitude;
                 if (magnitude < 0.01f)
+                {
                     continue;
+                }
 
                 waypoints[i] = ResolveInsidePoint(waypoints[i], forward / magnitude);
             }
@@ -60,15 +64,17 @@ namespace FacilityNavigation
             Vector3[] candidates =
             {
                 point,
-                point + forward * 1.5f,
-                point + forward * 3f,
-                point - forward * 1.5f,
+                point + (forward * 1.5f),
+                point + (forward * 3f),
+                point - (forward * 1.5f),
             };
 
             foreach (Vector3 candidate in candidates)
             {
                 if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                {
                     return hit.position;
+                }
             }
 
             return point;
@@ -94,7 +100,9 @@ namespace FacilityNavigation
                 if (SharedPath.status == NavMeshPathStatus.PathComplete)
                 {
                     for (int i = 1; i < segmentCorners.Length; i++)
+                    {
                         AddCorner(corners, segmentCorners[i]);
+                    }
 
                     return;
                 }
@@ -111,7 +119,9 @@ namespace FacilityNavigation
                     if (progressed)
                     {
                         for (int i = 1; i < segmentCorners.Length; i++)
+                        {
                             AddCorner(corners, segmentCorners[i]);
+                        }
 
                         ReplaceLastIfStuck(corners, to);
                         return;
@@ -125,13 +135,17 @@ namespace FacilityNavigation
         private static void ReplaceLastIfStuck(List<Vector3> corners, Vector3 target)
         {
             if (corners.Count > 0 && (corners[corners.Count - 1] - target).sqrMagnitude > 0.01f)
+            {
                 AddCorner(corners, target);
+            }
         }
 
         private static void AddCorner(List<Vector3> corners, Vector3 point)
         {
             if (corners.Count > 0 && (corners[corners.Count - 1] - point).sqrMagnitude < 0.0004f)
+            {
                 return;
+            }
 
             corners.Add(point);
         }

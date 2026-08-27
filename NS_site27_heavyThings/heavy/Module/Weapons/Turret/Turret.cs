@@ -92,7 +92,7 @@ namespace Next_generationSite_27.UnionP.Turret
                 _ = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
             }
 
-                        return Quaternion.LookRotation(projectedForward, wallNormal);
+            return Quaternion.LookRotation(projectedForward, wallNormal);
         }
     }
     public class Turret : MonoBehaviour
@@ -243,7 +243,7 @@ namespace Next_generationSite_27.UnionP.Turret
             ItemBase itemBase2 = Onwer.Inventory.CreateItemInstance(new ItemIdentifier(_Type, itemSerial), true);
             return itemBase2 ?? null;
         }
-                protected void OnDestroy()
+        protected void OnDestroy()
         {
             PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
             Map.ExplodeEffect(turretModelpos, Exiled.API.Enums.ProjectileType.Flashbang);
@@ -353,12 +353,12 @@ namespace Next_generationSite_27.UnionP.Turret
             if (Locking != null && point != null && Locking.IsAlive
                 && Vector3.Distance(shotPoint.transform.position, Locking.Position) <= DistanceToLock)
             {
-                                Vector3 direction = (Locking.Position - point.transform.position).normalized;
+                Vector3 direction = (Locking.Position - point.transform.position).normalized;
                 direction.x = Mathf.Clamp(direction.x, -45f, 45f);
 
-                                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
 
-                                float smoothFactor = 5f;
+                float smoothFactor = 5f;
                 point.transform.rotation = Quaternion.Slerp(point.transform.rotation, targetRotation, Time.deltaTime * smoothFactor);
             }
             try
@@ -418,15 +418,16 @@ namespace Next_generationSite_27.UnionP.Turret
         }
         public float DistanceToLock = 15f;
 
-        private float lockProgress = 0f;          private readonly float maxLockTime = 1.5f;         private readonly float minLockTime = 0.5f; 
+        private float lockProgress = 0f; private readonly float maxLockTime = 1.5f; private readonly float minLockTime = 0.5f;
         private void Lock()
         {
             if (Locking != null && Locking.IsAlive &&
                 Vector3.Distance(shotPoint.transform.position, Locking.Position) <= DistanceToLock)
             {
-                return;             }
+                return;
+            }
 
-                        Locking = null;
+            Locking = null;
             foreach (var player in Player.Enumerable)
             {
                 if (player == null || !player.IsAlive || player == Onwer ||
@@ -438,20 +439,21 @@ namespace Next_generationSite_27.UnionP.Turret
 
                 float dist = Vector3.Distance(shotPoint.transform.position, player.Position);
 
-                                if (dist <= DistanceToLock)
+                if (dist <= DistanceToLock)
                 {
-                                        float lockTime = Mathf.Lerp(maxLockTime, minLockTime, dist / DistanceToLock);
+                    float lockTime = Mathf.Lerp(maxLockTime, minLockTime, dist / DistanceToLock);
 
-                                        lockProgress += Time.deltaTime / lockTime;
+                    lockProgress += Time.deltaTime / lockTime;
 
-                                        if (lockProgress >= 1f)
+                    if (lockProgress >= 1f)
                     {
                         Locking = player;
-                        lockProgress = 0f;                          break;                      }
+                        lockProgress = 0f; break;
+                    }
                 }
                 else
                 {
-                                        lockProgress = 0f;
+                    lockProgress = 0f;
                 }
             }
         }
@@ -463,7 +465,7 @@ namespace Next_generationSite_27.UnionP.Turret
             {
                 itemBase = CreateOnwerItem();
             }
-                        if (itemBase is InventorySystem.Items.Firearms.Firearm item)
+            if (itemBase is InventorySystem.Items.Firearms.Firearm item)
             {
                 try
                 {
@@ -475,7 +477,7 @@ namespace Next_generationSite_27.UnionP.Turret
                     float num = dist / fireM.DamageFalloffDistance;
                     damage *= Mathf.Clamp01(1f - num);
                     handler.Damage = damage;
-                                        IDestructible destructible = target.Destructible;
+                    IDestructible destructible = target.Destructible;
                     HitboxIdentity hitboxIdentity = destructible as HitboxIdentity;
                     if (hitboxIdentity != null)
                     {
@@ -510,7 +512,7 @@ namespace Next_generationSite_27.UnionP.Turret
     {
         public uint NetworkId => base.netId;
 
-                        public Vector3 CenterOfMass => base.transform.position;
+        public Vector3 CenterOfMass => base.transform.position;
         public Turret turret;
         public bool Damage(float damage, PlayerStatsSystem.DamageHandlerBase handler, Vector3 pos)
         {

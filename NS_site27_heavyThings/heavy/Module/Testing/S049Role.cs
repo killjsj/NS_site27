@@ -1,15 +1,10 @@
-﻿using CustomPlayerEffects;
-using CustomRendering;
-using Exiled.API.Enums;
-using Exiled.API.Features;
+﻿using Exiled.API.Features;
 using Exiled.API.Features.Attributes;
 using Exiled.Events.EventArgs.Player;
-using HintServiceMeow.Core.Interface;
 using MEC;
 using Next_generationSite_27.UnionP;
 using NS_site27_api.Modules.Abilities;
 using NS_site27_api.Modules.CustomRolePlus;
-using NS_site27_heavy.heavy.Module.dage;
 using PlayerRoles;
 using System.Collections.Generic;
 using UnityEngine;
@@ -42,13 +37,13 @@ namespace NS_site27_heavy.heavy.Module.AirDrop
         {
             if (Check(ev.Player))
             {
-                if (pbz.TryGetValue(ev.Player,out var zombies))
+                if (pbz.TryGetValue(ev.Player, out var zombies))
                 {
                     foreach (var item in zombies)
                     {
                         item.Zombie.Destroy();
                     }
-                    pbz.Remove(ev.Player);
+                    _ = pbz.Remove(ev.Player);
                 }
             }
         }
@@ -77,13 +72,13 @@ namespace NS_site27_heavy.heavy.Module.AirDrop
                 zombies = new();
                 S049Role.pbz[player] = zombies;
             }
-            var bz = BetterZombie.Create(this.player);
+            var bz = BetterZombie.Create(player);
             zombies.Add(bz);
-            Timing.CallDelayed(60f, () =>
+            _ = Timing.CallDelayed(60f, () =>
             {
                 if (S049Role.pbz.TryGetValue(player, out var zombies))
                 {
-                    zombies.Remove(bz);
+                    _ = zombies.Remove(bz);
                     bz.Zombie.Destroy();
                 }
             });
@@ -131,10 +126,7 @@ namespace NS_site27_heavy.heavy.Module.AirDrop
                         }
                         foreach (var item in zombies)
                         {
-                            if (item != null)
-                            {
-                                item.LockTo(p);
-                            }
+                            item?.LockTo(p);
                         }
                         return true;
                     }
@@ -143,10 +135,7 @@ namespace NS_site27_heavy.heavy.Module.AirDrop
                 {
                     foreach (var item in zombies)
                     {
-                        if (item != null)
-                        {
-                            item.MoveToPosition(raycast.point);
-                        }
+                        item?.MoveToPosition(raycast.point);
                     }
                 }
             }

@@ -33,7 +33,7 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         }
     }
 
-                                                                                                                                                                                                                    
+
     [HarmonyPatch(typeof(PlayerRoles.Voice.Intercom))]
     public class IntercomPatch
     {
@@ -47,9 +47,9 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
             {
                 if (
                     codes[i].opcode == OpCodes.Call &&
-                    codes[i+1].opcode == OpCodes.Brfalse_S &&
-                    codes[i+2].opcode == OpCodes.Ldloc_0 &&
-                    codes[i+3].opcode == OpCodes.Isinst
+                    codes[i + 1].opcode == OpCodes.Brfalse_S &&
+                    codes[i + 2].opcode == OpCodes.Ldloc_0 &&
+                    codes[i + 3].opcode == OpCodes.Isinst
                     )
                 {
                     codes[i] = new CodeInstruction(OpCodes.Call, typeof(IntercomPatch).Method(nameof(CheckScpAndHuman)));
@@ -60,17 +60,16 @@ namespace NS_site27_api.Modules.HarmonyPatches.Patches
         }
         public static bool CheckScpAndHuman(ReferenceHub hub)
         {
-            if (hub == null) return false;
-            if(hub.IsHuman()) return true;
-            if(Player.TryGet(hub,out var player))
+            if (hub == null)
             {
-                return ScpToPlayerChat.TalkTohumanScp.Contains(player) || (player.Role.Type == RoleTypeId.Scp079 && ScpToPlayerChat.Scp079AllowIntercom.Contains(hub));
+                return false;
             }
-            return false;
+
+            return hub.IsHuman() || Player.TryGet(hub, out var player) && (ScpToPlayerChat.TalkTohumanScp.Contains(player) || (player.Role.Type == RoleTypeId.Scp079 && ScpToPlayerChat.Scp079AllowIntercom.Contains(hub)));
         }
         [HarmonyPatch("CheckRange")]
         [HarmonyPostfix]
-        public static void Postfix(ReferenceHub hub,ref bool __result)
+        public static void Postfix(ReferenceHub hub, ref bool __result)
         {
             if (!__result)
             {

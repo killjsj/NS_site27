@@ -7,7 +7,6 @@ using PlayerRoles.Subroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 namespace NS_site27_api.Modules.Abilities
 {
@@ -285,7 +284,7 @@ namespace NS_site27_api.Modules.Abilities
             int keyId = id + ((int)KeyCode * 7919);
             setting = SettingManager.Instance?.GetOrCreateKeybindSetting(
                 keyId, Name, KeyCode, Des,
-                (pressedPlayer,isPressed) =>
+                (pressedPlayer, isPressed) =>
                 {
                     if (isPressed && activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
@@ -346,7 +345,7 @@ namespace NS_site27_api.Modules.Abilities
 
     public abstract class PassAbility : AbilityBase, IRegisiterNeeded<AbilityBase>
     {
-                public Player pass_player;
+        public Player pass_player;
         public static Dictionary<Player, List<PassAbility>> activeAbilities = new();
         public virtual float checktime => 0.2f;
         public virtual void Init(Player player)
@@ -358,8 +357,8 @@ namespace NS_site27_api.Modules.Abilities
         {
             while (true)
             {
-                        try { this.OnCheck(this.pass_player); }
-                        catch (Exception ex) { Log.Warn($"PassAbility error: {ex}"); }
+                try { OnCheck(pass_player); }
+                catch (Exception ex) { Log.Warn($"PassAbility error: {ex}"); }
                 yield return Timing.WaitForSeconds(checktime);
             }
         }
@@ -374,7 +373,7 @@ namespace NS_site27_api.Modules.Abilities
         public void InternalRegister(Player panel)
         {
             pass_player = panel;
-                Log.Info($"InternalRegister {panel}");
+            Log.Info($"InternalRegister {panel}");
             if (!activeAbilities.ContainsKey(pass_player))
             {
                 activeAbilities.Add(pass_player, new List<PassAbility> { this });

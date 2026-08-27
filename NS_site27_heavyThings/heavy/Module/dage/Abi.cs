@@ -34,15 +34,19 @@ namespace NS_site27_heavy.heavy.Module.dage
         public override float checktime => 0.005f;
         public override void OnCheck(Player player)
         {
-            if (!vaild.Contains(player.ReferenceHub)) return;
-            if (player.Role.Base is not IFpcRole fpc)
+            if (!vaild.Contains(player.ReferenceHub))
             {
                 return;
             }
-                if (!LineXray.IsEnabled(player.ReferenceHub))
-                {
-                    LineXray.Enable(player.ReferenceHub, 200);
-                }
+
+            if (player.Role.Base is not IFpcRole)
+            {
+                return;
+            }
+            if (!LineXray.IsEnabled(player.ReferenceHub))
+            {
+                LineXray.Enable(player.ReferenceHub, 200);
+            }
         }
         public void restart()
         {
@@ -110,7 +114,7 @@ namespace NS_site27_heavy.heavy.Module.dage
         [HarmonyPatch]
         internal static class ExactRayPatch
         {
-                        private static MethodBase TargetMethod()
+            private static MethodBase TargetMethod()
             {
                 return AccessTools.Method(typeof(HitscanHitregModuleBase), "RandomizeRay");
             }
@@ -120,9 +124,10 @@ namespace NS_site27_heavy.heavy.Module.dage
                 ReferenceHub owner = __instance.Firearm?.Owner;
                 if (owner == null || !AimOverride.TryConsume(owner, ray.origin, out Vector3 dir))
                 {
-                    return true;                                        }
+                    return true;
+                }
 
-                __result = new Ray(ray.origin, dir);                    return false;
+                __result = new Ray(ray.origin, dir); return false;
             }
         }
 
@@ -191,7 +196,7 @@ namespace NS_site27_heavy.heavy.Module.dage
     }
     public class rot : PassAbility
     {
-        
+
         public override string Name => "它转起来了!";
 
         public override string Des => "";
@@ -211,11 +216,11 @@ namespace NS_site27_heavy.heavy.Module.dage
         }
         public rot() : base()
         {
-                    }
+        }
     }
     public class jum : KeyAbility
     {
-        
+
         public override string Name => "跳两下起飞了";
 
         public override string Des => "";
@@ -253,12 +258,12 @@ namespace NS_site27_heavy.heavy.Module.dage
         public override string Name => "大哥忘关就是开?";
         public override string Des => "";
         public int sid = -1;
-        private static float audioLength = 0f;         public CoroutineHandle ch;
+        private static float audioLength = 0f; public CoroutineHandle ch;
 
         public override void Init(Player player)
         {
-                Log.Info($"Init {player}");
-            if(pass_player  == null)
+            Log.Info($"Init {player}");
+            if (pass_player == null)
             {
                 Log.Info("pas  = pl");
                 pass_player = player;

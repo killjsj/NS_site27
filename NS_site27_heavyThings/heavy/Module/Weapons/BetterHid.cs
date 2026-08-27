@@ -60,9 +60,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             var re = "";
             if (Player.TryGet(ev.PlayerDisplay.ReferenceHub, out var p))
             {
-                if (!Check(p.CurrentItem)) return re;
+                if (!Check(p.CurrentItem))
+                {
+                    return re;
+                }
+
                 var info = TryGetBHID_Info(p.CurrentItem);
-                if(info != null)
+                if (info != null)
                 {
                     re += $"{info.Status},Battery:{info.CurrentBattery / TotalDamage * 100:F1}({info.CurrentBattery:F1}/{TotalDamage})";
                 }
@@ -236,9 +240,9 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                     break;
             }
         }
-                public const float TotalDamage = 8000f;
-                public const float RecoverTime = 0.3f;
-                public const float WindupTime_L = 1f;
+        public const float TotalDamage = 8000f;
+        public const float RecoverTime = 0.3f;
+        public const float WindupTime_L = 1f;
         public const float WindupTime_H = 3f;
 
         public const float WindupEnergyForSecond = 60f;
@@ -296,7 +300,11 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                         Raycast(o.CameraTransform, 0.65f, 10, out var num);
                         foreach (IDestructible destructible in DetectedDestructibles)
                         {
-                            if (destructible is HitboxIdentity hi && hi.TargetHub == o.ReferenceHub) continue;
+                            if (destructible is HitboxIdentity hi && hi.TargetHub == o.ReferenceHub)
+                            {
+                                continue;
+                            }
+
                             _ = ServerDealDamage(destructible, o, d);
                         }
                         for (int i = 0; i < num; i++)
@@ -374,12 +382,8 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         }
         private float GetAudioLength(string key)
         {
-            if (AudioLengths.TryGetValue(key, out var length))
-            {
-                return length;
-            }
-
-            return 1f;         }
+            return AudioLengths.TryGetValue(key, out var length) ? length : 1f;
+        }
         private void ChangeStatus(BHID_playerInfos info, BHID_status status)
         {
             if (info.Status == status)
@@ -544,13 +548,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
 
         public static bool ServerDealDamage(IDestructible target, Player Onwer, float damage)
         {
-            var microHidDamageHandler = new CustomReasonDamageHandler("1",damage);
+            var microHidDamageHandler = new CustomReasonDamageHandler("1", damage);
             if (!target.Damage(damage, microHidDamageHandler, target.CenterOfMass))
             {
                 return false;
             }
-                Hitmarker.SendHitmarkerDirectly(Onwer.ReferenceHub, 1f, true, HitmarkerType.Regular);
-            
+            Hitmarker.SendHitmarkerDirectly(Onwer.ReferenceHub, 1f, true, HitmarkerType.Regular);
+
             return true;
         }
 

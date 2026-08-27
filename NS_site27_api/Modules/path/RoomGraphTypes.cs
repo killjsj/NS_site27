@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Exiled.API.Features;
 using Exiled.API.Features.Doors;
 using Interactables.Interobjects.DoorUtils;
 using MapGeneration;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FacilityNavigation
@@ -20,7 +20,10 @@ namespace FacilityNavigation
             Edges = new List<RoomEdge>(4);
         }
 
-        public override string ToString() => Room != null ? $"{Room.Name} ({Room.Type})" : "<null>";
+        public override string ToString()
+        {
+            return Room != null ? $"{Room.Name} ({Room.Type})" : "<null>";
+        }
     }
 
     public enum RoomEdgeType
@@ -60,10 +63,13 @@ namespace FacilityNavigation
                                                : (from.Position + to.Position) * 0.5f);
         }
 
-        public override string ToString() => $"{From} -[{Type}#{LinkId}]-> {To}";
+        public override string ToString()
+        {
+            return $"{From} -[{Type}#{LinkId}]-> {To}";
+        }
     }
 
-    public struct RoomPair : IEquatable<RoomPair>
+    public readonly struct RoomPair : IEquatable<RoomPair>
     {
         public readonly RoomIdentifier A;
         public readonly RoomIdentifier B;
@@ -89,9 +95,15 @@ namespace FacilityNavigation
             }
         }
 
-        public bool Equals(RoomPair other) => A == other.A && B == other.B;
+        public bool Equals(RoomPair other)
+        {
+            return A == other.A && B == other.B;
+        }
 
-        public override bool Equals(object obj) => obj is RoomPair other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is RoomPair other && Equals(other);
+        }
 
         public override int GetHashCode()
         {

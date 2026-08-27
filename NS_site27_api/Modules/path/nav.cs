@@ -1,5 +1,4 @@
 ﻿using Exiled.API.Features;
-using Exiled.API.Features.Doors;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using MapGeneration;
@@ -59,8 +58,7 @@ namespace Next_generationSite_27.UnionP
 
         public RoomGraph()
         {
-            if (Instance != null)
-                Instance.Cancel();
+            Instance?.Cancel();
 
             Instance = this;
             BuildAsync();
@@ -69,7 +67,9 @@ namespace Next_generationSite_27.UnionP
         public static RoomGraph Rebuild()
         {
             if (Instance == null)
+            {
                 return new RoomGraph();
+            }
 
             Instance.Cancel();
             Instance.BuildAsync();
@@ -79,14 +79,19 @@ namespace Next_generationSite_27.UnionP
         public void Cancel()
         {
             if (_buildHandle.IsRunning)
-                Timing.KillCoroutines(_buildHandle);
+            {
+                _ = Timing.KillCoroutines(_buildHandle);
+            }
+
             _building = false;
         }
 
         public void BuildAsync()
         {
             if (_building)
+            {
                 return;
+            }
 
             _building = true;
             _buildHandle = Timing.RunCoroutine(_BuildRoutine());
@@ -113,7 +118,9 @@ namespace Next_generationSite_27.UnionP
                 nodes[room.Identifier] = new RoomNode(room);
 
                 if (++batch % BatchSize == 0)
+                {
                     yield return Timing.WaitForOneFrame;
+                }
             }
 
             if (nodes.Count != rooms.Length)
@@ -140,14 +147,18 @@ namespace Next_generationSite_27.UnionP
                                                     .OrderBy(d => d.GetInstanceID()))
             {
                 if (!door.RoomsAlreadyRegistered || door.Rooms == null)
+                {
                     continue;
+                }
 
                 doorEdges += LinkAllPairs(
                     door.Rooms, byIdentifier, connected,
                     RoomEdgeType.Door, door, door.transform.position);
 
                 if (++batch % BatchSize == 0)
+                {
                     yield return Timing.WaitForOneFrame;
+                }
             }
 
             batch = 0;
@@ -156,14 +167,18 @@ namespace Next_generationSite_27.UnionP
                                                              .OrderBy(c => c.GetInstanceID()))
             {
                 if (!connector.RoomsAlreadyRegistered || connector.Rooms == null)
+                {
                     continue;
+                }
 
                 connectorEdges += LinkAllPairs(
                     connector.Rooms, byIdentifier, connected,
                     RoomEdgeType.Connector, null, connector.transform.position);
 
                 if (++batch % BatchSize == 0)
+                {
                     yield return Timing.WaitForOneFrame;
+                }
             }
 
             var shafts = new Dictionary<ElevatorGroup, List<ElevatorDoor>>();
@@ -171,11 +186,15 @@ namespace Next_generationSite_27.UnionP
                                                     .Where(d => d != null)
                                                     .OrderBy(d => d.GetInstanceID()))
             {
-                if (!(door is ElevatorDoor elevatorDoor) || !elevatorDoor.RoomsAlreadyRegistered)
+                if (door is not ElevatorDoor elevatorDoor || !elevatorDoor.RoomsAlreadyRegistered)
+                {
                     continue;
+                }
 
                 if (!shafts.TryGetValue(elevatorDoor.Group, out List<ElevatorDoor> list))
+                {
                     shafts[elevatorDoor.Group] = list = new List<ElevatorDoor>();
+                }
 
                 list.Add(elevatorDoor);
             }
@@ -191,7 +210,9 @@ namespace Next_generationSite_27.UnionP
                         ElevatorDoor a = doors[i];
                         ElevatorDoor b = doors[j];
                         if (a.Rooms == null || b.Rooms == null)
+                        {
                             continue;
+                        }
 
                         foreach (RoomIdentifier ra in a.Rooms)
                         {
@@ -199,7 +220,9 @@ namespace Next_generationSite_27.UnionP
                             {
                                 if (TryAddEdge(ra, rb, byIdentifier, connected, RoomEdgeType.Elevator,
                                                a, a.transform.position, b.transform.position))
+                                {
                                     elevatorEdges++;
+                                }
                             }
                         }
                     }
@@ -217,33 +240,46 @@ namespace Next_generationSite_27.UnionP
                 foreach (Room room in rooms)
                 {
                     if (!nodes.TryGetValue(room.Identifier, out RoomNode nodeA))
+                    {
                         continue;
+                    }
 
                     if (FallbackMode == NearestRoomsMode.IsolatedOnly && nodeA.Edges.Count > 0)
+                    {
                         continue;
+                    }
 
                     IEnumerable<Room> neighbours = room.NearestRooms;
                     if (neighbours == null)
+                    {
                         continue;
+                    }
 
                     foreach (Room neighbour in neighbours)
                     {
                         if (neighbour == null || neighbour.Identifier == null ||
                             neighbour.Identifier == room.Identifier)
+                        {
                             continue;
+                        }
+
                         if (!nodes.TryGetValue(neighbour.Identifier, out RoomNode nodeB))
+                        {
                             continue;
+                        }
 
                         var pair = new RoomPair(room.Identifier, neighbour.Identifier);
                         if (!connected.Add(pair))
+                        {
                             continue;
+                        }
 
                         Vector3 mid = (room.Position + neighbour.Position) * 0.5f;
 
                         if (!TryResolveConnectionPoint(mid, room.Identifier, neighbour.Identifier,
                                                        out Vector3 point))
                         {
-                            connected.Remove(pair);
+                            _ = connected.Remove(pair);
                             rejected++;
                             Log.Debug($"[RoomGraph] failed link {room.Name} <-> " +
                                       $"{neighbour.Name}: midpoint {mid} not walkable");
@@ -259,10 +295,14 @@ namespace Next_generationSite_27.UnionP
                     }
 
                     if (nodeA.Edges.Count > 0)
+                    {
                         rescued++;
+                    }
 
                     if (++batch % BatchSize == 0)
+                    {
                         yield return Timing.WaitForOneFrame;
+                    }
                 }
             }
 
@@ -271,7 +311,9 @@ namespace Next_generationSite_27.UnionP
             List<RoomNode> isolatedNodes = nodes.Values.Where(n => n.Edges.Count == 0).ToList();
 
             foreach (RoomNode n in isolatedNodes)
+            {
                 Log.Warn($"[RoomGraph] i room: {n.Room.Name} ({n.Room.Type}) at {n.Position}");
+            }
 
             OnBuilt?.Invoke();
         }
@@ -282,16 +324,24 @@ namespace Next_generationSite_27.UnionP
             point = candidate;
 
             if (!ValidateWithNavMesh)
+            {
                 return true;
+            }
 
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 1.5f, NavMesh.AllAreas))
+            {
                 return false;
+            }
 
             if (!hit.position.TryGetRoom(out RoomIdentifier owner))
+            {
                 return false;
+            }
 
             if (owner != a && owner != b)
+            {
                 return false;
+            }
 
             point = hit.position;
             return true;
@@ -313,7 +363,9 @@ namespace Next_generationSite_27.UnionP
                 {
                     if (TryAddEdge(connectorRooms[i], connectorRooms[j], byIdentifier, connected,
                                    type, door, point, point))
+                    {
                         added++;
+                    }
                 }
             }
 
@@ -331,13 +383,17 @@ namespace Next_generationSite_27.UnionP
             Vector3 pointFromB)
         {
             if (a == null || b == null || a == b)
+            {
                 return false;
+            }
 
             if (!byIdentifier.TryGetValue(a, out RoomNode nodeA) ||
                 !byIdentifier.TryGetValue(b, out RoomNode nodeB))
+            {
                 return false;
+            }
 
-            connected.Add(new RoomPair(a, b));
+            _ = connected.Add(new RoomPair(a, b));
 
             int linkId = ++_linkCounter;
             nodeA.Edges.Add(new RoomEdge(nodeA, nodeB, door, type, pointFromA, linkId));
@@ -350,11 +406,15 @@ namespace Next_generationSite_27.UnionP
         {
             List<RoomEdge> edges = GetRoomEdgePath(start, end, passable);
             if (edges == null)
+            {
                 return null;
+            }
 
             var rooms = new List<Room> { start };
             foreach (RoomEdge edge in edges)
+            {
                 rooms.Add(edge.To.Room);
+            }
 
             return rooms;
         }
@@ -375,7 +435,9 @@ namespace Next_generationSite_27.UnionP
             }
 
             if (start == end)
+            {
                 return new List<RoomEdge>();
+            }
 
             if (!TryGetNode(start, out RoomNode s))
             {
@@ -390,9 +452,11 @@ namespace Next_generationSite_27.UnionP
             }
 
             if (s == e)
+            {
                 return new List<RoomEdge>();
+            }
 
-            passable = passable ?? IsEdgePassable;
+            passable ??= IsEdgePassable;
 
             var open = new FastPriorityQueue<RoomNode>();
             var came = new Dictionary<RoomNode, RoomEdge>(Nodes.Count);
@@ -405,21 +469,29 @@ namespace Next_generationSite_27.UnionP
             {
                 RoomNode cur = open.Dequeue();
                 if (cur == null || !visited.Add(cur))
+                {
                     continue;
+                }
 
                 if (cur == e)
+                {
                     return ReconstructEdgePath(came, cur, s);
+                }
 
                 float gCur = g.TryGetValue(cur, out float gv) ? gv : float.MaxValue;
 
                 foreach (RoomEdge edge in cur.Edges)
                 {
                     if (!passable(edge))
+                    {
                         continue;
+                    }
 
                     RoomNode nb = edge.To;
                     if (visited.Contains(nb))
+                    {
                         continue;
+                    }
 
                     float cost = gCur
                                + Vector3.Distance(cur.Position, edge.ConnectionPoint)
@@ -427,7 +499,9 @@ namespace Next_generationSite_27.UnionP
 
                     float gNb = g.TryGetValue(nb, out float gnv) ? gnv : float.MaxValue;
                     if (cost + 0.0001f >= gNb)
+                    {
                         continue;
+                    }
 
                     came[nb] = edge;
                     g[nb] = cost;
@@ -453,15 +527,23 @@ namespace Next_generationSite_27.UnionP
                 current = edge.From;
 
                 if (!guard.Add(current))
-                    break;  
-                if (current == start)
+                {
                     break;
+                }
+
+                if (current == start)
+                {
+                    break;
+                }
             }
 
             return path.ToList();
         }
 
-        public static bool IsEdgePassable(RoomEdge edge) => edge != null && edge.To != null;
+        public static bool IsEdgePassable(RoomEdge edge)
+        {
+            return edge != null && edge.To != null;
+        }
     }
 
     public class RoomNode
@@ -476,7 +558,10 @@ namespace Next_generationSite_27.UnionP
             Edges = new List<RoomEdge>(4);
         }
 
-        public override string ToString() => Room != null ? $"{Room.Name} ({Room.Type})" : "<null>";
+        public override string ToString()
+        {
+            return Room != null ? $"{Room.Name} ({Room.Type})" : "<null>";
+        }
     }
 
     public enum RoomEdgeType
@@ -516,10 +601,13 @@ namespace Next_generationSite_27.UnionP
                                                : (from.Position + to.Position) * 0.5f);
         }
 
-        public override string ToString() => $"{From} -[{Type}#{LinkId}]-> {To}";
+        public override string ToString()
+        {
+            return $"{From} -[{Type}#{LinkId}]-> {To}";
+        }
     }
 
-    public struct RoomPair : IEquatable<RoomPair>
+    public readonly struct RoomPair : IEquatable<RoomPair>
     {
         public readonly RoomIdentifier A;
         public readonly RoomIdentifier B;
@@ -545,9 +633,15 @@ namespace Next_generationSite_27.UnionP
             }
         }
 
-        public bool Equals(RoomPair other) => A == other.A && B == other.B;
+        public bool Equals(RoomPair other)
+        {
+            return A == other.A && B == other.B;
+        }
 
-        public override bool Equals(object obj) => obj is RoomPair other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is RoomPair other && Equals(other);
+        }
 
         public override int GetHashCode()
         {
@@ -562,11 +656,14 @@ namespace Next_generationSite_27.UnionP
 
     public class FastPriorityQueue<T> where T : class
     {
-        private readonly List<(T item, float prio)> _heap = new List<(T, float)>();
+        private readonly List<(T item, float prio)> _heap = new();
 
         public int Count => _heap.Count;
 
-        public void Clear() => _heap.Clear();
+        public void Clear()
+        {
+            _heap.Clear();
+        }
 
         public void Enqueue(T item, float prio)
         {
@@ -577,7 +674,9 @@ namespace Next_generationSite_27.UnionP
             {
                 int p = (i - 1) / 2;
                 if (_heap[p].prio <= prio)
+                {
                     break;
+                }
 
                 (_heap[i], _heap[p]) = (_heap[p], _heap[i]);
                 i = p;
@@ -587,13 +686,18 @@ namespace Next_generationSite_27.UnionP
         public T Dequeue()
         {
             if (_heap.Count == 0)
-                return null;  
+            {
+                return null;
+            }
+
             T top = _heap[0].item;
             var last = _heap[_heap.Count - 1];
             _heap.RemoveAt(_heap.Count - 1);
 
             if (_heap.Count == 0)
+            {
                 return top;
+            }
 
             _heap[0] = last;
 
@@ -604,9 +708,20 @@ namespace Next_generationSite_27.UnionP
                 int r = l + 1;
                 int s = i;
 
-                if (l < _heap.Count && _heap[l].prio < _heap[s].prio) s = l;
-                if (r < _heap.Count && _heap[r].prio < _heap[s].prio) s = r;
-                if (s == i) break;
+                if (l < _heap.Count && _heap[l].prio < _heap[s].prio)
+                {
+                    s = l;
+                }
+
+                if (r < _heap.Count && _heap[r].prio < _heap[s].prio)
+                {
+                    s = r;
+                }
+
+                if (s == i)
+                {
+                    break;
+                }
 
                 (_heap[i], _heap[s]) = (_heap[s], _heap[i]);
                 i = s;

@@ -1,35 +1,27 @@
 ﻿using CommandSystem;
-using DrawableLine;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.CustomStats;
 using MEC;
 using Mirror;
 using NetworkManagerUtils.Dummies;
-using NS_site27_heavy.heavy.Module.testing;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.PlayableScps.Scp079.Pinging;
 using PlayerRoles.Subroutines;
-using PlayerStatsSystem;
 using RelativePositioning;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using Utils;
 using Utils.Networking;
 
 namespace NS_site27_heavy.heavy.Module.Testing
 {
     internal class test_Fake079Ind
     {
-        public static void Send(Vector3 pos,Player player)
+        public static void Send(Vector3 pos, Player player)
         {
-            if (RoleTypeId.Scp079.TryGetRoleTemplate<Scp079Role>(out var r)) {
-                if(r is ISubroutinedRole isr)
+            if (RoleTypeId.Scp079.TryGetRoleTemplate<Scp079Role>(out var r))
+            {
+                if (r is ISubroutinedRole isr)
                 {
                     SubroutineBase[] allSubroutines = isr.SubroutineModule.AllSubroutines;
                     for (int i = 0; i < allSubroutines.Length; i++)
@@ -54,9 +46,9 @@ namespace NS_site27_heavy.heavy.Module.Testing
                                 }
                                 if (!f)
                                 {
-                                    h = Spawn("", RoleTypeId.Scp079, true,Vector3.zero).ReferenceHub;
-                                                                        h.roleManager.ServerSetRole(RoleTypeId.Scp079,RoleChangeReason.None);
-                                    Timing.CallDelayed(0.3f, () =>
+                                    h = Spawn("", RoleTypeId.Scp079, true, Vector3.zero).ReferenceHub;
+                                    h.roleManager.ServerSetRole(RoleTypeId.Scp079, RoleChangeReason.None);
+                                    _ = Timing.CallDelayed(0.3f, () =>
                                     {
                                         writer.WriteReferenceHub(h);
                                         writer.WriteRoleType(RoleTypeId.Scp079);
@@ -109,14 +101,14 @@ namespace NS_site27_heavy.heavy.Module.Testing
         }
         public static Npc Spawn(string name, RoleTypeId role = RoleTypeId.None, bool ignored = false, Vector3? position = null)
         {
-            Npc npc = new Npc(DummyUtils.SpawnDummy(name));
-            Timing.CallDelayed(0.2f, delegate
+            Npc npc = new(DummyUtils.SpawnDummy(name));
+            _ = Timing.CallDelayed(0.2f, delegate
             {
                 npc.Role.Set(role, SpawnReason.ForceClass, position.HasValue ? RoleSpawnFlags.AssignInventory : RoleSpawnFlags.All);
             });
             if (ignored)
             {
-                Round.IgnoredPlayers.Add(npc.ReferenceHub);
+                _ = Round.IgnoredPlayers.Add(npc.ReferenceHub);
             }
             npc.ReferenceHub.serverRoles.NetworkHideFromPlayerList = true;
             Player.Dictionary.Add(npc.GameObject, npc);

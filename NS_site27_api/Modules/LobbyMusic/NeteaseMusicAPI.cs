@@ -12,7 +12,8 @@ namespace NeteaseMusicAPI
 {
     public enum QualityLevel
     {
-        STANDARD,           EXHIGH,             LOSSLESS,           HIRES,              SKY,                JYEFFECT,           JYMASTER,           DOLBY           }
+        STANDARD, EXHIGH, LOSSLESS, HIRES, SKY, JYEFFECT, JYMASTER, DOLBY
+    }
 
     public class APIConstants
     {
@@ -29,7 +30,7 @@ namespace NeteaseMusicAPI
         public static readonly string QR_UNIKEY_API = "https://interface3.music.163.com/eapi/login/qrcode/unikey";
         public static readonly string QR_LOGIN_API = "https://interface3.music.163.com/eapi/login/qrcode/client/login";
 
-                public static readonly Dictionary<string, string> DEFAULT_CONFIG = new()
+        public static readonly Dictionary<string, string> DEFAULT_CONFIG = new()
         {
             {"os", "pc"},
             {"appver", ""},
@@ -106,23 +107,37 @@ namespace NeteaseMusicAPI
     {
         public long id { get; set; }
         public string url { get; set; }
-        public int br { get; set; }                   public long size { get; set; }                public string md5 { get; set; }
+        public int br { get; set; }
+        public long size { get; set; }
+        public string md5 { get; set; }
         public int code { get; set; }
-        public int expi { get; set; }                 public string type { get; set; }              public double gain { get; set; }              public double peak { get; set; }              public double closedGain { get; set; }
+        public int expi { get; set; }
+        public string type { get; set; }
+        public double gain { get; set; }
+        public double peak { get; set; }
+        public double closedGain { get; set; }
         public double closedPeak { get; set; }
-        public int fee { get; set; }                  public object uf { get; set; }                public int payed { get; set; }                public int flag { get; set; }
-        public bool canExtend { get; set; }           public object freeTrialInfo { get; set; }
-        public string level { get; set; }             public string encodeType { get; set; }        public object channelLayout { get; set; }
+        public int fee { get; set; }
+        public object uf { get; set; }
+        public int payed { get; set; }
+        public int flag { get; set; }
+        public bool canExtend { get; set; }
+        public object freeTrialInfo { get; set; }
+        public string level { get; set; }
+        public string encodeType { get; set; }
+        public object channelLayout { get; set; }
         public FreeTrialPrivilege freeTrialPrivilege { get; set; }
         public FreeTimeTrialPrivilege freeTimeTrialPrivilege { get; set; }
         public int urlSource { get; set; }
         public int rightSource { get; set; }
         public object podcastCtrp { get; set; }
         public object effectTypes { get; set; }
-        public int time { get; set; }                 public object message { get; set; }
+        public int time { get; set; }
+        public object message { get; set; }
         public object levelConfuse { get; set; }
         public object accompany { get; set; }
-        public int sr { get; set; }                   public object auEff { get; set; }
+        public int sr { get; set; }
+        public object auEff { get; set; }
         public object immerseType { get; set; }
         public int beatType { get; set; }
         public string musicId { get; set; }

@@ -21,13 +21,13 @@ using Round = Exiled.API.Features.Round;
 
 namespace NS_site27_api.Modules.LobbyMusic
 {
-        public enum SongSource
+    public enum SongSource
     {
         NeteaseCloud = 0,
         MonsterSiren = 1
     }
 
-        public struct SongReq
+    public struct SongReq
     {
         public string id;
         public SongSource source;
@@ -51,11 +51,11 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-        public class LobbyMusicConfig : ModuleConfigBase
+    public class LobbyMusicConfig : ModuleConfigBase
     {
     }
 
-        [CommandHandler(typeof(ClientCommandHandler))]
+    [CommandHandler(typeof(ClientCommandHandler))]
     public class OrderSongCommand : ICommand
     {
         public string Command => "orderSong";
@@ -95,7 +95,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-        [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class DisOrderSongCommand : ICommand
     {
         public string Command => "DisOrderSong";
@@ -117,7 +117,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-        [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class EnOrderSongCommand : ICommand
     {
         public string Command => "EnOrderSong";
@@ -133,7 +133,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
     }
 
-        public class LobbyMusicManager
+    public class LobbyMusicManager
     {
         public static LobbyMusicManager Instance { get; set; }
 
@@ -164,7 +164,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             public string Text;
         }
 
-                public void Init()
+        public void Init()
         {
             Instance = this;
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
@@ -173,7 +173,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             _cts = new CancellationTokenSource();
         }
 
-                public void Cleanup()
+        public void Cleanup()
         {
             if (_processor.IsRunning)
             {
@@ -197,12 +197,12 @@ namespace NS_site27_api.Modules.LobbyMusic
             _tempFiles.Clear();
         }
 
-                public void OnRoundStarted()
+        public void OnRoundStarted()
         {
             DestroySpeaker();
         }
 
-                public void OnRestartingRound()
+        public void OnRestartingRound()
         {
             _readyToNext = true;
             _cts?.Cancel();
@@ -218,7 +218,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             _tempFiles.Clear();
         }
 
-                public void OnWaitingForPlayers()
+        public void OnWaitingForPlayers()
         {
             OnRestartingRound();
             if (_processor.IsRunning)
@@ -232,7 +232,7 @@ namespace NS_site27_api.Modules.LobbyMusic
         }
 
 
-                public IEnumerator<float> MonitorPlaybackEnd()
+        public IEnumerator<float> MonitorPlaybackEnd()
         {
             int currentSid = sessionId;
             while (sessionId == currentSid && TotalTime > 0)
@@ -278,7 +278,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-                public void DestroySpeaker()
+        public void DestroySpeaker()
         {
             StopLyrics();
             if (sessionId != 0)
@@ -296,9 +296,9 @@ namespace NS_site27_api.Modules.LobbyMusic
             _readyToNext = true;
         }
 
-                public bool SongPlayable => Round.IsLobby || AdminOverrideEnable;
+        public bool SongPlayable => Round.IsLobby || AdminOverrideEnable;
 
-                public IEnumerator<float> ProcessQueue()
+        public IEnumerator<float> ProcessQueue()
         {
             Log.Info("start!");
             while (true)
@@ -317,7 +317,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-                public async Awaitable ProcessSongAsync(long songId)
+        public async Awaitable ProcessSongAsync(long songId)
         {
             int retries = 2;
             CancellationToken ct = _cts.Token;
@@ -364,7 +364,8 @@ namespace NS_site27_api.Modules.LobbyMusic
                             }
                         }
                     }
-                    else                     {
+                    else
+                    {
                         string apiUrl = $"https://monster-siren.hypergryph.com/api/song/{songId}";
                         using var http = new HttpClient();
                         var response = await http.GetStringAsync(apiUrl);
@@ -398,7 +399,8 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                     _processing.player?.SendConsoleMessage("歌曲解析完成，准备下载", "green");
                     await StartPlayback(downloadUrl, songName, lrcContent, ct);
-                    return;                 }
+                    return;
+                }
                 catch (OperationCanceledException)
                 {
                     Log.Info($"歌曲 {songId} 被取消");
@@ -420,7 +422,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 }
             }
         }
-                public async Awaitable StartPlayback(string url, string name, string lrc, CancellationToken ct)
+        public async Awaitable StartPlayback(string url, string name, string lrc, CancellationToken ct)
         {
             await Awaitable.BackgroundThreadAsync();
             if (string.IsNullOrEmpty(url))
@@ -494,7 +496,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     return;
                 }
                 DefaultAudioManager.Instance.RegisterAudio(guid.ToString(), () => File.OpenRead(tempOggFile));
-                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio<int>(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f,state:1,validPlayersFilter:(p,_) => p.IsReady);
+                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio<int>(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f, state: 1, validPlayersFilter: (p, _) => p.IsReady);
                 CurrentSongName = name;
                 _songStartTime = Time.time;
                 StartLyrics(lrc);
@@ -531,7 +533,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             }
         }
 
-                public List<LrcLine> ParseLrc(string lrcContent)
+        public List<LrcLine> ParseLrc(string lrcContent)
         {
             var lines = new List<LrcLine>();
             if (!string.IsNullOrEmpty(lrcContent))
@@ -607,9 +609,9 @@ namespace NS_site27_api.Modules.LobbyMusic
             return $"{min:D2}:{sec:D2}";
         }
 
-            }
+    }
 
-        public class LobbyMusicModule : ModuleBase<LobbyMusicConfig>
+    public class LobbyMusicModule : ModuleBase<LobbyMusicConfig>
     {
         public override string ModuleName => "LobbyMusic";
         public LobbyMusicManager _manager;

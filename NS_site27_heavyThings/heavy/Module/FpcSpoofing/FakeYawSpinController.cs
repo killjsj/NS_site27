@@ -6,15 +6,16 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 {
-                                        public static class FakeYawSpinController
+    public static class FakeYawSpinController
     {
-                public const float DefaultDegreesPerSecond = 3000f;
+        public const float DefaultDegreesPerSecond = 3000f;
 
         private sealed class SpinEntry
         {
             public float DegreesPerSecond;
             public float Yaw;
-            public HashSet<ReferenceHub> Receivers;           }
+            public HashSet<ReferenceHub> Receivers;
+        }
 
         private static readonly Dictionary<ReferenceHub, SpinEntry> Spins
             = new();
@@ -23,10 +24,10 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 
         private static bool _hooked;
 
-                                                                                                                                                                                                public static void Start(ReferenceHub target,
-                                 float degreesPerSecond = DefaultDegreesPerSecond,
-                                 IEnumerable<ReferenceHub> receivers = null,
-                                 float? startYaw = null)
+        public static void Start(ReferenceHub target,
+float degreesPerSecond = DefaultDegreesPerSecond,
+IEnumerable<ReferenceHub> receivers = null,
+float? startYaw = null)
         {
             if (target == null)
             {
@@ -49,7 +50,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             entry.Receivers = receivers == null ? null : new HashSet<ReferenceHub>(receivers);
         }
 
-                public static void Stop(ReferenceHub target)
+        public static void Stop(ReferenceHub target)
         {
             if (target == null || !Spins.TryGetValue(target, out SpinEntry entry))
             {
@@ -58,7 +59,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 
             _ = Spins.Remove(target);
 
-                        if (entry.Receivers != null)
+            if (entry.Receivers != null)
             {
                 foreach (ReferenceHub r in entry.Receivers)
                 {
@@ -79,7 +80,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             return target != null && Spins.ContainsKey(target);
         }
 
-                public static void StopAll()
+        public static void StopAll()
         {
             var targets = new List<ReferenceHub>(Spins.Keys);
             foreach (ReferenceHub t in targets)
@@ -97,7 +98,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
                 return;
             }
 
-                                    StaticUnityMethods.OnUpdate += OnUpdate;
+            StaticUnityMethods.OnUpdate += OnUpdate;
             _hooked = true;
         }
 
@@ -127,7 +128,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
                 ReferenceHub target = kv.Key;
                 SpinEntry entry = kv.Value;
 
-                                if (target == null || target.roleManager.CurrentRole is not IFpcRole)
+                if (target == null || target.roleManager.CurrentRole is not IFpcRole)
                 {
                     DeadTargets.Add(target);
                     continue;

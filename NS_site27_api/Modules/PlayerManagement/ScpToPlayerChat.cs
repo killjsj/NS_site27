@@ -29,7 +29,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             Exiled.Events.Handlers.Player.ChangingRole -= OnChangingRole;
             VoiceSetting = null;
-                        LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage -= VoiceChatting;
+            LabApi.Events.Handlers.PlayerEvents.SendingVoiceMessage -= VoiceChatting;
         }
 
         public override void OnEnable()
@@ -38,14 +38,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             {
                 if (p != null && p.IsScp && sb != null && sb.Id == Config.SettingId && sb is KeybindSetting keybind && keybind.IsPressed)
                 {
-                    if (!TalkTohumanScp.Contains(p))
-                    {
-                        TalkTohumanScp.Add(p);
-                    }
-                    else
-                    {
-                        _ = TalkTohumanScp.Remove(p);
-                    }
+                    _ = !TalkTohumanScp.Contains(p) ? TalkTohumanScp.Add(p) : TalkTohumanScp.Remove(p);
                     string str = TalkTohumanScp.Contains(p) ? "<color=green><size=20>已开启 SCP对人类语音</size></color>" : "<color=red><size=20>已关闭 SCP对人类语音</size></color>";
                     p.RemoveHint("scphumantalk");
                     p.AddHint("scphumantalk", 3, x => new MsgUpdateResult() { Content = str, Title = "scpTalkToHuman" });
@@ -90,7 +83,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     {
                         Volume = 1,
                     };
-                    if (AudioManagerAPI.Controllers.ControllerIdManager.TryAllocate(AudioPriority.High, null, AS, out var _, out var id))
+                    if (AudioManagerAPI.Controllers.ControllerIdManager.TryAllocate(AudioPriority.High, null, AS, out _, out var id))
                     {
                         var newInstance = SpeakerToy.Create(ev.Player.GameObject.transform, false);
                         newInstance.ControllerId = id;
@@ -124,20 +117,15 @@ namespace NS_site27_api.Modules.PlayerManagement
                 }
 
             }
-            else if(ev.Player.Role == RoleTypeId.Scp079)
+            else if (ev.Player.Role == RoleTypeId.Scp079)
             {
-                if(ev.Message.Channel == VoiceChat.VoiceChatChannel.Proximity)
+                if (ev.Message.Channel == VoiceChat.VoiceChatChannel.Proximity)
                 {
-                    if(ev.Player.ReferenceHub.roleManager.CurrentRole is Scp079Role s079)
+                    if (ev.Player.ReferenceHub.roleManager.CurrentRole is Scp079Role s079)
                     {
-                        if(s079.CurrentCamera?.Room.Name == MapGeneration.RoomName.EzIntercom && (s079?.CurrentCamera?.Label?.ToLower().Contains("panel") ?? false))
-                        {
-                            Scp079AllowIntercom.Add(ev.Player.ReferenceHub);
-                        }
-                        else
-                        {
-                            Scp079AllowIntercom.Remove(ev.Player.ReferenceHub);
-                        }
+                        _ = s079.CurrentCamera?.Room.Name == MapGeneration.RoomName.EzIntercom && (s079?.CurrentCamera?.Label?.ToLower().Contains("panel") ?? false)
+                            ? Scp079AllowIntercom.Add(ev.Player.ReferenceHub)
+                            : Scp079AllowIntercom.Remove(ev.Player.ReferenceHub);
                     }
                 }
             }

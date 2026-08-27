@@ -65,7 +65,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         {
             if (ev.Player != null && _scp106Catchers.TryGetValue(ev.Player, out _))
             {
-                                _ = _scp106Catchers.Remove(ev.Player);
+                _ = _scp106Catchers.Remove(ev.Player);
             }
         }
         public static void HandleScpStandHeal(Player player)

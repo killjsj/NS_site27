@@ -82,7 +82,7 @@ namespace DisplayKit
 
         public static T GetOrAdd<T>(string key, System.Func<T> factory)
         {
-            return (T)_cache.GetOrAdd(key,() => factory());
+            return (T)_cache.GetOrAdd(key, () => factory());
         }
 
         public static void Set(string key, object value)
@@ -241,7 +241,7 @@ namespace DisplayKit.Elements
 
         public DisplayElement AddElement()
         {
-            var key = $"DisplayCanvas.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            var key = $"DisplayCanvas.AddElement.{GetHashCode()}.{Guid.NewGuid()}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var el = new DisplayElement
@@ -257,7 +257,7 @@ namespace DisplayKit.Elements
 
         public DisplayText AddText(string text = "")
         {
-            var key = $"DisplayCanvas.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            var key = $"DisplayCanvas.AddText.{GetHashCode()}.{Guid.NewGuid()}.{text}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var t = new DisplayText
@@ -274,67 +274,67 @@ namespace DisplayKit.Elements
 
         public void Spawn()
         {
-            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{GetHashCode()}", true);
         }
 
         public void Spawn(int connectionId)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}.{connectionId}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{GetHashCode()}.{connectionId}", true);
         }
 
         public void Spawn(ReferenceHub hub)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Spawned.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Spawned.{GetHashCode()}.{hub?.GetHashCode().ToString() ?? "null"}", true);
         }
 
         public void Show()
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}", true);
         }
 
         public void Hide()
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", false);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}", false);
         }
 
         public void Show(int connectionId)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{connectionId}", true);
         }
 
         public void Hide(int connectionId)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", false);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{connectionId}", false);
         }
 
         public void Show(ReferenceHub hub)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{hub?.GetHashCode().ToString() ?? "null"}", true);
         }
 
         public void Hide(ReferenceHub hub)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", false);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{hub?.GetHashCode().ToString() ?? "null"}", false);
         }
 
         public void SetVisibility(bool visible)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}", visible);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}", visible);
         }
 
         public void SetVisibility(int connectionId, bool visible)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{connectionId}", visible);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{connectionId}", visible);
         }
 
         public void SetVisibility(ReferenceHub hub, bool visible)
         {
-            ExternObjectCache.Set($"DisplayCanvas.Visibility.{this.GetHashCode()}.{(hub?.GetHashCode().ToString() ?? "null")}", visible);
+            ExternObjectCache.Set($"DisplayCanvas.Visibility.{GetHashCode()}.{hub?.GetHashCode().ToString() ?? "null"}", visible);
         }
 
         public void Destroy()
         {
-            ExternObjectCache.Set($"DisplayCanvas.Destroyed.{this.GetHashCode()}", true);
+            ExternObjectCache.Set($"DisplayCanvas.Destroyed.{GetHashCode()}", true);
         }
 
         public int? Id { get; internal set; }
@@ -393,13 +393,13 @@ namespace DisplayKit.Elements
 
         public DisplayElement AddElement()
         {
-            var key = $"DisplayElement.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            var key = $"DisplayElement.AddElement.{GetHashCode()}.{Guid.NewGuid()}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var el = new DisplayElement
                 {
                     Parent = this,
-                    Root = this.Root,
+                    Root = Root,
                     BaseElement = new VisualElement()
                 };
                 Children.Add(el);
@@ -409,13 +409,13 @@ namespace DisplayKit.Elements
 
         public DisplayText AddText(string text = "")
         {
-            var key = $"DisplayElement.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            var key = $"DisplayElement.AddText.{GetHashCode()}.{Guid.NewGuid()}.{text}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var t = new DisplayText
                 {
                     Parent = this,
-                    Root = this.Root,
+                    Root = Root,
                     BaseElement = new VisualElement(),
                     Content = text
                 };
@@ -426,11 +426,15 @@ namespace DisplayKit.Elements
 
         public void Remove()
         {
-            ExternObjectCache.Set($"DisplayElement.Removed.{this.GetHashCode()}", true);
+            ExternObjectCache.Set($"DisplayElement.Removed.{GetHashCode()}", true);
             if (Parent is DisplayCanvas dc)
-                dc.Children.Remove(this);
+            {
+                _ = dc.Children.Remove(this);
+            }
             else if (Parent is DisplayElement de)
-                de.Children.Remove(this);
+            {
+                _ = de.Children.Remove(this);
+            }
         }
 
         public int? Id { get; internal set; }
@@ -475,13 +479,13 @@ namespace DisplayKit.Elements
 
         public DisplayElement AddElement()
         {
-            var key = $"DisplayText.AddElement.{this.GetHashCode()}.{Guid.NewGuid()}";
+            var key = $"DisplayText.AddElement.{GetHashCode()}.{Guid.NewGuid()}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var el = new DisplayElement
                 {
                     Parent = this,
-                    Root = this.Root,
+                    Root = Root,
                     BaseElement = new VisualElement()
                 };
                 Children.Add(el);
@@ -491,13 +495,13 @@ namespace DisplayKit.Elements
 
         public DisplayText AddText(string text = "")
         {
-            var key = $"DisplayText.AddText.{this.GetHashCode()}.{Guid.NewGuid()}.{text}";
+            var key = $"DisplayText.AddText.{GetHashCode()}.{Guid.NewGuid()}.{text}";
             return ExternObjectCache.GetOrAdd(key, () =>
             {
                 var t = new DisplayText
                 {
                     Parent = this,
-                    Root = this.Root,
+                    Root = Root,
                     BaseElement = new VisualElement(),
                     Content = text
                 };
@@ -508,11 +512,15 @@ namespace DisplayKit.Elements
 
         public void Remove()
         {
-            ExternObjectCache.Set($"DisplayText.Removed.{this.GetHashCode()}", true);
+            ExternObjectCache.Set($"DisplayText.Removed.{GetHashCode()}", true);
             if (Parent is DisplayCanvas dc)
-                dc.Children.Remove(this);
+            {
+                _ = dc.Children.Remove(this);
+            }
             else if (Parent is DisplayElement de)
-                de.Children.Remove(this);
+            {
+                _ = de.Children.Remove(this);
+            }
         }
 
         public string Content { get; set; }
@@ -546,7 +554,7 @@ namespace DisplayKit
         public static void ParseAndApply(string cssStyle, IDisplayStyleTarget element)
         {
             var styles = Parse(cssStyle);
-            ExternObjectCache.Set($"StyleParser.ParseAndApply.{cssStyle}.{(element?.GetHashCode().ToString() ?? "null")}", styles);
+            ExternObjectCache.Set($"StyleParser.ParseAndApply.{cssStyle}.{element?.GetHashCode().ToString() ?? "null"}", styles);
         }
 
         public static Dictionary<string, string> Parse(string cssStyle)
@@ -560,11 +568,15 @@ namespace DisplayKit
     {
         public static void WriteAssignments(Dictionary<string, string> styles, string varName, StringBuilder sb)
         {
-            if (styles == null) return;
+            if (styles == null)
+            {
+                return;
+            }
+
             var concatenated = string.Join(";", System.Linq.Enumerable.Select(styles, kv => $"{kv.Key}:{kv.Value}"));
             var key = $"StyleCodeGen.WriteAssignments.{varName}.{concatenated}";
             var cached = ExternObjectCache.GetOrAdd(key, () => concatenated);
-            sb.Append(cached);
+            _ = sb.Append(cached);
         }
     }
 
@@ -573,18 +585,18 @@ namespace DisplayKit
         public static void Apply(UIElements.IStyle s, IDisplayStyleTarget e)
         {
             var dict = ToDictionary(s);
-            ExternObjectCache.Set($"StyleIStyleConverter.Apply.{(e?.GetHashCode().ToString() ?? "null")}", dict);
+            ExternObjectCache.Set($"StyleIStyleConverter.Apply.{e?.GetHashCode().ToString() ?? "null"}", dict);
         }
 
         public static Dictionary<string, string> ToDictionary(UIElements.IStyle s)
         {
-            var key = $"StyleIStyleConverter.ToDictionary.IStyle.{(s?.GetHashCode().ToString() ?? "null")}";
+            var key = $"StyleIStyleConverter.ToDictionary.IStyle.{s?.GetHashCode().ToString() ?? "null"}";
             return ExternObjectCache.GetOrAdd(key, () => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
         }
 
         public static Dictionary<string, string> ToDictionary(UIElements.IResolvedStyle rs)
         {
-            var key = $"StyleIStyleConverter.ToDictionary.IResolvedStyle.{(rs?.GetHashCode().ToString() ?? "null")}";
+            var key = $"StyleIStyleConverter.ToDictionary.IResolvedStyle.{rs?.GetHashCode().ToString() ?? "null"}";
             return ExternObjectCache.GetOrAdd(key, () => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
         }
     }
@@ -593,8 +605,9 @@ namespace DisplayKit
     {
         public static string StripSuffix(string s, string suffix)
         {
-            if (string.IsNullOrEmpty(s) || string.IsNullOrEmpty(suffix)) return s;
-            return s.EndsWith(suffix, StringComparison.Ordinal) ? s.Substring(0, s.Length - suffix.Length) : s;
+            return string.IsNullOrEmpty(s) || string.IsNullOrEmpty(suffix)
+                ? s
+                : s.EndsWith(suffix, StringComparison.Ordinal) ? s.Substring(0, s.Length - suffix.Length) : s;
         }
 
         public static bool TryParseKeyword(string raw, out StyleKeyword keyword)

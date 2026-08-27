@@ -38,17 +38,11 @@ namespace NS_site27_api.Modules.PlayerManagement
                 return GamePhase.FreshStart;
             }
 
-            if (hours < 10)
-            {
-                return GamePhase.FirstGlimpse;
-            }
-
-            if (hours < 15)
-            {
-                return GamePhase.MinorAchievement;
-            }
-
-            return hours < 20
+            return hours < 10
+                ? GamePhase.FirstGlimpse
+                : hours < 15
+                ? GamePhase.MinorAchievement
+                : hours < 20
                 ? GamePhase.SteadyProgress
                 : hours < 25
                 ? GamePhase.BattleHardened

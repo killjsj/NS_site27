@@ -29,7 +29,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
 
-                        DisplayElement VisualElement = canvas.AddElement();
+            DisplayElement VisualElement = canvas.AddElement();
             VisualElement.BaseElement.name = "VisualElement";
             VisualElement.Position.Position = Position.Absolute;
             VisualElement.Size.Width = Length.Percent(100f);
@@ -38,7 +38,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             VisualElement.Position.Left = 0f;
             VisualElement.Position.Right = 0f;
 
-                        DisplayElement died = VisualElement.AddElement();
+            DisplayElement died = VisualElement.AddElement();
             died.BaseElement.name = "died";
             died.Position.Position = Position.Absolute;
             died.Position.Left = 0f;
@@ -49,7 +49,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             died.Transform.TransformOrigin = new TransformOrigin(Length.Percent(0f), Length.Percent(0f), 0f);
             died.Transform.Translate = new Translate(Length.Percent(0f), Length.Percent(0f));
 
-                        DisplayElement ntfDisplay = died.AddElement();
+            DisplayElement ntfDisplay = died.AddElement();
             ntfDisplay.BaseElement.name = "ntfDisplay";
             ntfDisplay.Flex.Grow = 0f;
             ntfDisplay.Size.Height = Length.Percent(21f);
@@ -60,10 +60,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             ntfDisplay.Text.Color = new Color(0.2470588f, 0.772549f, 0.6705883f, 1f);
             ntfDisplay.Text.FontSize = 26f;
 
-                        DisplayText ntfText = ntfDisplay.AddText("");
+            DisplayText ntfText = ntfDisplay.AddText("");
             ntfText.BaseElement.name = "ntfText";
 
-                        DisplayElement chaosDisplay = died.AddElement();
+            DisplayElement chaosDisplay = died.AddElement();
             chaosDisplay.BaseElement.name = "chaosDisplay";
             chaosDisplay.Flex.Grow = 0f;
             chaosDisplay.Size.Height = Length.Percent(21f);
@@ -74,10 +74,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             chaosDisplay.Text.Color = new Color(0.1607843f, 1f, 0.8078431f, 1f);
             chaosDisplay.Text.FontSize = 26f;
 
-                        DisplayText chaosText = chaosDisplay.AddText("");
+            DisplayText chaosText = chaosDisplay.AddText("");
             chaosText.BaseElement.name = "chaosText";
 
-                        DisplayElement teamDisplay = died.AddElement();
+            DisplayElement teamDisplay = died.AddElement();
             teamDisplay.BaseElement.name = "teamDisplay";
             teamDisplay.Flex.Grow = 0f;
             teamDisplay.Size.Height = Length.Percent(18f);
@@ -88,10 +88,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             teamDisplay.Text.FontSize = 21f;
             teamDisplay.Text.Color = new Color(0.4666667f, 0f, 1f, 1f);
 
-                        DisplayText DiedTeamText = teamDisplay.AddText("");
+            DisplayText DiedTeamText = teamDisplay.AddText("");
             DiedTeamText.BaseElement.name = "DiedTeamText";
 
-                        DisplayElement groupDisplay = died.AddElement();
+            DisplayElement groupDisplay = died.AddElement();
             groupDisplay.BaseElement.name = "groupDisplay";
             groupDisplay.Flex.Grow = 0f;
             groupDisplay.Size.Height = Length.Percent(9f);
@@ -102,10 +102,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             groupDisplay.Text.FontSize = 22f;
             groupDisplay.Text.Color = new Color(0.003921569f, 0f, 1f, 1f);
 
-                        DisplayText GroupText = groupDisplay.AddText("");
+            DisplayText GroupText = groupDisplay.AddText("");
             GroupText.BaseElement.name = "GroupText";
 
-                        DisplayElement ServerEventToPlayerDisplay = VisualElement.AddElement();
+            DisplayElement ServerEventToPlayerDisplay = VisualElement.AddElement();
             ServerEventToPlayerDisplay.BaseElement.name = "ServerEventToPlayerDisplay";
             ServerEventToPlayerDisplay.Size.Height = Length.Percent(9f);
             ServerEventToPlayerDisplay.Size.Width = Length.Percent(20f);
@@ -115,10 +115,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             ServerEventToPlayerDisplay.Text.FontSize = 26f;
             ServerEventToPlayerDisplay.Text.Color = new Color(0f, 1f, 0.9529412f, 1f);
 
-                        DisplayText ServerEventToPlayerText = ServerEventToPlayerDisplay.AddText("");
+            DisplayText ServerEventToPlayerText = ServerEventToPlayerDisplay.AddText("");
             ServerEventToPlayerText.BaseElement.name = "ServerEventToPlayerText";
 
-                        DisplayElement levelDisplay = VisualElement.AddElement();
+            DisplayElement levelDisplay = VisualElement.AddElement();
             levelDisplay.BaseElement.name = "levelDisplay";
             levelDisplay.Position.Position = Position.Absolute;
             levelDisplay.Position.Left = 0f;
@@ -128,16 +128,16 @@ namespace NS_site27_api.Modules.PlayerManagement
             levelDisplay.Text.FontSize = 23f;
             levelDisplay.Text.Color = new Color(0.3529412f, 0.945098f, 0.3529412f, 1f);
 
-                        DisplayText LevelText = levelDisplay.AddText("");
+            DisplayText LevelText = levelDisplay.AddText("");
             LevelText.BaseElement.name = "LevelText";
 
-                        DisplayElement alive = VisualElement.AddElement();
+            DisplayElement alive = VisualElement.AddElement();
             alive.BaseElement.name = "alive";
             alive.Position.Position = Position.Absolute;
             alive.Size.Width = Length.Percent(100f);
             alive.Size.Height = Length.Percent(100f);
 
-                        DisplayElement TeamShowDisplay = alive.AddElement();
+            DisplayElement TeamShowDisplay = alive.AddElement();
             TeamShowDisplay.BaseElement.name = "TeamShowDisplay";
             TeamShowDisplay.Position.Position = Position.Absolute;
             TeamShowDisplay.Size.Height = Length.Percent(29f);
@@ -148,10 +148,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             TeamShowDisplay.Text.OutlineColor = Color.white;
             TeamShowDisplay.Text.Color = new Color(0.02745098f, 0.8039216f, 0.7764706f, 1f);
 
-                        DisplayText TeamText = TeamShowDisplay.AddText("");
+            DisplayText TeamText = TeamShowDisplay.AddText("");
             TeamText.BaseElement.name = "TeamText";
 
-                        DisplayElement SpawnProtect = alive.AddElement();
+            DisplayElement SpawnProtect = alive.AddElement();
             SpawnProtect.BaseElement.name = "SpawnProtect";
             SpawnProtect.Size.Width = Length.Percent(16f);
             SpawnProtect.Size.Height = Length.Percent(8f);
@@ -161,10 +161,10 @@ namespace NS_site27_api.Modules.PlayerManagement
             SpawnProtect.Text.FontSize = 27f;
             SpawnProtect.Text.Color = new Color(0.2745098f, 0.9098039f, 0.654902f, 1f);
 
-                        DisplayText ProtectText = SpawnProtect.AddText("");
+            DisplayText ProtectText = SpawnProtect.AddText("");
             ProtectText.BaseElement.name = "ProtectText";
 
-                        DisplayElement Ammo = alive.AddElement();
+            DisplayElement Ammo = alive.AddElement();
             Ammo.BaseElement.name = "Ammo";
             Ammo.Flex.Grow = 1f;
             Ammo.Position.Position = Position.Absolute;
@@ -175,7 +175,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             Ammo.Align.AlignItems = Align.Center;
             Ammo.Align.JustifyContent = Justify.Center;
 
-                        DisplayText AmmoText = Ammo.AddText("");
+            DisplayText AmmoText = Ammo.AddText("");
             AmmoText.BaseElement.name = "AmmoText";
             AmmoText.Position.Position = Position.Absolute;
             AmmoText.Text.Color = new Color(1f, 0.8588235f, 0f, 1f);

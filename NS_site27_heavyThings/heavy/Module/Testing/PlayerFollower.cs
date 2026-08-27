@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
 using Exiled.API.Features;
 using FacilityNavigation;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Scp049.Zombies;
 using RelativePositioning;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -31,7 +31,7 @@ namespace Next_generationSite_27.UnionP
         private float _minDistance = DefaultMinDistance;
         private float _speed = DefaultSpeed;
 
-        private readonly List<Vector3> _waypoints = new List<Vector3>(48);
+        private readonly List<Vector3> _waypoints = new(48);
         private bool _directLine;
         private float _nextRepathTime;
         private Vector3 _lastStuckSample;
@@ -54,12 +54,12 @@ namespace Next_generationSite_27.UnionP
             if (!NetworkServer.active ||
                 _hubToFollow == null ||
                 _hub == null ||
-                !(_hub.roleManager.CurrentRole is IFpcRole))
+                _hub.roleManager.CurrentRole is not IFpcRole)
             {
                 Destroy(this);
                 return;
             }
-            if (!(_hubToFollow.roleManager.CurrentRole is IFpcRole))
+            if (_hubToFollow.roleManager.CurrentRole is not IFpcRole)
             {
                 _hubToFollow = OwnerHub;
             }
@@ -68,7 +68,9 @@ namespace Next_generationSite_27.UnionP
             if (_hub.roleManager.CurrentRole is ZombieRole zombieRole &&
                 zombieRole.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out var consume) &&
                 consume.IsInProgress)
+            {
                 return;
+            }
 
             Vector3 goal = TargetPos?.Invoke(_hubToFollow) ?? _hubToFollow.transform.position;
             Vector3 pos = transform.position;
@@ -79,7 +81,9 @@ namespace Next_generationSite_27.UnionP
                 _hubToFollow = OwnerHub;
 
                 if (_hub.roleManager.CurrentRole is IFpcRole fpcr)
+                {
                     fpcr.FpcModule.ServerOverridePosition(OwnerHub.transform.position);
+                }
 
                 ResetPath();
                 _stuckAttempts = 0;
@@ -96,9 +100,7 @@ namespace Next_generationSite_27.UnionP
                 FaceTarget(fpc, goal);
                 return;
             }
-
-            float speed = _speed;
-            speed = fpc.FpcModule.VelocityForState(PlayerMovementState.Sprinting, false);
+            float speed = fpc.FpcModule.VelocityForState(PlayerMovementState.Sprinting, false);
 
 
             if (Time.time >= _nextRepathTime)
@@ -126,20 +128,28 @@ namespace Next_generationSite_27.UnionP
             if (PathModule.TryFindPathAtoB(from, to, out List<Vector3> corners, out _))
             {
                 for (int i = 1; i < corners.Count; i++)
+                {
                     _waypoints.Add(corners[i]);
+                }
             }
 
             if (_waypoints.Count == 0)
+            {
                 _waypoints.Add(to);
+            }
 
             if (DebugDrawPath && _waypoints.Count > 1)
+            {
                 Draw.Path(_waypoints.ToArray(), Color.red, RepathInterval + 0.001f);
+            }
         }
 
         private Vector3 GetLookAheadPoint(Vector3 pos, Vector3 fallbackGoal)
         {
             if (_waypoints.Count == 0)
+            {
                 return fallbackGoal;
+            }
 
             float accumulated = 0f;
             Vector3 previousPoint = pos;
@@ -153,7 +163,7 @@ namespace Next_generationSite_27.UnionP
                 if (accumulated >= LookAheadDistance)
                 {
                     float overshoot = accumulated - LookAheadDistance;
-                    float t = 1f - overshoot / segmentLength;
+                    float t = 1f - (overshoot / segmentLength);
                     return Vector3.Lerp(previousPoint, currentPoint, t);
                 }
 
@@ -166,7 +176,9 @@ namespace Next_generationSite_27.UnionP
         private void Step(IFpcRole fpc, Vector3 pos, Vector3 targetPos, float speed, Vector3 faceTarget)
         {
             if (DebugDrawPath)
+            {
                 Draw.Line(pos, targetPos, Color.green, 0.05f);
+            }
 
             Vector3 dir = targetPos - pos;
             dir.y = 0f;
@@ -175,7 +187,7 @@ namespace Next_generationSite_27.UnionP
             if (magnitude > 0.05f)
             {
                 dir /= magnitude;
-                Vector3 next = pos + dir * (speed * Time.deltaTime);
+                Vector3 next = pos + (dir * (speed * Time.deltaTime));
                 fpc.FpcModule.Motor.ReceivedPosition = new RelativePosition(next);
             }
             FaceTarget(fpc, faceTarget);
@@ -186,11 +198,15 @@ namespace Next_generationSite_27.UnionP
             Vector3 dirToTarget = targetPos - transform.position;
             dirToTarget.y = 0f;
             if (dirToTarget.sqrMagnitude < 0.01f)
+            {
                 return;
+            }
 
             float yaw = Mathf.Atan2(dirToTarget.x, dirToTarget.z) * Mathf.Rad2Deg;
             if (yaw < 0f)
+            {
                 yaw += 360f;
+            }
 
             fpc.FpcModule.MouseLook.CurrentHorizontal = yaw;
         }
@@ -209,7 +225,9 @@ namespace Next_generationSite_27.UnionP
 
             _stuckTimer += Time.deltaTime;
             if (_stuckTimer < StuckCheckInterval)
+            {
                 return;
+            }
 
             _stuckTimer = 0f;
             _lastStuckSample = pos;
@@ -222,7 +240,9 @@ namespace Next_generationSite_27.UnionP
                     _hubToFollow = OwnerHub;
 
                     if (_hub.roleManager.CurrentRole is IFpcRole fpcr)
+                    {
                         fpcr.FpcModule.ServerOverridePosition(OwnerHub.transform.position);
+                    }
 
                     ResetPath();
                     _stuckAttempts = 0;

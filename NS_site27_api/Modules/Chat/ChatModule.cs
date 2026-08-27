@@ -11,30 +11,30 @@ using Time = UnityEngine.Time;
 
 namespace NS_site27_api.Modules.Chat
 {
-        public class ChatConfig : ModuleConfigBase
+    public class ChatConfig : ModuleConfigBase
     {
-                public float ChatFontSize { get; set; } = 23f;
+        public float ChatFontSize { get; set; } = 23f;
 
-                public int MaxPublicChatLines { get; set; } = 3;
+        public int MaxPublicChatLines { get; set; } = 3;
         public float PublicChatDuration { get; set; } = 3f;
 
-                public int MaxTeamChatLines { get; set; } = 3;
+        public int MaxTeamChatLines { get; set; } = 3;
         public float TeamChatDuration { get; set; } = 3f;
 
-                public int MaxAdminChatLines { get; set; } = 5;
+        public int MaxAdminChatLines { get; set; } = 5;
         public float AdminChatDuration { get; set; } = 5f;
 
         public int MaxServerBroadcastLines { get; set; } = 3;
         public float ServerBroadcastDuration { get; set; } = 10f;
 
-                public int MaxMessagesPerCooldown { get; set; } = 3;
+        public int MaxMessagesPerCooldown { get; set; } = 3;
         public float CooldownWindow { get; set; } = 10f;
         public float CooldownDuration { get; set; } = 10f;
     }
 
-        public struct ChatMessage
+    public struct ChatMessage
     {
-        public string InputText;          public float StartTime;
+        public string InputText; public float StartTime;
         public Player player;
         public bool isFirstProcess = true;
         public ChatMessage(string text, Player player)
@@ -51,7 +51,7 @@ namespace NS_site27_api.Modules.Chat
         Admin,
         ServerBroadcast
     }
-        public static class ChatManager
+    public static class ChatManager
     {
         public static ChatConfig _cfg;
         public class TimeSorter : IComparer<ChatMessage>
@@ -62,7 +62,7 @@ namespace NS_site27_api.Modules.Chat
             }
         }
         public static TimeSorter _timeSorter = new();
-                public static List<ChatMessage> ChatList = new();
+        public static List<ChatMessage> ChatList = new();
         public static List<ChatMessage> AdminList = new();
         public static List<ChatMessage> ServerList = new();
         public static Dictionary<Team, List<ChatMessage>> TeamList = new()
@@ -75,11 +75,11 @@ namespace NS_site27_api.Modules.Chat
             { Team.OtherAlive, new List<ChatMessage>() },
         };
 
-                public static readonly Dictionary<string, float> cooldownEndTimes = new();
+        public static readonly Dictionary<string, float> cooldownEndTimes = new();
         public static readonly Dictionary<string, List<float>> recentMessageTimes = new();
         public static readonly List<ChatMessage> FirstProcesses = new();
 
-                public static readonly Dictionary<Team, string> teamColors = new()
+        public static readonly Dictionary<Team, string> teamColors = new()
         {
             { Team.SCPs, "#FF0000" },
             { Team.FoundationForces, "#0096FF" },
@@ -95,18 +95,18 @@ namespace NS_site27_api.Modules.Chat
             _cfg = config;
         }
 
-                public static bool CanSendMessage(Player player, out float cooldownRemaining)
+        public static bool CanSendMessage(Player player, out float cooldownRemaining)
         {
             string userId = player.UserId;
             float now = Time.time;
 
-                        if (cooldownEndTimes.TryGetValue(userId, out float endTime) && now < endTime)
+            if (cooldownEndTimes.TryGetValue(userId, out float endTime) && now < endTime)
             {
                 cooldownRemaining = endTime - now;
                 return false;
             }
 
-                        if (!recentMessageTimes.TryGetValue(userId, out var times))
+            if (!recentMessageTimes.TryGetValue(userId, out var times))
             {
                 times = new List<float>();
                 recentMessageTimes[userId] = times;

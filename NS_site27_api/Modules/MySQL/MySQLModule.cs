@@ -55,7 +55,7 @@ namespace NS_site27_api.Modules.MySQL
                 using var reader = await cmd.ExecuteReaderAsync();
                 if (await reader.ReadAsync())
                 {
-                                        int uidOrd = reader.GetOrdinal("uid");
+                    int uidOrd = reader.GetOrdinal("uid");
                     int nameOrd = reader.GetOrdinal("name");
                     int expOrd = reader.GetOrdinal("experience");
                     int mulOrd = reader.GetOrdinal("experience_multiplier");
@@ -316,20 +316,18 @@ namespace NS_site27_api.Modules.MySQL
 
             try
             {
-                using (var conn = new MySqlConnection(_connectionString))
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    _ = cmd.Parameters.AddWithValue("@issuer_name", issuer_name ?? "Unknown");
-                    _ = cmd.Parameters.AddWithValue("@issuer_userid", issuer_userid ?? "Unknown");
-                    _ = cmd.Parameters.AddWithValue("@name", name ?? "Unknown");
-                    _ = cmd.Parameters.AddWithValue("@userid", userid);
-                    _ = cmd.Parameters.AddWithValue("@reason", reason ?? "No reason");
-                    _ = cmd.Parameters.AddWithValue("@start_time", start);
-                    _ = cmd.Parameters.AddWithValue("@end_time", end);
-                    _ = cmd.Parameters.AddWithValue("@port", port ?? "Unknown");
-                    await conn.OpenAsync();
-                    _ = await cmd.ExecuteNonQueryAsync();
-                }
+                using var conn = new MySqlConnection(_connectionString);
+                using var cmd = new MySqlCommand(sql, conn);
+                _ = cmd.Parameters.AddWithValue("@issuer_name", issuer_name ?? "Unknown");
+                _ = cmd.Parameters.AddWithValue("@issuer_userid", issuer_userid ?? "Unknown");
+                _ = cmd.Parameters.AddWithValue("@name", name ?? "Unknown");
+                _ = cmd.Parameters.AddWithValue("@userid", userid);
+                _ = cmd.Parameters.AddWithValue("@reason", reason ?? "No reason");
+                _ = cmd.Parameters.AddWithValue("@start_time", start);
+                _ = cmd.Parameters.AddWithValue("@end_time", end);
+                _ = cmd.Parameters.AddWithValue("@port", port ?? "Unknown");
+                await conn.OpenAsync();
+                _ = await cmd.ExecuteNonQueryAsync();
                 return true;
             }
             catch (Exception ex)
@@ -371,7 +369,7 @@ namespace NS_site27_api.Modules.MySQL
                     int startOrd = reader.GetOrdinal("start_time");
                     int endOrd = reader.GetOrdinal("end_time");
                     int portOrd = reader.GetOrdinal("port");
-                    
+
 
                     return (
                         reader.IsDBNull(issuerNameOrd) ? null : reader.GetString(issuerNameOrd),
@@ -386,7 +384,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"QueryBan: {ex}"); }
-            
+
 
             return null;
         }
@@ -399,7 +397,7 @@ namespace NS_site27_api.Modules.MySQL
                 return result;
             }
 
-            
+
 
             const string sql = @"SELECT player_name, port, permissions, expiration_date, is_permanent, notes
                                  FROM admin WHERE userid = @userid
@@ -434,7 +432,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"QueryAdmin: {ex}"); }
-            
+
 
             return result;
         }
@@ -451,7 +449,7 @@ namespace NS_site27_api.Modules.MySQL
                                    FROM badge WHERE userid = @userid
                                    AND (is_permanent = 1 OR expiration_date > NOW())
                                    ORDER BY is_permanent DESC, expiration_date ASC";
-            
+
 
             try
             {
@@ -481,7 +479,7 @@ namespace NS_site27_api.Modules.MySQL
                 }
             }
             catch (Exception ex) { Log.Error($"查询用户 {userid} 的徽章失败: {ex}"); }
-            
+
 
             return badges;
         }
@@ -496,7 +494,7 @@ namespace NS_site27_api.Modules.MySQL
 
             const string sql = @"INSERT INTO admin_log (userid, name, operation_time, port, command_name, command_result, additional_info, admingroup)
                                  VALUES (@userid, @name, @operation_time, @port, @command_name, @command_result, @additional_info, @admingroup)";
-            
+
 
             try
             {

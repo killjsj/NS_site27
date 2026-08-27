@@ -203,7 +203,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                     _ = Vector3.ProjectOnPlane(Vector3.right, wallNormal).normalized;
                 }
 
-                                return Quaternion.LookRotation(projectedForward, wallNormal);
+                return Quaternion.LookRotation(projectedForward, wallNormal);
             }
         }
 
@@ -331,17 +331,17 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 return hit;
             }
 
-                        hit.point = to;
+            hit.point = to;
             hit.normal = Vector3.up;
             hit.distance = distance;
-            
+
             return hit;
         }
         public class bunker : NetworkBehaviour, IDestructible, IBlockStaticBatching
         {
             public uint NetworkId => base.netId;
 
-                                    public Vector3 CenterOfMass => base.transform.position;
+            public Vector3 CenterOfMass => base.transform.position;
             private void ServerSendImpactDecal(RaycastHit hit, Vector3 origin, DecalPoolType decalType, ImpactEffectsModule impactEffectsModule)
             {
                 _ = typeof(ImpactEffectsModule).GetMethod("ServerSendImpactDecal", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(impactEffectsModule, new object[] { hit, origin, decalType });
@@ -394,18 +394,18 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
                 _prevStatus = true;
             }
 
-                        private IEnumerator BreakWindow()
+            private IEnumerator BreakWindow()
             {
                 GameObject.Destroy(base.gameObject);
                 yield break;
             }
 
-                        private bool CheckDamagePerms(RoleTypeId roleType)
+            private bool CheckDamagePerms(RoleTypeId roleType)
             {
                 return !_preventScpDamage || (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(roleType, out PlayerRoleBase playerRoleBase) && playerRoleBase.Team > Team.SCPs);
             }
 
-                        [ServerCallback]
+            [ServerCallback]
             private void ServerDamageWindow(float damage)
             {
                 if (!NetworkServer.active)

@@ -61,7 +61,7 @@ namespace NS_site27_api.Modules.Voting
             int no = VoteControl[1].Count;
 
             double percentage = yes / (double)Mathf.Max(1, yes + no) * 100;
-                        foreach (var player in Player.Enumerable)
+            foreach (var player in Player.Enumerable)
             {
                 player.RemoveHint("votestart");
                 player.AddHint("voteend", 7f, x => new MsgUpdateResult() { Title = "vote", Content = $"投票:{voteName} 结果: 同意率:{percentage:F2}% 同意:{yes} 不同意:{no}" }, Priority: PriorityLevel.High);

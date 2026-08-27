@@ -17,7 +17,7 @@ namespace NS_site27_api.Modules.Chat
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
-                        DisplayElement VisualElement = canvas.AddElement();
+            DisplayElement VisualElement = canvas.AddElement();
             VisualElement.BaseElement.name = "VisualElement";
             VisualElement.Position.Position = Position.Absolute;
             VisualElement.Size.Width = Length.Percent(100f);
@@ -26,7 +26,7 @@ namespace NS_site27_api.Modules.Chat
             VisualElement.Position.Left = 0f;
             VisualElement.Position.Right = 0f;
 
-                        DisplayElement chat = VisualElement.AddElement();
+            DisplayElement chat = VisualElement.AddElement();
             chat.BaseElement.name = "chat";
             chat.Flex.Grow = 1f;
             chat.Size.Width = Length.Percent(14.5f);
@@ -34,7 +34,7 @@ namespace NS_site27_api.Modules.Chat
             chat.Position.Position = Position.Absolute;
             chat.Position.Top = Length.Percent(15f);
 
-                        DisplayText ChatText = chat.AddText("");
+            DisplayText ChatText = chat.AddText("");
             ChatText.BaseElement.name = "ChatText";
             ChatText.Text.Font = FontType.LiberationSans;
             ChatText.Text.FontSize = 23f;
@@ -121,7 +121,7 @@ namespace NS_site27_api.Modules.Chat
         }
         private static string GetChannelDisplay(List<ChatMessage> list, int maxLines, ChatMode mode)
         {
-                        var outTime = 3f;
+            var outTime = 3f;
             switch (mode)
             {
                 case ChatMode.Global:

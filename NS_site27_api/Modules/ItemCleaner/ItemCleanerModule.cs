@@ -90,8 +90,8 @@ namespace NS_site27_api.Modules.ItemCleaner
                 counter += 0.4f;
                 if (counter <= cfg.CleanTime - cfg.startCountDownTime)
                 {
-                                    }
-                                else if (counter <= cfg.CleanTime)
+                }
+                else if (counter <= cfg.CleanTime)
                 {
                     if (!countdownstart)
                     {

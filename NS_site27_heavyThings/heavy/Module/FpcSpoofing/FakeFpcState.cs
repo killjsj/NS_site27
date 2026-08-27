@@ -3,15 +3,15 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 {
-                    public readonly struct FakeFpcState
+    public readonly struct FakeFpcState
     {
-                public readonly Vector3? Position;
+        public readonly Vector3? Position;
 
-                public readonly float? Yaw;
+        public readonly float? Yaw;
 
-                public readonly float? Pitch;
+        public readonly float? Pitch;
 
-                public readonly PlayerMovementState? State;
+        public readonly PlayerMovementState? State;
 
         public FakeFpcState(
             Vector3? position = null,
@@ -28,7 +28,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
         public bool IsEmpty =>
             !Position.HasValue && !Yaw.HasValue && !Pitch.HasValue && !State.HasValue;
 
-                public FakeFpcState With(FakeFpcState other)
+        public FakeFpcState With(FakeFpcState other)
         {
             return new FakeFpcState(
             other.Position ?? Position,

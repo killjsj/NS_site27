@@ -5,7 +5,6 @@ using Exiled.API.Features.Roles;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MessageModule;
 using PlayerRoles;
-using PlayerRoles.Subroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -183,7 +182,7 @@ namespace NS_site27_api.Modules.Commands
         public string Command => "tp";
         public string[] Aliases => Array.Empty<string>();
         public string Description => "tp";
-        public string[] Usage => new[] { "x","y","z" };
+        public string[] Usage => new[] { "x", "y", "z" };
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {

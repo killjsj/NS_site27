@@ -95,24 +95,21 @@ namespace NS_site27_api.Modules.PlayerManagement
         public void ChangedItem(ChangedItemEventArgs ev)
         {
 
-                try
+            try
+            {
+                if (ev.Player == null)
                 {
-                    if (ev.Player == null)
-                    {
-                        return;
-                    }
-                    if (allItems == null)
-                    {
-                        allItems = (ItemType[])Enum.GetValues(typeof(ItemType));
-                    }
-                    foreach (ItemType itemType in allItems)
-                    {
-                        if (GetItemBase(itemType)?.Category != ItemCategory.Ammo) { continue; }
-                        ev.Player.Inventory.ServerSetAmmo(itemType, 200);
-                    }
+                    return;
                 }
-                catch (Exception e) { Log.Warn($"[PM] ChangedItem: {e}"); }
-            
+                allItems ??= (ItemType[])Enum.GetValues(typeof(ItemType));
+                foreach (ItemType itemType in allItems)
+                {
+                    if (GetItemBase(itemType)?.Category != ItemCategory.Ammo) { continue; }
+                    ev.Player.Inventory.ServerSetAmmo(itemType, 200);
+                }
+            }
+            catch (Exception e) { Log.Warn($"[PM] ChangedItem: {e}"); }
+
         }
         public void Hurting(HurtingEventArgs ev)
         {
@@ -212,12 +209,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         }
         public static ItemBase GetItemBase(ItemType type)
         {
-            if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out var value))
-            {
-                return null;
-            }
-
-            return value;
+            return !InventoryItemLoader.AvailableItems.TryGetValue(type, out var value) ? null : value;
         }
         public static ItemType[] allItems = null;
         private void OnChangingRole(ChangingRoleEventArgs ev)
@@ -230,10 +222,7 @@ namespace NS_site27_api.Modules.PlayerManagement
                     {
                         return;
                     }
-                    if (allItems == null)
-                    {
-                        allItems = (ItemType[])Enum.GetValues(typeof(ItemType));
-                    }
+                    allItems ??= (ItemType[])Enum.GetValues(typeof(ItemType));
                     foreach (ItemType itemType in allItems)
                     {
                         if (GetItemBase(itemType)?.Category != ItemCategory.Ammo) { continue; }
@@ -247,7 +236,7 @@ namespace NS_site27_api.Modules.PlayerManagement
         private void OnDied(DiedEventArgs ev)
         {
             _ = GetOrCreateStats(ev.Player);
-            
+
             if (ev.Attacker == null)
             {
                 return;
@@ -297,7 +286,7 @@ namespace NS_site27_api.Modules.PlayerManagement
             try
             {
                 var sql = SQL;
-                if (sql == null ||  ev.Player.IsNPC)
+                if (sql == null || ev.Player.IsNPC)
                 {
                     return;
                 }
@@ -410,8 +399,10 @@ namespace NS_site27_api.Modules.PlayerManagement
                             continue;
                         }
 
-                        if(!player.IsNPC)
+                        if (!player.IsNPC)
+                        {
                             PlayerStateManager.HandleBadgeSync(player, player.ReferenceHub);
+                        }
 
                         if (player.Role is SpectatorRole spectatorRole)
                         {
@@ -424,8 +415,10 @@ namespace NS_site27_api.Modules.PlayerManagement
 
                         try { PlayerStateManager.HandleScpStandHeal(player); }
                         catch (Exception e) { Log.Error($"[scpheal] {player?.Nickname ?? "Unknown"}: {e.GetType().Name} - {e.Message}"); }
-                        if(!player.IsNPC)
+                        if (!player.IsNPC)
+                        {
                             PlayerStateManager.HandlePlayerRenamer(player);
+                        }
                     }
                 }
                 catch (Exception e) { Log.Error($"[PM] Refresh: {e}"); }

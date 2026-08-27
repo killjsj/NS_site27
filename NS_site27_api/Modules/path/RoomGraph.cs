@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Exiled.API.Features;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using MapGeneration;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace FacilityNavigation
@@ -15,18 +15,18 @@ namespace FacilityNavigation
         public const float DefaultLockedDoorPenalty = 8f;
 
         private static readonly Dictionary<RoomIdentifier, RoomNode> NodesById =
-            new Dictionary<RoomIdentifier, RoomNode>(250);
+            new(250);
 
         private static readonly Dictionary<RoomPair, List<RoomEdge>> EdgesByPair =
-            new Dictionary<RoomPair, List<RoomEdge>>();
+            new();
 
         private static readonly Dictionary<RoomPair, int> LinkIdCounter =
-            new Dictionary<RoomPair, int>();
+            new();
 
         private static readonly Dictionary<RoomEdge, Vector3[]> EdgePassPoints =
-            new Dictionary<RoomEdge, Vector3[]>();
+            new();
 
-        private static readonly List<RoomNode> NodeList = new List<RoomNode>();
+        private static readonly List<RoomNode> NodeList = new();
 
         public static IReadOnlyList<RoomNode> Nodes => NodeList;
 
@@ -39,7 +39,9 @@ namespace FacilityNavigation
             Clear();
 
             foreach (RoomIdentifier id in RoomIdentifier.AllRoomIdentifiers)
+            {
                 CreateNode(id);
+            }
 
             AddDoorEdges();
             AddConnectorEdges();
@@ -60,17 +62,25 @@ namespace FacilityNavigation
             IsBuilt = false;
         }
 
-        public static void Invalidate() => IsBuilt = false;
+        public static void Invalidate()
+        {
+            IsBuilt = false;
+        }
 
         public static void EnsureBuilt()
         {
             if (IsBuilt && !IsStale())
+            {
                 return;
+            }
 
             if (!SeedSynchronizer.MapGenerated)
             {
                 if (IsBuilt)
+                {
                     Clear();
+                }
+
                 return;
             }
 
@@ -93,10 +103,7 @@ namespace FacilityNavigation
         {
             EnsureBuilt();
 
-            if (worldPos.TryGetRoom(out RoomIdentifier id) && NodesById.TryGetValue(id, out RoomNode node))
-                return node;
-
-            return NearestNode(worldPos, 25f);
+            return worldPos.TryGetRoom(out RoomIdentifier id) && NodesById.TryGetValue(id, out RoomNode node) ? node : NearestNode(worldPos, 25f);
         }
 
         private static RoomNode NearestNode(Vector3 worldPos, float maxDistance)
@@ -107,7 +114,9 @@ namespace FacilityNavigation
             foreach (RoomNode node in NodeList)
             {
                 if (node?.Room == null)
+                {
                     continue;
+                }
 
                 Vector3 delta = node.Position - worldPos;
                 delta.y *= 0.5f;
@@ -127,11 +136,13 @@ namespace FacilityNavigation
         {
             EnsureBuilt();
 
-            List<RoomNode> isolated = new List<RoomNode>();
+            List<RoomNode> isolated = new();
             foreach (RoomNode node in NodeList)
             {
                 if (node.Edges.Count == 0)
+                {
                     isolated.Add(node);
+                }
             }
 
             return isolated;
@@ -162,7 +173,9 @@ namespace FacilityNavigation
 
             List<RoomNode> isolated = GetIsolatedNodes();
             if (isolated.Count > 0)
+            {
                 Log.Warn($"[RoomGraph] isolated rooms ({isolated.Count}): {FormatPath(isolated)}");
+            }
         }
 
         public static List<RoomNode> FindPath(RoomNode start, RoomNode goal)
@@ -216,10 +229,14 @@ namespace FacilityNavigation
             float cost = 1f;
 
             if (edge.Type == RoomEdgeType.Elevator)
+            {
                 cost += DefaultElevatorCost;
+            }
 
             if (edge.DoorBase != null && edge.DoorBase.ActiveLocks != 0)
+            {
                 cost += DefaultLockedDoorPenalty;
+            }
 
             return cost;
         }
@@ -227,14 +244,19 @@ namespace FacilityNavigation
         public static string FormatPath(IReadOnlyList<RoomNode> path)
         {
             if (path == null || path.Count == 0)
+            {
                 return string.Empty;
+            }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < path.Count; i++)
             {
                 if (i > 0)
-                    sb.Append(" -> ");
-                sb.Append(path[i].ToString());
+                {
+                    _ = sb.Append(" -> ");
+                }
+
+                _ = sb.Append(path[i].ToString());
             }
 
             return sb.ToString();
@@ -243,19 +265,21 @@ namespace FacilityNavigation
         public static string FormatPathDetailed(IReadOnlyList<RoomNode> path)
         {
             if (path == null || path.Count == 0)
+            {
                 return string.Empty;
+            }
 
-            StringBuilder sb = new StringBuilder();
-            sb.Append("[0] ").AppendLine(path[0].ToString());
+            StringBuilder sb = new();
+            _ = sb.Append("[0] ").AppendLine(path[0].ToString());
 
             for (int i = 1; i < path.Count; i++)
             {
                 RoomEdge edge = FindPrimaryEdgeBetween(path[i - 1], path[i]);
-                sb.Append("    ");
-                sb.Append(edge == null ? "-->" : $"-[{edge.Type}#{edge.LinkId}]->");
-                sb.Append(' ');
-                sb.Append('[').Append(i).Append("] ");
-                sb.AppendLine(path[i].ToString());
+                _ = sb.Append("    ");
+                _ = sb.Append(edge == null ? "-->" : $"-[{edge.Type}#{edge.LinkId}]->");
+                _ = sb.Append(' ');
+                _ = sb.Append('[').Append(i).Append("] ");
+                _ = sb.AppendLine(path[i].ToString());
             }
 
             return sb.ToString().TrimEnd();
@@ -263,10 +287,7 @@ namespace FacilityNavigation
 
         public static RoomEdge FindPrimaryEdgeBetween(RoomNode a, RoomNode b)
         {
-            if (a == null || b == null)
-                return null;
-
-            return GetBestEdgeBetween(a, b);
+            return a == null || b == null ? null : GetBestEdgeBetween(a, b);
         }
 
         public static bool TryBuildWaypoints(Vector3 from, Vector3 to,
@@ -279,7 +300,9 @@ namespace FacilityNavigation
 
             List<RoomNode> path = SearchFewest(GetNode(from), GetNode(to), null);
             if (path == null)
+            {
                 return false;
+            }
 
             rooms = path;
             waypoints = new List<Vector3> { from };
@@ -291,13 +314,15 @@ namespace FacilityNavigation
                 if (edge == null)
                 {
                     waypoints.Add(FindBoundaryPoint(
-                        path[i].Room != null ? path[i].Room.Identifier : null,
-                        path[i + 1].Room != null ? path[i + 1].Room.Identifier : null));
+                        path[i].Room?.Identifier,
+                        path[i + 1].Room?.Identifier));
                     continue;
                 }
 
                 foreach (Vector3 point in GetPassPoints(edge, path[i]))
+                {
                     waypoints.Add(point);
+                }
             }
 
             waypoints.Add(to);
@@ -307,7 +332,9 @@ namespace FacilityNavigation
         public static Vector3[] GetPassPoints(RoomEdge edge, RoomNode travellingFrom)
         {
             if (edge == null)
+            {
                 return Array.Empty<Vector3>();
+            }
 
             Vector3[] points = EdgePassPoints.TryGetValue(edge, out Vector3[] stored)
                 ? stored
@@ -316,28 +343,36 @@ namespace FacilityNavigation
             bool forward = ReferenceEquals(edge.From, travellingFrom) || !ReferenceEquals(edge.To, travellingFrom);
 
             if (forward || points.Length < 2)
+            {
                 return points;
+            }
 
             Vector3[] reversed = new Vector3[points.Length];
             for (int i = 0; i < points.Length; i++)
+            {
                 reversed[i] = points[points.Length - 1 - i];
+            }
 
             return reversed;
         }
 
         private static RoomEdge GetBestEdgeBetween(RoomNode a, RoomNode b)
         {
-            RoomPair pair = new RoomPair(a.Room?.Identifier, b.Room?.Identifier);
+            RoomPair pair = new(a.Room?.Identifier, b.Room?.Identifier);
 
             if (!EdgesByPair.TryGetValue(pair, out List<RoomEdge> list) || list.Count == 0)
+            {
                 return null;
+            }
 
             RoomEdge best = list[0];
 
             for (int i = 1; i < list.Count; i++)
             {
                 if (RankOf(list[i].Type) < RankOf(best.Type))
+                {
                     best = list[i];
+                }
             }
 
             return best;
@@ -345,25 +380,29 @@ namespace FacilityNavigation
 
         private static int RankOf(RoomEdgeType type)
         {
-            switch (type)
+            return type switch
             {
-                case RoomEdgeType.Door: return 0;
-                case RoomEdgeType.Connector: return 1;
-                case RoomEdgeType.Elevator: return 2;
-                default: return 3;
-            }
+                RoomEdgeType.Door => 0,
+                RoomEdgeType.Connector => 1,
+                RoomEdgeType.Elevator => 2,
+                _ => 3,
+            };
         }
 
         private static void CreateNode(RoomIdentifier id)
         {
             if (id == null || NodesById.ContainsKey(id))
+            {
                 return;
+            }
 
             Room exRoom = Room.Get(id);
             if (exRoom == null)
+            {
                 return;
+            }
 
-            RoomNode node = new RoomNode(exRoom);
+            RoomNode node = new(exRoom);
             NodesById.Add(id, node);
             NodeList.Add(node);
         }
@@ -373,12 +412,16 @@ namespace FacilityNavigation
             foreach (DoorVariant door in DoorVariant.AllDoors)
             {
                 if (door == null || door is ElevatorDoor || !door.RoomsAlreadyRegistered)
+                {
                     continue;
+                }
 
                 RoomEdgeType type = door is CheckpointDoor ? RoomEdgeType.Transition : RoomEdgeType.Door;
 
                 if (!RegisterRoomsPair(door.Rooms, door, type, door.transform.position))
+                {
                     RegisterProbedPair(door, type);
+                }
             }
         }
 
@@ -387,9 +430,11 @@ namespace FacilityNavigation
             foreach (RoomConnector connector in RoomConnector.AllConnectors)
             {
                 if (connector == null)
+                {
                     continue;
+                }
 
-                RegisterRoomsPair(connector.Rooms, null, RoomEdgeType.Connector, connector.transform.position);
+                _ = RegisterRoomsPair(connector.Rooms, null, RoomEdgeType.Connector, connector.transform.position);
             }
         }
 
@@ -399,11 +444,15 @@ namespace FacilityNavigation
             {
                 List<ElevatorDoor> doors = ElevatorDoor.GetDoorsForGroup(group);
                 if (doors == null || doors.Count < 2)
+                {
                     continue;
+                }
 
                 RoomIdentifier[] floorRooms = new RoomIdentifier[doors.Count];
                 for (int i = 0; i < doors.Count; i++)
+                {
                     floorRooms[i] = ResolveElevatorFloorRoom(doors[i]);
+                }
 
                 for (int i = 0; i < doors.Count - 1; i++)
                 {
@@ -411,7 +460,9 @@ namespace FacilityNavigation
                     ElevatorDoor upper = doors[i + 1];
 
                     if (lower == null || upper == null)
+                    {
                         continue;
+                    }
 
                     RegisterEdge(floorRooms[i], floorRooms[i + 1], lower,
                         RoomEdgeType.Elevator,
@@ -425,16 +476,24 @@ namespace FacilityNavigation
         private static RoomIdentifier ResolveElevatorFloorRoom(ElevatorDoor door)
         {
             if (door == null)
+            {
                 return null;
+            }
 
             if (door.TargetPosition.TryGetRoom(out RoomIdentifier id))
+            {
                 return id;
+            }
 
             if (door.transform.position.TryGetRoom(out id))
+            {
                 return id;
+            }
 
             if (door.Chamber != null && door.Chamber.CurrentRoom != null)
+            {
                 return door.Chamber.CurrentRoom;
+            }
 
             Vector3 origin = door.transform.position;
             RoomIdentifier nearest = null;
@@ -443,7 +502,9 @@ namespace FacilityNavigation
             foreach (RoomIdentifier candidate in RoomIdentifier.AllRoomIdentifiers)
             {
                 if (candidate == null)
+                {
                     continue;
+                }
 
                 Vector3 delta = candidate.transform.position - origin;
                 delta.y = 0f;
@@ -464,16 +525,22 @@ namespace FacilityNavigation
             foreach (RoomIdentifier room in RoomIdentifier.AllRoomIdentifiers)
             {
                 if (room == null)
+                {
                     continue;
+                }
 
                 foreach (RoomIdentifier other in room.ConnectedRooms)
                 {
                     if (other == null)
+                    {
                         continue;
+                    }
 
-                    RoomPair pair = new RoomPair(room, other);
+                    RoomPair pair = new(room, other);
                     if (EdgesByPair.ContainsKey(pair))
+                    {
                         continue;
+                    }
 
                     RegisterEdge(room, other, null, RoomEdgeType.Transition, FindBoundaryPoint(room, other), 0);
                 }
@@ -483,7 +550,9 @@ namespace FacilityNavigation
         public static Vector3 FindBoundaryPoint(RoomIdentifier a, RoomIdentifier b)
         {
             if (a == null || b == null)
+            {
                 return Vector3.zero;
+            }
 
             Vector3 from = a.transform.position;
             Vector3 to = b.transform.position;
@@ -491,17 +560,21 @@ namespace FacilityNavigation
             Vector3 delta = to - from;
             float dist = delta.magnitude;
             if (dist < 0.5f)
+            {
                 return from;
+            }
 
             Vector3 dir = delta / dist;
 
             Vector3 lastInside = from;
             for (float d = 1f; d <= dist; d += 1f)
             {
-                Vector3 sample = from + dir * d;
+                Vector3 sample = from + (dir * d);
 
                 if (!sample.TryGetRoom(out RoomIdentifier id))
+                {
                     continue;
+                }
 
                 if (id != a)
                 {
@@ -512,18 +585,12 @@ namespace FacilityNavigation
                 lastInside = sample;
             }
 
-            return lastInside + dir * 2f;
+            return lastInside + (dir * 2f);
         }
 
         private static bool RegisterRoomsPair(RoomIdentifier[] rooms, DoorVariant door, RoomEdgeType type, Vector3 point)
         {
-            if (rooms == null || rooms.Length < 2)
-                return false;
-
-            if (!TryGetTwoDistinct(rooms, out RoomIdentifier first, out RoomIdentifier second))
-                return false;
-
-            return FinalizePair(first, second, door, type, point);
+            return rooms != null && rooms.Length >= 2 && TryGetTwoDistinct(rooms, out RoomIdentifier first, out RoomIdentifier second) && FinalizePair(first, second, door, type, point);
         }
 
         private static void RegisterProbedPair(DoorVariant door, RoomEdgeType type)
@@ -531,7 +598,7 @@ namespace FacilityNavigation
             Vector3 origin = door.transform.position;
             Vector3 forward = door.transform.forward;
 
-            List<RoomIdentifier> found = new List<RoomIdentifier>(4);
+            List<RoomIdentifier> found = new(4);
 
             CollectProbe(found, origin, forward);
             CollectProbe(found, origin, -forward);
@@ -544,7 +611,7 @@ namespace FacilityNavigation
                 {
                     if (found[i] != found[j])
                     {
-                        FinalizePair(found[i], found[j], door, type, origin);
+                        _ = FinalizePair(found[i], found[j], door, type, origin);
                         return;
                     }
                 }
@@ -557,7 +624,7 @@ namespace FacilityNavigation
 
             foreach (float distance in distances)
             {
-                Vector3 sample = origin + direction * distance;
+                Vector3 sample = origin + (direction * distance);
 
                 if (sample.TryGetRoom(out RoomIdentifier id) && !results.Contains(id))
                 {
@@ -565,7 +632,7 @@ namespace FacilityNavigation
                     return;
                 }
 
-                Vector3 lowered = sample - Vector3.up * 2f;
+                Vector3 lowered = sample - (Vector3.up * 2f);
                 if (lowered.TryGetRoom(out id) && !results.Contains(id))
                 {
                     results.Add(id);
@@ -582,7 +649,9 @@ namespace FacilityNavigation
             foreach (RoomIdentifier candidate in rooms)
             {
                 if (candidate == null)
+                {
                     continue;
+                }
 
                 if (first == null)
                 {
@@ -604,10 +673,14 @@ namespace FacilityNavigation
             RoomEdgeType type, Vector3 point)
         {
             if (a == null || b == null || a == b)
+            {
                 return false;
+            }
 
             if (type == RoomEdgeType.Door && a.Zone != b.Zone)
+            {
                 type = RoomEdgeType.Transition;
+            }
 
             RegisterEdge(a, b, door, type, point, 0);
             return true;
@@ -620,9 +693,11 @@ namespace FacilityNavigation
             RoomNode nb = GetNodeRaw(b);
 
             if (na == null || nb == null || ReferenceEquals(na, nb))
+            {
                 return;
+            }
 
-            RoomPair pair = new RoomPair(a, b);
+            RoomPair pair = new(a, b);
 
             int linkId;
             if (!LinkIdCounter.TryGetValue(pair, out int next))
@@ -637,7 +712,7 @@ namespace FacilityNavigation
 
             LinkIdCounter[pair] = Mathf.Max(next, linkId) + 1;
 
-            RoomEdge edge = new RoomEdge(na, nb, door, type, point, linkId);
+            RoomEdge edge = new(na, nb, door, type, point, linkId);
 
             na.Edges.Add(edge);
             nb.Edges.Add(edge);
@@ -662,29 +737,27 @@ namespace FacilityNavigation
 
         private static RoomNode Other(RoomEdge edge, RoomNode current)
         {
-            if (ReferenceEquals(edge.From, current))
-                return edge.To;
-
-            if (ReferenceEquals(edge.To, current))
-                return edge.From;
-
-            return null;
+            return ReferenceEquals(edge.From, current) ? edge.To : ReferenceEquals(edge.To, current) ? edge.From : null;
         }
 
         private static List<RoomNode> SearchFewest(RoomNode start, RoomNode goal, Func<RoomEdge, bool> edgeFilter)
         {
             if (start == null || goal == null)
+            {
                 return null;
+            }
 
             if (ReferenceEquals(start, goal))
+            {
                 return new List<RoomNode> { start };
+            }
 
-            Dictionary<RoomNode, RoomNode> prev = new Dictionary<RoomNode, RoomNode>
+            Dictionary<RoomNode, RoomNode> prev = new()
             {
                 { start, null }
             };
 
-            Queue<RoomNode> queue = new Queue<RoomNode>();
+            Queue<RoomNode> queue = new();
             queue.Enqueue(start);
 
             while (queue.Count > 0)
@@ -692,16 +765,22 @@ namespace FacilityNavigation
                 RoomNode current = queue.Dequeue();
 
                 if (ReferenceEquals(current, goal))
+                {
                     break;
+                }
 
                 foreach (RoomEdge edge in current.Edges)
                 {
                     if (edgeFilter != null && !edgeFilter(edge))
+                    {
                         continue;
+                    }
 
                     RoomNode next = Other(edge, current);
                     if (next == null || prev.ContainsKey(next))
+                    {
                         continue;
+                    }
 
                     prev[next] = current;
                     queue.Enqueue(next);
@@ -714,21 +793,25 @@ namespace FacilityNavigation
         private static List<RoomNode> SearchCheapest(RoomNode start, RoomNode goal, Func<RoomEdge, float> costOverride)
         {
             if (start == null || goal == null)
+            {
                 return null;
+            }
 
             Func<RoomEdge, float> cost = costOverride ?? DefaultEdgeCost;
 
             if (ReferenceEquals(start, goal))
+            {
                 return new List<RoomNode> { start };
+            }
 
-            Dictionary<RoomNode, float> dist = new Dictionary<RoomNode, float>
+            Dictionary<RoomNode, float> dist = new()
             {
                 { start, 0f }
             };
 
-            Dictionary<RoomNode, RoomNode> prev = new Dictionary<RoomNode, RoomNode>();
-            HashSet<RoomNode> closed = new HashSet<RoomNode>();
-            List<RoomNode> open = new List<RoomNode> { start };
+            Dictionary<RoomNode, RoomNode> prev = new();
+            HashSet<RoomNode> closed = new();
+            List<RoomNode> open = new() { start };
 
             while (open.Count > 0)
             {
@@ -749,16 +832,22 @@ namespace FacilityNavigation
                 open.RemoveAt(bestIndex);
 
                 if (!closed.Add(current))
+                {
                     continue;
+                }
 
                 if (ReferenceEquals(current, goal))
+                {
                     break;
+                }
 
                 foreach (RoomEdge edge in current.Edges)
                 {
                     RoomNode next = Other(edge, current);
                     if (next == null || closed.Contains(next))
+                    {
                         continue;
+                    }
 
                     float newDist = dist[current] + cost(edge);
 
@@ -777,15 +866,17 @@ namespace FacilityNavigation
         private static List<RoomNode> Reconstruct(Dictionary<RoomNode, RoomNode> prev, RoomNode goal)
         {
             if (!prev.ContainsKey(goal))
+            {
                 return null;
+            }
 
-            List<RoomNode> path = new List<RoomNode>();
+            List<RoomNode> path = new();
             RoomNode current = goal;
 
             while (current != null)
             {
                 path.Add(current);
-                prev.TryGetValue(current, out RoomNode parent);
+                _ = prev.TryGetValue(current, out RoomNode parent);
                 current = parent;
             }
 
@@ -796,12 +887,16 @@ namespace FacilityNavigation
         private static bool IsStale()
         {
             if (NodeList.Count == 0 || NodeList.Count != RoomIdentifier.AllRoomIdentifiers.Count)
+            {
                 return true;
+            }
 
             foreach (RoomIdentifier key in NodesById.Keys)
             {
                 if (key == null)
+                {
                     return true;
+                }
             }
 
             return false;

@@ -196,22 +196,24 @@ namespace NS_site27_api.Core
         {
             while (!stop)
             {
-                foreach (var point in InPoint.Keys.ToList())                 {
+                foreach (var point in InPoint.Keys.ToList())
+                {
                     var playersInPoint = InPoint[point];
                     var aPlayers = playersInPoint.Intersect(ATeam).Count();
                     var bPlayers = playersInPoint.Intersect(BTeam).Count();
 
-                    var progress = TPoint[point];  
-                                        if (aPlayers == bPlayers && aPlayers > 1)
+                    var progress = TPoint[point];
+                    if (aPlayers == bPlayers && aPlayers > 1)
                     {
                         if (progress.A > 0) { progress.A -= UnityEngine.Random.Range(-1, 2); ; }
                         if (progress.B > 0) { progress.B -= UnityEngine.Random.Range(-1, 2); }
-                        TPoint[point] = progress;                          continue;
+                        TPoint[point] = progress; continue;
                     }
 
                     int advantage = aPlayers - bPlayers;
-                    float speed = Math.Min(5f, Math.Abs(advantage * 1.5f)); 
-                    if (advantage > 0)                     {
+                    float speed = Math.Min(5f, Math.Abs(advantage * 1.5f));
+                    if (advantage > 0)
+                    {
                         if (progress.B > 0)
                         {
                             progress.B -= speed;
@@ -229,7 +231,8 @@ namespace NS_site27_api.Core
                             }
                         }
                     }
-                    if (advantage < 0)                     {
+                    if (advantage < 0)
+                    {
                         if (progress.A > 0)
                         {
                             progress.A -= speed;
@@ -248,7 +251,8 @@ namespace NS_site27_api.Core
                         }
                     }
 
-                    TPoint[point] = progress;                  }
+                    TPoint[point] = progress;
+                }
                 RemainTime = TimeSpan.FromSeconds(Config.TotalTime - time.Elapsed.TotalSeconds);
                 if (RemainTime.TotalSeconds <= 0)
                 {
@@ -428,7 +432,7 @@ namespace NS_site27_api.Core
                 /*
                 canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) 
                 */
-                                DisplayElement VisualElement = canvas.AddElement();
+                DisplayElement VisualElement = canvas.AddElement();
                 VisualElement.BaseElement.name = "VisualElement";
                 VisualElement.Flex.Grow = 1f;
                 VisualElement.Position.Position = Position.Absolute;
@@ -441,7 +445,7 @@ namespace NS_site27_api.Core
                 /*
                 canvas(UXML - id:0, Root) -> VisualElement(VisualElement - id:1, 1th child of canvas) -> zhanlText(Label - id:2, 1th child of VisualElement) 
                 */
-                                DisplayText zhanlText = VisualElement.AddText("");
+                DisplayText zhanlText = VisualElement.AddText("");
                 zhanlText.BaseElement.name = "zhanlText";
                 zhanlText.Background.Color = new Color(0.6784314f, 0.2f, 0.7372549f, 0.31f);
                 zhanlText.Text.Color = new Color(0f, 0.4901961f, 1f, 1f);
@@ -583,14 +587,14 @@ namespace NS_site27_api.Core
 
     public class czszConfig : EventConfig
     {
-                public int TotalTime { get; set; } = 450;
+        public int TotalTime { get; set; } = 450;
         public int TotalLives { get; set; } = 65;
         public int TargetPoint { get; set; } = 1000;
 
         public List<Loadout> ALoadouts { get; set; }
         public List<Loadout> BLoadouts { get; set; }
 
-                public czszConfig()
+        public czszConfig()
         {
             ALoadouts = new List<Loadout>
         {

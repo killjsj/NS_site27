@@ -2,7 +2,6 @@ using AdminToys;
 using CommandSystem;
 using Exiled.API.Features;
 using HarmonyLib;
-using Mirror;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using ProjectMER.Features.Objects;
@@ -138,7 +137,7 @@ namespace NS_site27_heavy.heavy.Module.testing
             {
                 ThisFollower.position = TargetFollower.position + offset;
                 ThisFollower.rotation = TargetFollower.rotation;
-                            }
+            }
         }
     }
     [CommandHandler(typeof(RemoteAdminCommandHandler))]

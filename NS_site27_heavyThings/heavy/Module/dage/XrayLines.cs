@@ -16,7 +16,7 @@ namespace NS_site27_api.Core.UI
         public const float DefaultRange = 60f;
         public const int MaxMarkers = 60;
 
-                private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, Primitive>> Cubes = new();
+        private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, Primitive>> Cubes = new();
         private static readonly List<ReferenceHub> DeadViewers = new();
 
         private static bool _hooked;
@@ -163,7 +163,7 @@ namespace NS_site27_api.Core.UI
             Quaternion invRot = Quaternion.Inverse(camRot);
             float tanHalfV = Mathf.Tan(ScreenProjection.GetVerticalFov(viewer) * 0.5f * Mathf.Deg2Rad);
 
-            Transform viewerTransform = viewer.transform; 
+            Transform viewerTransform = viewer.transform;
             foreach (ReferenceHub target in ReferenceHub.AllHubs)
             {
                 if (drawn >= MaxMarkers)
@@ -202,8 +202,8 @@ namespace NS_site27_api.Core.UI
                     continue;
                 }
 
-                                if (!TryGetAnchoredCubeTransform(camPos, camRot, invRot, tanHalfV, bounds,
-                        out Vector3 worldPos, out Quaternion worldRot, out Vector3 worldScale))
+                if (!TryGetAnchoredCubeTransform(camPos, camRot, invRot, tanHalfV, bounds,
+        out Vector3 worldPos, out Quaternion worldRot, out Vector3 worldScale))
                 {
                     continue;
                 }
@@ -282,17 +282,17 @@ namespace NS_site27_api.Core.UI
                 , 0.01f, 30f);
             var a = Mathf.Lerp(0, 1, dis / 30f);
             var enemy = HitboxIdentity.IsEnemy(target, enemyHub);
-                        return !enemy
-                ? new Color(0.31f, 0.78f, 1f, a)
-                : target.GetTeam() switch
-                {
-                    Team.SCPs => new Color(0.78f, 0.16f, 0.78f, a),
-                    Team.FoundationForces => new Color(0.24f, 0.55f, 1f, a),
-                    Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f, a),
-                    Team.Scientists => new Color(0.94f, 0.90f, 0.55f, a),
-                    Team.ClassD => new Color(1f, 0.55f, 0.16f, a),
-                    _ => new Color(0.90f, 0.24f, 0.24f, a),
-                };
+            return !enemy
+    ? new Color(0.31f, 0.78f, 1f, a)
+    : target.GetTeam() switch
+    {
+        Team.SCPs => new Color(0.78f, 0.16f, 0.78f, a),
+        Team.FoundationForces => new Color(0.24f, 0.55f, 1f, a),
+        Team.ChaosInsurgency => new Color(0.20f, 0.75f, 0.24f, a),
+        Team.Scientists => new Color(0.94f, 0.90f, 0.55f, a),
+        Team.ClassD => new Color(1f, 0.55f, 0.16f, a),
+        _ => new Color(0.90f, 0.24f, 0.24f, a),
+    };
         }
         private static bool TryGetAnchoredCubeTransform(
     Vector3 camPos,
@@ -426,7 +426,7 @@ namespace NS_site27_api.Core.UI
                 && viewer.roleManager.CurrentRole is IFpcRole;
         }
 
-                private sealed class ViewerSettings
+        private sealed class ViewerSettings
         {
             public float Range = DefaultRange;
             public bool EnemiesOnly = true;

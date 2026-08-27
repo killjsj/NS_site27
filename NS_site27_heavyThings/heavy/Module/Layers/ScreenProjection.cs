@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace NS_site27_api.Core.UI
 {
-                                                        public readonly struct ScreenRect
+    public readonly struct ScreenRect
     {
         public readonly float HMin;
         public readonly float HMax;
@@ -20,7 +20,7 @@ namespace NS_site27_api.Core.UI
             YMax = yMax;
         }
 
-                                        public Rect ToUiRect(float aspectRatio)
+        public Rect ToUiRect(float aspectRatio)
         {
             if (aspectRatio <= 0f)
             {
@@ -34,15 +34,15 @@ namespace NS_site27_api.Core.UI
         }
     }
 
-                    public static class ScreenProjection
+    public static class ScreenProjection
     {
-                                        public const float BaseVerticalFov = 70f;
+        public const float BaseVerticalFov = 70f;
 
-                public const float AutoFov = -1f;
+        public const float AutoFov = -1f;
 
         private static readonly Vector3[] CornerBuffer = new Vector3[8];
 
-                                                                                                                                public static float GetVerticalFov(ReferenceHub hub)
+        public static float GetVerticalFov(ReferenceHub hub)
         {
             float zoom = 1f;
 
@@ -59,7 +59,7 @@ namespace NS_site27_api.Core.UI
             return BaseVerticalFov / zoom;
         }
 
-                                                                                                                                                        public static float GetAspectRatio(ReferenceHub hub, float fallback = 16f / 9f)
+        public static float GetAspectRatio(ReferenceHub hub, float fallback = 16f / 9f)
         {
             AspectRatioSync sync = hub?.aspectRatioSync;
             if (sync == null)
@@ -71,10 +71,10 @@ namespace NS_site27_api.Core.UI
             return reported > 1.0001f ? reported : fallback;
         }
 
-                                                                public static bool TryGetPlayerRect(ReferenceHub observer,
-                                            ReferenceHub target,
-                                            out ScreenRect rect,
-                                            float verticalFovDegrees = AutoFov)
+        public static bool TryGetPlayerRect(ReferenceHub observer,
+ReferenceHub target,
+out ScreenRect rect,
+float verticalFovDegrees = AutoFov)
         {
             rect = default;
 
@@ -102,7 +102,7 @@ namespace NS_site27_api.Core.UI
             return TryProjectBounds(cam.position, cam.rotation, bounds, verticalFovDegrees, out rect);
         }
 
-                public static bool TryGetWorldBounds(ReferenceHub target, out Bounds bounds)
+        public static bool TryGetWorldBounds(ReferenceHub target, out Bounds bounds)
         {
             bounds = default;
 
@@ -154,11 +154,11 @@ namespace NS_site27_api.Core.UI
             return any;
         }
 
-                                                public static bool TryProjectBounds(Vector3 cameraPosition,
-                                            Quaternion cameraRotation,
-                                            Bounds bounds,
-                                            float verticalFovDegrees,
-                                            out ScreenRect rect)
+        public static bool TryProjectBounds(Vector3 cameraPosition,
+    Quaternion cameraRotation,
+    Bounds bounds,
+    float verticalFovDegrees,
+    out ScreenRect rect)
         {
             rect = default;
 
@@ -190,12 +190,12 @@ namespace NS_site27_api.Core.UI
             {
                 Vector3 local = invRot * (CornerBuffer[i] - cameraPosition);
 
-                                                if (local.z <= 0.01f)
+                if (local.z <= 0.01f)
                 {
                     continue;
                 }
 
-                float h = local.x / local.z / tanHalfV;                   float v = local.y / local.z / tanHalfV;                   float y = 0.5f - (v * 0.5f);              
+                float h = local.x / local.z / tanHalfV; float v = local.y / local.z / tanHalfV; float y = 0.5f - (v * 0.5f);
                 any = true;
                 if (h < hMin) { hMin = h; }
                 if (h > hMax) { hMax = h; }
@@ -212,11 +212,11 @@ namespace NS_site27_api.Core.UI
             return true;
         }
 
-                                        public static bool TryProjectPoint(Vector3 cameraPosition,
-                                           Quaternion cameraRotation,
-                                           Vector3 worldPoint,
-                                           out Vector2 point,
-                                           float verticalFovDegrees = BaseVerticalFov)
+        public static bool TryProjectPoint(Vector3 cameraPosition,
+           Quaternion cameraRotation,
+           Vector3 worldPoint,
+           out Vector2 point,
+           float verticalFovDegrees = BaseVerticalFov)
         {
             point = default;
 

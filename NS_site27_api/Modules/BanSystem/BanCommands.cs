@@ -59,7 +59,7 @@ namespace NS_site27_api.Modules.BanSystem
 
                 DateTime endTime = DateTime.Now.AddMinutes(duration);
                 _ = sql?.InsertBanRecordAsync(player.UserId, player.Nickname, runner.UserId, runner.Nickname, reason, DateTime.Now, endTime, Exiled.API.Features.Server.Port.ToString());
-                                player.Kick(reason, runner);
+                player.Kick(reason, runner);
             }
 
             response = $"Banned {targets.Count} pass_player(s).";
@@ -97,9 +97,9 @@ namespace NS_site27_api.Modules.BanSystem
 
             private static async void GetBans(ICommandSender sender, MySQLConnect sql, string userId)
             {
-                var response = "";
                 var bans = await SqlQueryAllBan(sql, userId);
 
+                string response;
                 if (bans.Count == 0)
                 {
                     response = $"No ban records for {userId}.";

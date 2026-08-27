@@ -164,7 +164,8 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
                                 player.CurrentItem = null;
                                 Vector3 pos = PlayerCamera.transform.position;
 
-                                if ((player.Position - pos).sqrMagnitude > 0.0004f)                                 {
+                                if ((player.Position - pos).sqrMagnitude > 0.0004f)
+                                {
                                     _ = player.ReferenceHub.TryOverridePosition(pos);
                                 }
                                 Vector3 playerEuler = player.Rotation.eulerAngles;
@@ -213,9 +214,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
             dir.Normalize();
 
-                        float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-            vertical = Mathf.Clamp(vertical, -88f, 88f);          
-                        float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
+            vertical = Mathf.Clamp(vertical, -88f, 88f);
+            float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             if (horizontal < 0f)
             {
                 horizontal += 360f;
@@ -243,9 +244,9 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 SchematicName = "testHeli"
             };
-            if(hp  == null)
+            if (hp == null)
             {
-                OnPlayDone?.Invoke(this,WaitingToSpawn);
+                OnPlayDone?.Invoke(this, WaitingToSpawn);
                 return true;
             }
             root = hp.SpawnOrUpdateObject();

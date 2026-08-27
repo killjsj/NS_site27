@@ -124,7 +124,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 if (raycast.collider.TryGetComponent<IDestructible>(out var destructible))
                 {
-                                        if (destructible is HitboxIdentity HI)
+                    if (destructible is HitboxIdentity HI)
                     {
                         var p = Player.Get(HI.TargetHub);
                         if (p == player)
@@ -152,11 +152,11 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
     }
     public class DebuggersAbility3 : PassAbility, ITiming
     {
-        
+
         public override string Name => "范围扫描";
 
         public override string Des => "扫描周围35m内的敌人";
-                        public AbilityCooldown cd = new();
+        public AbilityCooldown cd = new();
 
         float ITiming.CoolDownRemaining { get => cd.Remaining; set => cd.Remaining = value; }
         float ITiming.DoneRemaining { get => 0; set { } }
@@ -165,7 +165,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 
         public override void OnCheck(Player player)
         {
-                        if (cd.IsReady)
+            if (cd.IsReady)
             {
                 cd.Trigger(2.5);
                 foreach (var p in Player.Enumerable)
@@ -182,11 +182,11 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         }
         public DebuggersAbility3() : base()
         {
-                    }
+        }
     }
     public class TestAbility1 : ItemKeyAbility
     {
-        
+
         public override string Name => "物品-伤害";
 
         public override string Des => "对周围敌人造成伤害50f";
@@ -215,13 +215,13 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         }
         public TestAbility1() : base()
         {
-                    }
+        }
     }
 
 
     public class TestAbility2 : ItemKeyAbility
     {
-        
+
         public override string Name => "物品-扫描";
 
         public override string Des => "扫描周围35m内的所有人";
@@ -240,7 +240,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             {
                 if (player != p && Vector3.Distance(player.Position, p.Position) <= 35f)
                 {
-                                        {
+                    {
                         new DrawableLineMessage(0.5f, Color.yellow * new Color(1, 1, 1, 1 - (Vector3.Distance(player.Position, p.Position) / 150) + 0.01f), new Vector3[2] { p.CameraTransform.position + (0.2f * Vector3.down), player.Position }).SendToHubsConditionally(x => x == player.ReferenceHub);
                     }
                 }
@@ -249,6 +249,6 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         }
         public TestAbility2() : base()
         {
-                    }
+        }
     }
 }

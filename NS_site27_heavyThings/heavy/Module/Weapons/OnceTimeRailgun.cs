@@ -103,18 +103,18 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             new DrawableLineMessage(1.1f, new Color(1, 1, 1, 0.5f), new Vector3[2] { p.CameraTransform.position - (Vector3.up * 0.3f) + (p.CameraTransform.forward * 0.2f), Info.point }).SendToAuthenticated();
         }
         public static float ExplosionRad = 1.2f;
-        private const float BaseDamage = 500f;                  private const float DoorBaseDamage = 100f;
-        private const float MinDamage = 0.1f;           
-                                public static void Explode(Footprint attacker, Vector3 position, ExplosionType explosionType)
+        private const float BaseDamage = 500f; private const float DoorBaseDamage = 100f;
+        private const float MinDamage = 0.1f;
+        public static void Explode(Footprint attacker, Vector3 position, ExplosionType explosionType)
         {
-                        SetHostHitboxes(true);
+            SetHostHitboxes(true);
 
-                        HashSet<uint> processedDestructibles = HashSetPool<uint>.Shared.Rent();
+            HashSet<uint> processedDestructibles = HashSetPool<uint>.Shared.Rent();
             HashSet<uint> processedDoors = HashSetPool<uint>.Shared.Rent();
             try
             {
-                float radius = ExplosionRad; 
-                                Collider[] hitColliders = Physics.OverlapSphere(position, radius, HitscanHitregModuleBase.HitregMask);
+                float radius = ExplosionRad;
+                Collider[] hitColliders = Physics.OverlapSphere(position, radius, HitscanHitregModuleBase.HitregMask);
                 var p = Primitive.Create(position, null, new Vector3(radius, radius, radius), false);
                 p.Collidable = false;
                 p.Color = new Color(1, 1, 1, 0.25f);
@@ -125,18 +125,18 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 animator.duration = 0.4f;
 
                 _ = Timing.CallDelayed(0.4f, () => { p?.Destroy(); });
-                                bool isServer = NetworkServer.active;
+                bool isServer = NetworkServer.active;
 
                 foreach (Collider collider in hitColliders)
                 {
                     if (isServer)
                     {
-                                                if (collider.TryGetComponent<IExplosionTrigger>(out var trigger))
+                        if (collider.TryGetComponent<IExplosionTrigger>(out var trigger))
                         {
                             trigger.OnExplosionDetected(attacker, position, radius);
                         }
 
-                                                if (collider.TryGetComponent<IDestructible>(out var destructible))
+                        if (collider.TryGetComponent<IDestructible>(out var destructible))
                         {
                             if (!processedDestructibles.Contains(destructible.NetworkId) &&
                                 ExplodeDestructible(destructible, attacker, position, explosionType, radius))
@@ -144,15 +144,15 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                                 _ = processedDestructibles.Add(destructible.NetworkId);
                             }
                         }
-                                                else if (collider.TryGetComponent<InteractableCollider>(out var interactable) &&
-                                 interactable.Target is DoorVariant door &&
-                                 processedDoors.Add(door.netId))
+                        else if (collider.TryGetComponent<InteractableCollider>(out var interactable) &&
+         interactable.Target is DoorVariant door &&
+         processedDoors.Add(door.netId))
                         {
                             ExplodeDoor(door, position, attacker, radius);
                         }
                     }
 
-                                        if (collider.attachedRigidbody != null)
+                    if (collider.attachedRigidbody != null)
                     {
                         ExplodeRigidbody(collider.attachedRigidbody, position, radius);
                     }
@@ -160,13 +160,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
             finally
             {
-                                HashSetPool<uint>.Shared.Return(processedDestructibles);
+                HashSetPool<uint>.Shared.Return(processedDestructibles);
                 HashSetPool<uint>.Shared.Return(processedDoors);
             }
 
             SetHostHitboxes(false);
         }
-                public class ScaleAnimator : MonoBehaviour
+        public class ScaleAnimator : MonoBehaviour
         {
             public float duration = 0.4f;
             public Vector3 endScale;
@@ -185,10 +185,11 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 transform.localScale = Vector3.Lerp(startScale, endScale, t);
                 if (t >= 1f)
                 {
-                    Destroy(gameObject, 0.05f);                 }
+                    Destroy(gameObject, 0.05f);
+                }
             }
         }
-                                private static void SetHostHitboxes(bool state)
+        private static void SetHostHitboxes(bool state)
         {
             if (!NetworkServer.active)
             {
@@ -212,40 +213,40 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
         }
 
-                                private static void ExplodeRigidbody(Rigidbody rb, Vector3 pos, float radius)
+        private static void ExplodeRigidbody(Rigidbody rb, Vector3 pos, float radius)
         {
             if (rb.isKinematic)
             {
                 return;
             }
 
-                        if (Physics.Linecast(rb.gameObject.transform.position, pos, ThrownProjectile.HitBlockerMask))
+            if (Physics.Linecast(rb.gameObject.transform.position, pos, ThrownProjectile.HitBlockerMask))
             {
                 return;
             }
 
-                        float massFactor = (Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius) + 1f;
+            float massFactor = (Mathf.Clamp01(Mathf.InverseLerp(0.5f, 10f, rb.mass)) * radius) + 1f;
             float force = 10f / massFactor;
 
-                        rb.AddExplosionForce(force, pos, radius, force, ForceMode.VelocityChange);
+            rb.AddExplosionForce(force, pos, radius, force, ForceMode.VelocityChange);
         }
 
-                                private static bool ExplodeDestructible(IDestructible dest, Footprint attacker, Vector3 pos, ExplosionType explosionType, float radius)
+        private static bool ExplodeDestructible(IDestructible dest, Footprint attacker, Vector3 pos, ExplosionType explosionType, float radius)
         {
             Vector3 delta = dest.CenterOfMass - pos;
             float magnitude = delta.magnitude;
 
-                        if (magnitude < 0.001f || magnitude > radius)
+            if (magnitude < 0.001f || magnitude > radius)
             {
                 return false;
             }
 
-                        if (Physics.Linecast(dest.CenterOfMass, pos, ThrownProjectile.HitBlockerMask))
+            if (Physics.Linecast(dest.CenterOfMass, pos, ThrownProjectile.HitBlockerMask))
             {
                 return false;
             }
 
-                        float distanceFactor = Mathf.Clamp01(1f - (magnitude / radius));
+            float distanceFactor = Mathf.Clamp01(1f - (magnitude / radius));
             float damage = BaseDamage * distanceFactor;
 
             if (damage < MinDamage)
@@ -253,15 +254,15 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                 return false;
             }
 
-                        Vector3 impulse = (delta / magnitude * distanceFactor * 10f) + Vector3.up;
+            Vector3 impulse = (delta / magnitude * distanceFactor * 10f) + Vector3.up;
 
-                        bool damaged = dest.Damage(damage, new ExplosionDamageHandler(attacker, impulse, damage, 50, explosionType), dest.CenterOfMass);
+            bool damaged = dest.Damage(damage, new ExplosionDamageHandler(attacker, impulse, damage, 50, explosionType), dest.CenterOfMass);
 
-                        if (damaged && ReferenceHub.TryGetHubNetID(dest.NetworkId, out ReferenceHub targetHub))
+            if (damaged && ReferenceHub.TryGetHubNetID(dest.NetworkId, out ReferenceHub targetHub))
             {
                 bool isSelf = attacker.Hub == targetHub;
 
-                                bool shouldApplyEffects = isSelf || HitboxIdentity.IsDamageable(attacker.Role, targetHub.GetRoleId());
+                bool shouldApplyEffects = isSelf || HitboxIdentity.IsDamageable(attacker.Role, targetHub.GetRoleId());
                 if (shouldApplyEffects)
                 {
                     float duration = 0.3f;
@@ -271,7 +272,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
                     TriggerEffect<Concussed>(targetHub, duration, minimal);
                 }
 
-                                if (!isSelf && attacker.Hub != null)
+                if (!isSelf && attacker.Hub != null)
                 {
                     Hitmarker.SendHitmarkerDirectly(attacker.Hub, 1f, true, HitmarkerType.Regular);
                 }
@@ -280,7 +281,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             return damaged;
         }
 
-                                private static void ExplodeDoor(DoorVariant door, Vector3 pos, Footprint attacker, float radius)
+        private static void ExplodeDoor(DoorVariant door, Vector3 pos, Footprint attacker, float radius)
         {
             if (door is not IDamageableDoor damageableDoor)
             {
@@ -297,7 +298,7 @@ namespace NS_site27_heavy.heavy.Module.Weapons
             }
         }
 
-                                private static void TriggerEffect<T>(ReferenceHub hub, float duration, float minimal) where T : StatusEffectBase
+        private static void TriggerEffect<T>(ReferenceHub hub, float duration, float minimal) where T : StatusEffectBase
         {
             if (duration < minimal)
             {

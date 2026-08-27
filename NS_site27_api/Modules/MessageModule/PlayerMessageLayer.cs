@@ -114,7 +114,7 @@ namespace NS_site27_api.Modules.MessageModule
             MsgOutSide.Size.MaxHeight = Length.Percent(18f);
             MsgOutSide.Position.Top = Length.Percent(0f);
 
-                        DisplayElement color = MsgOutSide.AddElement();
+            DisplayElement color = MsgOutSide.AddElement();
             color.BaseElement.name = "color";
             color.Flex.Grow = 1f;
             color.Position.Position = Position.Relative;
@@ -137,7 +137,7 @@ namespace NS_site27_api.Modules.MessageModule
             color.Size.MaxWidth = Length.Percent(18f);
             color.Size.MaxHeight = Length.Percent(18f);
 
-                        DisplayText MsgText = MsgOutSide.AddText("");
+            DisplayText MsgText = MsgOutSide.AddText("");
             MsgText.BaseElement.name = "MsgText";
             MsgText.Spacing.PaddingTop = 0f;
             MsgText.Spacing.PaddingRight = 0f;
@@ -151,7 +151,7 @@ namespace NS_site27_api.Modules.MessageModule
             MsgText.Position.Left = Length.Percent(4f);
             MsgText.Text.Wrap = WhiteSpace.Normal;
 
-                        DisplayText title = MsgOutSide.AddText("");
+            DisplayText title = MsgOutSide.AddText("");
             title.BaseElement.name = "title";
             title.Position.Position = Position.Relative;
             title.Position.Left = Length.Percent(16f);
@@ -480,7 +480,7 @@ namespace NS_site27_api.Modules.MessageModule
     }
     public static class PlayerMessageHelper
     {
-                private static void AddHint(Player player, string id, float time, Func<Player, MsgUpdateResult> updater, int priority = 0)
+        private static void AddHint(Player player, string id, float time, Func<Player, MsgUpdateResult> updater, int priority = 0)
         {
             if (player == null || PlayerMessageLayer.Instance == null)
             {

@@ -4,12 +4,12 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.FpcSpoofing
 {
-                                    public static class FpcSpoofer
+    public static class FpcSpoofer
     {
-                private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, FakeFpcState>> Fakes
-            = new();
+        private static readonly Dictionary<ReferenceHub, Dictionary<ReferenceHub, FakeFpcState>> Fakes
+    = new();
 
-                                        public static void Set(ReferenceHub receiver, ReferenceHub target, FakeFpcState state)
+        public static void Set(ReferenceHub receiver, ReferenceHub target, FakeFpcState state)
         {
             if (receiver == null || target == null || receiver == target)
             {
@@ -34,7 +34,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             }
         }
 
-                public static void Replace(ReferenceHub receiver, ReferenceHub target, FakeFpcState state)
+        public static void Replace(ReferenceHub receiver, ReferenceHub target, FakeFpcState state)
         {
             if (receiver == null || target == null || receiver == target)
             {
@@ -80,7 +80,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             Set(receiver, target, new FakeFpcState(state: state));
         }
 
-                public static void Clear(ReferenceHub receiver, ReferenceHub target)
+        public static void Clear(ReferenceHub receiver, ReferenceHub target)
         {
             if (receiver == null || !Fakes.TryGetValue(receiver, out Dictionary<ReferenceHub, FakeFpcState> inner))
             {
@@ -94,22 +94,22 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             }
         }
 
-                public static void ClearPosition(ReferenceHub receiver, ReferenceHub target)
+        public static void ClearPosition(ReferenceHub receiver, ReferenceHub target)
         {
             Strip(receiver, target, s => s.WithoutPosition());
         }
 
-                public static void ClearRotation(ReferenceHub receiver, ReferenceHub target)
+        public static void ClearRotation(ReferenceHub receiver, ReferenceHub target)
         {
             Strip(receiver, target, s => s.WithoutRotation());
         }
 
-                public static void ClearState(ReferenceHub receiver, ReferenceHub target)
+        public static void ClearState(ReferenceHub receiver, ReferenceHub target)
         {
             Strip(receiver, target, s => s.WithoutState());
         }
 
-                public static void ClearTarget(ReferenceHub target)
+        public static void ClearTarget(ReferenceHub target)
         {
             if (target == null)
             {
@@ -132,7 +132,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             }
         }
 
-                public static void ClearReceiver(ReferenceHub receiver)
+        public static void ClearReceiver(ReferenceHub receiver)
         {
             if (receiver != null)
             {
@@ -140,7 +140,7 @@ namespace NS_site27_heavy.heavy.Module.FpcSpoofing
             }
         }
 
-                public static void ClearAll()
+        public static void ClearAll()
         {
             Fakes.Clear();
         }

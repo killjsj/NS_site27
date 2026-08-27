@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
 {
-                                        internal static class AimOverride
+    internal static class AimOverride
     {
         private struct Entry
         {
@@ -24,7 +24,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             Pending[shooter] = new Entry { Hitbox = target, Frame = Time.frameCount };
         }
 
-                                                                        public static bool TryConsume(ReferenceHub shooter, Vector3 origin, out Vector3 dir)
+        public static bool TryConsume(ReferenceHub shooter, Vector3 origin, out Vector3 dir)
         {
             dir = default;
 

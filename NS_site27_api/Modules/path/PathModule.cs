@@ -1,8 +1,6 @@
 using Exiled.API.Features;
-using Exiled.Events.Handlers;
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
-using LabApi.Features.Wrappers;
 using MapGeneration;
 using NS_site27_api.Core;
 using System.Collections.Generic;
@@ -45,12 +43,13 @@ namespace FacilityNavigation
 
         public void w()
         {
-            List<int> layers = new List<int>();
+            List<int> layers = new();
 
             var s = new GameObject();
             var surf = s.AddComponent<NavMeshSurface>();
 
             foreach (RoomIdentifier room in RoomIdentifier.AllRoomIdentifiers)
+            {
                 if (room.gameObject.activeSelf)
                 {
                     Collider[] colliders = room.gameObject.GetComponentsInChildren<Collider>();
@@ -63,6 +62,8 @@ namespace FacilityNavigation
                         }
                     }
                 }
+            }
+
             surf.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
             surf.layerMask = layer;
             surf.overrideVoxelSize = true;
@@ -72,7 +73,10 @@ namespace FacilityNavigation
             surf.collectObjects = CollectObjects.All;
             var Meshes = new Dictionary<MeshCollider, Mesh>();
             foreach (var r in Room.List)
+            {
                 ReplaceMesh(r, Meshes);
+            }
+
             surf.BuildNavMesh();
             foreach (var kvp in Meshes)
             {
@@ -85,7 +89,11 @@ namespace FacilityNavigation
             var filters = room.GameObject.GetComponentsInChildren<MeshCollider>(true);
             foreach (var filter in filters)
             {
-                if (filter.sharedMesh == null) continue;
+                if (filter.sharedMesh == null)
+                {
+                    continue;
+                }
+
                 if (readableMeshes.TryGetValue(filter.sharedMesh.name.Replace("(Instance)", "").Trim(), out var readableMesh))
                 {
                     originalMeshes[filter] = filter.sharedMesh;
@@ -143,10 +151,9 @@ namespace FacilityNavigation
 
         public static string DescribeRoute(List<RoomNode> rooms, List<Vector3> corners)
         {
-            if (rooms == null || rooms.Count == 0)
-                return "unreachable";
-
-            return $"{rooms.Count} rooms | {corners.Count} waypoints\n" +
+            return rooms == null || rooms.Count == 0
+                ? "unreachable"
+                : $"{rooms.Count} rooms | {corners.Count} waypoints\n" +
                    RoomGraph.FormatPathDetailed(rooms);
         }
     }

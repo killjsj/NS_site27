@@ -6,11 +6,11 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
 {
-                                    public static class AimTargeting
+    public static class AimTargeting
     {
-                public const float DefaultConeHalfAngle = 20f;
+        public const float DefaultConeHalfAngle = 20f;
 
-                public const float DefaultMaxRange = 150f;
+        public const float DefaultMaxRange = 150f;
 
         private struct Candidate
         {
@@ -23,20 +23,20 @@ namespace NS_site27_heavy.heavy.Module.dage
         private static readonly Dictionary<ReferenceHub, List<Candidate>> PlayerHitboxes = new();
         private static readonly List<ReferenceHub> SortedPlayers = new();
 
-                                                        public static bool PrefersHeadshot(Firearm firearm)
+        public static bool PrefersHeadshot(Firearm firearm)
         {
             return firearm == null || !firearm.TryGetModule(out HitscanHitregModuleBase hitreg, true)
                 || hitreg.UseHitboxMultipliers;
         }
 
-                                                                                                                        public static bool TryFindTarget(ReferenceHub shooter,
-                                         Vector3 origin,
-                                         Vector3 forward,
-                                         bool preferHeadshot,
-                                         out HitboxIdentity best,
-                                         float coneHalfAngle = DefaultConeHalfAngle,
-                                         float maxRange = DefaultMaxRange,
-                                         int? losMask = null)
+        public static bool TryFindTarget(ReferenceHub shooter,
+Vector3 origin,
+Vector3 forward,
+bool preferHeadshot,
+out HitboxIdentity best,
+float coneHalfAngle = DefaultConeHalfAngle,
+float maxRange = DefaultMaxRange,
+int? losMask = null)
         {
             best = null;
 
@@ -51,7 +51,7 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             float minDot = Mathf.Cos(coneHalfAngle * Mathf.Deg2Rad);
 
-                        foreach (HitboxIdentity hb in HitboxIdentity.Instances)
+            foreach (HitboxIdentity hb in HitboxIdentity.Instances)
             {
                 if (hb == null)
                 {
@@ -103,9 +103,9 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             int mask = losMask ?? HitscanHitregModuleBase.HitregMask;
 
-                                    SortedPlayers.Sort((a, b) => PlayerScores[b].CompareTo(PlayerScores[a]));
+            SortedPlayers.Sort((a, b) => PlayerScores[b].CompareTo(PlayerScores[a]));
 
-                        foreach (ReferenceHub owner in SortedPlayers)
+            foreach (ReferenceHub owner in SortedPlayers)
             {
                 List<Candidate> list = PlayerHitboxes[owner];
 
@@ -131,15 +131,18 @@ namespace NS_site27_heavy.heavy.Module.dage
             return false;
         }
 
-                private static int Rank(HitboxType type, bool preferHeadshot)
+        private static int Rank(HitboxType type, bool preferHeadshot)
         {
             return type switch
             {
-                HitboxType.Headshot => preferHeadshot ? 3 : 1,                HitboxType.Body => 2,                HitboxType.Limb => 0,                _ => 0,
+                HitboxType.Headshot => preferHeadshot ? 3 : 1,
+                HitboxType.Body => 2,
+                HitboxType.Limb => 0,
+                _ => 0,
             };
         }
 
-                                        private static readonly RaycastHit[] LosHits = new RaycastHit[64];
+        private static readonly RaycastHit[] LosHits = new RaycastHit[64];
 
         private static bool HasLineOfSight(ReferenceHub shooter, Vector3 origin,
                                            Candidate candidate, ReferenceHub owner, int mask)
@@ -152,14 +155,14 @@ namespace NS_site27_heavy.heavy.Module.dage
                 return true;
             }
 
-                        float nearest = float.MaxValue;
+            float nearest = float.MaxValue;
             Collider blockerCol = null;
 
             for (int i = 0; i < count; i++)
             {
                 RaycastHit h = LosHits[i];
 
-                                if (h.collider.TryGetComponent(out HitboxIdentity self) && self.TargetHub == shooter)
+                if (h.collider.TryGetComponent(out HitboxIdentity self) && self.TargetHub == shooter)
                 {
                     continue;
                 }

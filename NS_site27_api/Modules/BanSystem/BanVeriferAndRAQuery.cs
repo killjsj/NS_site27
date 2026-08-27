@@ -2,7 +2,6 @@
 using Exiled.Events.EventArgs.Player;
 using NS_site27_api.Core;
 using NS_site27_api.Modules.MySQL;
-using RemoteAdmin;
 using System;
 
 namespace NS_site27_api.Modules.BanSystem
@@ -30,7 +29,7 @@ namespace NS_site27_api.Modules.BanSystem
 
         private void PlayerEvents_RequestedRaPlayerInfo(LabApi.Events.Arguments.PlayerEvents.PlayerRequestedRaPlayerInfoEventArgs ev)
         {
-                                                                                                                                            }
+        }
 
         public async void OnPreVerifer(PreAuthenticatingEventArgs ev)
         {

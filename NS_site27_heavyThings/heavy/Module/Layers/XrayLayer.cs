@@ -11,25 +11,25 @@ using Position = UnityEngine.UIElements.Position;
 
 namespace NS_site27_api.Core.UI.DisplayKit.Layers
 {
-                                                                                    public class XrayLayer : DisplayLayer
+    public class XrayLayer : DisplayLayer
     {
         public override string Id { get; set; } = "xray";
 
         public override TimeSpan updateTime => TimeSpan.FromSeconds(0.05f);
 
-                public float Range { get; set; } = 60f;
+        public float Range { get; set; } = 60f;
 
-                public bool EnemiesOnly { get; set; } = true;
+        public bool EnemiesOnly { get; set; } = true;
 
-                public int MaxMarkers { get; set; } = 16;
+        public int MaxMarkers { get; set; } = 16;
 
-                public float Padding { get; set; } = 0.08f;
+        public float Padding { get; set; } = 0.08f;
 
         public float BorderWidth { get; set; } = 2f;
 
-                public const float FallbackAspectRatio = 16f / 9f;
+        public const float FallbackAspectRatio = 16f / 9f;
 
-                        private readonly Dictionary<DisplayCanvas, List<DisplayElement>> _boxes = new();
+        private readonly Dictionary<DisplayCanvas, List<DisplayElement>> _boxes = new();
 
         public override void InitNodes(Player target, DisplayCanvas canvas)
         {
@@ -59,7 +59,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             Vector3 origin = viewerFpc.FpcModule.Position;
             float sqrRange = Range * Range;
 
-                                    float fov = ScreenProjection.GetVerticalFov(viewer);
+            float fov = ScreenProjection.GetVerticalFov(viewer);
             float aspect = ScreenProjection.GetAspectRatio(viewer, FallbackAspectRatio);
 
             int used = 0;
@@ -82,7 +82,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
                     continue;
                 }
 
-                                if ((otherFpc.FpcModule.Position - origin).sqrMagnitude > sqrRange)
+                if ((otherFpc.FpcModule.Position - origin).sqrMagnitude > sqrRange)
                 {
                     continue;
                 }
@@ -100,7 +100,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
 
                 Rect rect = Pad(screen.ToUiRect(aspect));
 
-                                if (rect.xMax < 0f || rect.xMin > 1f || rect.yMax < 0f || rect.yMin > 1f)
+                if (rect.xMax < 0f || rect.xMin > 1f || rect.yMax < 0f || rect.yMin > 1f)
                 {
                     continue;
                 }
@@ -123,7 +123,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
             return new Rect(r.x - px, r.y - py, r.width + (px * 2f), r.height + (py * 2f));
         }
 
-                                        private DisplayElement GetBox(DisplayCanvas canvas, List<DisplayElement> pool, int index)
+        private DisplayElement GetBox(DisplayCanvas canvas, List<DisplayElement> pool, int index)
         {
             while (pool.Count <= index)
             {
@@ -143,7 +143,7 @@ namespace NS_site27_api.Core.UI.DisplayKit.Layers
         {
             box.Display.Display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
 
-                                    box.Position.Left = new StyleLength(Length.Percent(r.xMin * 100f));
+            box.Position.Left = new StyleLength(Length.Percent(r.xMin * 100f));
             box.Position.Top = new StyleLength(Length.Percent(r.yMin * 100f));
             box.Size.Width = new StyleLength(Length.Percent(r.width * 100f));
             box.Size.Height = new StyleLength(Length.Percent(r.height * 100f));

@@ -50,7 +50,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             }
 
         }
-            }
+    }
     [CustomItem(ItemType.ArmorLight)]
     internal class AM : CustomArmor
     {
@@ -88,5 +88,5 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         public void OnHurt(HurtingEventArgs ev)
         {
         }
-            }
+    }
 }

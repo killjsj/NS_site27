@@ -8,14 +8,14 @@ using UnityEngine;
 
 namespace NS_site27_heavy.heavy.Module.dage
 {
-                                                                                                                                            [HarmonyPatch(typeof(BacktrackerModule), nameof(BacktrackerModule.BacktrackAll))]
+    [HarmonyPatch(typeof(BacktrackerModule), nameof(BacktrackerModule.BacktrackAll))]
     internal static class MicroHidAimPatch
     {
-                                        public const float ConeHalfAngle = 30f;
+        public const float ConeHalfAngle = 30f;
 
-                private const float FallbackRange = 10f;
+        private const float FallbackRange = 10f;
 
-                        private static readonly Action WrapperDelegate = InvokeWithRedirect;
+        private static readonly Action WrapperDelegate = InvokeWithRedirect;
         private static ReferenceHub _owner;
         private static float _range;
         private static Action _inner;
@@ -46,7 +46,7 @@ namespace NS_site27_heavy.heavy.Module.dage
             callback = WrapperDelegate;
         }
 
-                        private static void Finalizer()
+        private static void Finalizer()
         {
             _pending = false;
             _owner = null;
@@ -61,9 +61,9 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             dir.Normalize();
 
-                        float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-            vertical = Mathf.Clamp(vertical, -88f, 88f);          
-                        float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            float vertical = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
+            vertical = Mathf.Clamp(vertical, -88f, 88f);
+            float horizontal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             if (horizontal < 0f)
             {
                 horizontal += 360f;
@@ -103,15 +103,15 @@ namespace NS_site27_heavy.heavy.Module.dage
 
             try
             {
-                                                                                                                bool found = AimTargeting.TryFindTarget(
-                    owner,
-                    cam.position,
-                    cam.forward,
-                    preferHeadshot: false,
-                    out HitboxIdentity target,
-                    coneHalfAngle: ConeHalfAngle,
-                    maxRange: range,
-                    losMask: PlayerRolesUtils.AttackMask);
+                bool found = AimTargeting.TryFindTarget(
+owner,
+cam.position,
+cam.forward,
+preferHeadshot: false,
+out HitboxIdentity target,
+coneHalfAngle: ConeHalfAngle,
+maxRange: range,
+losMask: PlayerRolesUtils.AttackMask);
 
                 if (found)
                 {

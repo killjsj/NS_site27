@@ -6,6 +6,7 @@ using PlayerRoles.PlayableScps.Scp049.Zombies;
 using RelativePositioning;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -140,7 +141,7 @@ namespace Next_generationSite_27.UnionP
 
             if (DebugDrawPath && _waypoints.Count > 1)
             {
-                Draw.Path(_waypoints.ToArray(), Color.red, RepathInterval + 0.001f);
+                Draw.Path(_waypoints.ToArray(), Color.red, RepathInterval + 0.001f, Player.Enumerable.Where(x=>!HitboxIdentity.IsEnemy(x.ReferenceHub,_hub)));
             }
         }
 
@@ -177,7 +178,7 @@ namespace Next_generationSite_27.UnionP
         {
             if (DebugDrawPath)
             {
-                Draw.Line(pos, targetPos, Color.green, 0.05f);
+                Draw.Line(pos, targetPos, Color.green, 0.05f, Player.Enumerable.Where(x => !HitboxIdentity.IsEnemy(x.ReferenceHub, _hub)));
             }
 
             Vector3 dir = targetPos - pos;

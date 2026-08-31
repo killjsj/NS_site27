@@ -1,5 +1,6 @@
 using AdminToys;
 using CommandSystem;
+using Exiled.API.Extensions;
 using Exiled.API.Features;
 using HarmonyLib;
 using PlayerRoles.FirstPersonControl;

@@ -397,7 +397,7 @@ namespace NS_site27_api.Modules.MessageModule
                                 }
                                 catch (Exception e)
                                 {
-                                    Log.Error($"When updatingmsg:{player}'s {item.id} {e}");
+                                    Log.Error($"When updatingmsg:{player}'s {item.id     } {e}");
                                 }
                             }
                         }
@@ -502,10 +502,14 @@ namespace NS_site27_api.Modules.MessageModule
         {
             AddHint(player, id, time, x => new MsgUpdateResult { Content = str }, (int)Priority);
         }
-
-        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter, PriorityLevel Priority = 0)
+        public static void AddHint(this Player player, string id, float time, string str,string Title = "New Message!",Color? NoticeCircleColor = null, PriorityLevel Priority = 0)
         {
-            AddHint(player, id, time, x => new MsgUpdateResult { Content = getter(x) }, (int)Priority);
+            AddHint(player, id, time, x => new MsgUpdateResult { Content = str, NoticeCircleColor = NoticeCircleColor??Color.green,Title = Title}, (int)Priority);
+        }
+
+        public static void AddHint(this Player player, string id, float time, Func<Player, string> getter, string Title = "New Message!", Color? NoticeCircleColor = null, PriorityLevel Priority = 0)
+        {
+            AddHint(player, id, time, x => new MsgUpdateResult { Content = getter(x), NoticeCircleColor = NoticeCircleColor ?? Color.green, Title = Title }, (int)Priority);
         }
 
         public static void AddHint(this Player player, string id, float time, Func<Player, MsgUpdateResult> updater, PriorityLevel Priority = 0)

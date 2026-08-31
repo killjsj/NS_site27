@@ -8,6 +8,7 @@ using NeteaseMusicAPI;
 using Newtonsoft.Json.Linq;
 using NS_site27_api.Core;
 using NS_site27_api.Core.UI.DisplayKit;
+using NS_site27_api.Modules.MessageModule;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using UnityEngine;
 using Player = Exiled.API.Features.Player;
 using Round = Exiled.API.Features.Round;
@@ -330,6 +332,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 {
                     Log.Info($"正在加载歌曲 {songId}");
                     _processing.player?.SendConsoleMessage($"歌曲加载中 - 解析... ({songId})", "yellow");
+                    _processing.player?.AddHint("SongPlayProcessing", 3f, $"歌曲 {songId} 开始解析", PriorityLevel.Lowest);
 
                     string downloadUrl = null;
                     string songName = null;
@@ -348,6 +351,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                         {
                             Log.Info($"获取歌曲URL失败: {urlResult.exception}");
                             _processing.player?.SendConsoleMessage("获取歌曲链接失败", "red");
+                    _readyToNext = true; _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {songId} 获取歌曲链接失败!", NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                             retries--;
                             continue;
                         }
@@ -373,19 +377,21 @@ namespace NS_site27_api.Modules.LobbyMusic
                         var data = json["data"];
                         if (data == null)
                         {
-                            Log.Error($"MS-R 歌曲数据为空: {songId}");
+                            Log.Error($"MSR 歌曲数据为空: {songId}");
                             _processing.player?.SendConsoleMessage("歌曲数据获取失败", "red");
+                    _readyToNext = true; _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {songId} 数据获取失败!", NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                             _readyToNext = true;
                             return;
                         }
 
-                        songName = data["name"]?.ToString() ?? "未知曲目";
+                        songName = data["name"]?.ToString() ?? "未知";
                         downloadUrl = data["sourceUrl"]?.ToString();
                         var lyricUrl = data["lyricUrl"]?.ToString();
 
                         if (string.IsNullOrEmpty(downloadUrl))
                         {
                             _processing.player?.SendConsoleMessage("该歌曲无播放链接", "red");
+                    _readyToNext = true; _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {songId} 无播放链接!", NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                             _readyToNext = true;
                             return;
                         }
@@ -397,15 +403,17 @@ namespace NS_site27_api.Modules.LobbyMusic
                         }
                     }
 
-                    _processing.player?.SendConsoleMessage("歌曲解析完成，准备下载", "green");
+                    _processing.player?.SendConsoleMessage("解析完成，准备下载", "green");
+                _processing.player?.AddHint("SongPlayProcessing", 3f, $"歌曲 {songId} 解析完成", PriorityLevel.Lowest);
                     await StartPlayback(downloadUrl, songName, lrcContent, ct);
                     return;
                 }
                 catch (OperationCanceledException)
                 {
                     Log.Info($"歌曲 {songId} 被取消");
-                    _processing.player?.SendConsoleMessage("点歌已被系统取消", "yellow");
-                    _readyToNext = true;
+                    _processing.player?.SendConsoleMessage("点歌已被取消", "yellow");
+                    _readyToNext = true; _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {songId} 加载被取消!", NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
+
                     return;
                 }
                 catch (Exception ex)
@@ -414,6 +422,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     if (retries == 0)
                     {
                         _processing.player?.SendConsoleMessage($"歌曲加载失败: {ex.Message}", "red");
+                    _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {songId} 播放准备失败! 详情查看控制台",NoticeCircleColor:Color.red,Priority: PriorityLevel.Low);
                         _readyToNext = true;
                         return;
                     }
@@ -428,6 +437,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             if (string.IsNullOrEmpty(url))
             {
                 _processing.player?.SendConsoleMessage("歌曲链接无效", "red");
+                    _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {name} 歌曲链接无效!",NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                 _readyToNext = true;
                 return;
             }
@@ -440,6 +450,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             {
                 Log.Info($"开始下载: {name}");
                 _processing.player?.SendConsoleMessage("歌曲下载中...", "green");
+                _processing.player?.AddHint("SongPlayProcessing", 3f, $"歌曲 {name} 下载中", PriorityLevel.Lowest);
 
                 using (var httpClient = new HttpClient())
                 {
@@ -453,6 +464,7 @@ namespace NS_site27_api.Modules.LobbyMusic
 
                 Log.Info($"Loading {_processing.id} - decoding");
                 _processing.player?.SendConsoleMessage("歌曲加载 - 解码中", "green");
+                _processing.player?.AddHint("SongPlayProcessing", 3f, $"歌曲 {name} 解码中", PriorityLevel.Lowest);
 
                 ct.ThrowIfCancellationRequested();
                 using var reader = new AudioFileReader(tempFile);
@@ -492,6 +504,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                 if (!SongPlayable)
                 {
                     _processing.player?.SendConsoleMessage("播放被阻止（当前禁止点歌）", "red");
+                    _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {name} 播放被阻止!（当前禁止点歌）",NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                     _readyToNext = true;
                     return;
                 }
@@ -514,6 +527,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     }
 
                     Log.Info($"歌曲播放开始: {name}");
+                    _processing.player?.AddHint("SongPlayStart", 3f, $"歌曲 {name} 播放成功!",PriorityLevel.Low);
                     _processing.player?.SendConsoleMessage("歌曲播放成功!", "green");
 
                 });
@@ -521,6 +535,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             catch (OperationCanceledException)
             {
                 Log.Info($"歌曲 {name} 加载被取消");
+                    _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {name} 加载被取消!", NoticeCircleColor: Color.red, Priority: PriorityLevel.Low);
                 _readyToNext = true;
                 throw;
             }
@@ -528,6 +543,7 @@ namespace NS_site27_api.Modules.LobbyMusic
             {
                 Log.Error($"播放准备失败: {ex}");
                 _processing.player?.SendConsoleMessage($"播放失败: {ex.Message}", "red");
+                    _processing.player?.AddHint("SongPlayFailed", 3f, $"歌曲 {name} 播放准备失败! 详情查看控制台",NoticeCircleColor:Color.red,Priority: PriorityLevel.Low);
                 _readyToNext = true;
                 throw;
             }

@@ -50,7 +50,10 @@ namespace NS_site27_heavy.Core
             ClearOnEnd.Clear();
         }
     }
+    public class NullModuleConfig : ModuleConfigBase
+    {
 
+    }
     public abstract class ModuleBase<T> : IModule where T : ModuleConfigBase, new()
     {
         public abstract string ModuleName { get; }

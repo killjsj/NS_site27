@@ -222,6 +222,8 @@
     <Compile Include="heavy\Core\Configs\ModuleConfigManager.cs" />
     <Compile Include="heavy\Core\HeavyCorePlugin.cs" />
     <Compile Include="heavy\Module\AirDropTestAnimWave\MainItem.cs" />
+    <Compile Include="heavy\Module\commanderBattle\BaseRole.cs" />
+    <Compile Include="heavy\Module\commanderBattle\Patch.cs" />
     <Compile Include="heavy\Module\dage\Abi.cs" />
     <Compile Include="heavy\Module\dage\AimOverride.cs" />
     <Compile Include="heavy\Module\dage\AimTargeting.cs" />
@@ -239,6 +241,8 @@
     <Compile Include="heavy\Module\dage\MicroHidAimPatch.cs" />
     <Compile Include="heavy\Module\Layers\ScreenProjection.cs" />
     <Compile Include="heavy\Module\Layers\XrayLayer.cs" />
+    <Compile Include="heavy\Module\Testing\FakeNuke.cs" />
+    <Compile Include="heavy\Module\Testing\nukePanelOverride.cs" />
     <Compile Include="heavy\Module\Testing\BotZombie.cs" />
     <Compile Include="heavy\Module\Testing\DummySwap.cs" />
     <Compile Include="heavy\Module\Testing\S049Role.cs" />
@@ -274,7 +278,9 @@
       <Name>NS_site27_api</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="heavy\Module\Patch\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetPath)" "C:\Users\kill\AppData\Roaming\EXILED\Plugins\"</PostBuildEvent>

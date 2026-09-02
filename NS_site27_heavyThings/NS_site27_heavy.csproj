@@ -242,6 +242,7 @@
     <Compile Include="heavy\Module\Layers\ScreenProjection.cs" />
     <Compile Include="heavy\Module\Layers\XrayLayer.cs" />
     <Compile Include="heavy\Module\Testing\FakeNuke.cs" />
+    <Compile Include="heavy\Module\Testing\MiniMap.cs" />
     <Compile Include="heavy\Module\Testing\nukePanelOverride.cs" />
     <Compile Include="heavy\Module\Testing\BotZombie.cs" />
     <Compile Include="heavy\Module\Testing\DummySwap.cs" />

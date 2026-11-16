@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 {
     [CustomRole(PlayerRoles.RoleTypeId.Tutorial)]
-2
+    public class MainRole : CustomRolePlus
     {
         public override uint Id { get; set; } = 37198;
         public override int MaxHealth { get; set; } = 100;

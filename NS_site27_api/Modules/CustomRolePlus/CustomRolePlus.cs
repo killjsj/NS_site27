@@ -271,6 +271,11 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             foreach (var template in abilities)
             {
+                if (set.RoleAbilities.Any(ability => ability.id == template.id))
+                {
+                    continue;
+                }
+
                 AbilityBase instance = template;
 
                 if (template is IRegisiterNeeded<AbilityBase> reg)
@@ -279,7 +284,10 @@ namespace NS_site27_api.Modules.CustomRolePlus
                     instance = reg.Register(player);
                 }
 
-                set.RoleAbilities.Add(instance);
+                if (instance != null && !set.RoleAbilities.Any(ability => ability.id == instance.id))
+                {
+                    set.RoleAbilities.Add(instance);
+                }
             }
         }
 
@@ -637,12 +645,7 @@ namespace NS_site27_api.Modules.CustomRolePlus
                                     var inst = created.FirstOrDefault(x => x.id == template.id);
                                     if (inst != null)
                                     {
-                                        UnregisterInstanceForTemplate(template, player, serial);
-                                        _ = created.RemoveAll(x => x.id == template.id);
-                                        if (PlayerAbilities.TryGetValue(player, out var pal))
-                                        {
-                                            _ = pal.ItemAbilities.RemoveAll(x => x.id == template.id);
-                                        }
+                                        UnregisterInstance(inst, player, serial);
                                     }
                                 }
                                 else if (!exists && shouldBe)
@@ -717,14 +720,14 @@ namespace NS_site27_api.Modules.CustomRolePlus
             CustomRolePlus.AddAbilityMessage(player);
         }
 
-        private static void UnregisterInstanceForTemplate(ItemAbilityBase template, Player player, ushort serial)
+        private static void UnregisterInstance(ItemAbilityBase ability, Player player, ushort serial)
         {
             if (!ItemAbilities.TryGetValue(serial, out var list))
             {
                 return;
             }
 
-            var inst = list.FirstOrDefault(x => x.id == template.id);
+            var inst = list.FirstOrDefault(x => x.id == ability.id);
             if (inst == null)
             {
                 return;
@@ -732,21 +735,21 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             try
             {
-                if (template is IitemRegisiterNeeded<ItemAbilityBase> reg1)
+                if (inst is IitemRegisiterNeeded<ItemAbilityBase> reg1)
                 {
                     reg1.Unregister(serial);
                 }
-                else if (template is IRegisiterNeeded<ItemAbilityBase> reg)
+                else if (inst is IRegisiterNeeded<ItemAbilityBase> reg)
                 {
                     reg.Uninit(player);
                 }
             }
             catch (Exception ex) { Log.Warn($"UnregisterInstanceForTemplate error: {ex}"); }
 
-            _ = list.RemoveAll(x => x.id == template.id);
+            _ = list.RemoveAll(x => x.id == ability.id);
             if (PlayerAbilities.TryGetValue(player, out var pal))
             {
-                _ = pal.ItemAbilities.RemoveAll(x => x.id == template.id);
+                _ = pal.ItemAbilities.RemoveAll(x => x.id == ability.id);
             }
 
             if (list.Count == 0)
@@ -996,6 +999,11 @@ namespace NS_site27_api.Modules.CustomRolePlus
 
             foreach (var template in abilities)
             {
+                if (ItemAbilities.TryGetValue(item.Serial, out var registered) && registered.Any(ability => ability.id == template.id))
+                {
+                    continue;
+                }
+
                 bool available;
                 try { available = template.IsAvailable(player, item) && IsAvailable(player, item); }
                 catch { available = true; }

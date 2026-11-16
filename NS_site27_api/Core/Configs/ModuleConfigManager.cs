@@ -25,7 +25,6 @@ namespace NS_site27_api.Core
         private static readonly IDeserializer Deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
                         .IncludeNonPublicProperties()
-
             .Build();
 
         private static readonly ISerializer Serializer = new SerializerBuilder()

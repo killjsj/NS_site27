@@ -477,15 +477,13 @@ namespace NS_site27_heavy.heavy.Module.Weapons
         }
         private int PlayTrackingAudio(BHID_playerInfos info, string key, float length)
         {
-            return DefaultAudioManager.Instance.PlayTrackingAudio<int>(
+            return DefaultAudioManager.Instance.PlayTrackingAudio(
                 key,
                 () =>
                 {
                     return info.Item.Owner == null ? Vector3.zero : info.Item.Owner.Position;
                 },
                 () => true,
-                0,
-                (p, _) => p.IsReady,
                 priority: AudioPriority.High,
                 lifespan: length,
                 maxDistance: 100,

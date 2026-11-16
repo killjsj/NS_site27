@@ -268,12 +268,10 @@ namespace NS_site27_heavy.heavy.Module.dage
                 Log.Info("pas  = pl");
                 pass_player = player;
             }
-            sid = DefaultAudioManager.Instance.PlayTrackingAudio<int>(
+            sid = DefaultAudioManager.Instance.PlayTrackingAudio(
                 "dage",
                 () => { if (pass_player == null) { if (DefaultAudioManager.Instance.IsValidSession(sid)) { DefaultAudioManager.Instance.StopAudio(sid); } return Vector3.zero; } return pass_player.Position; },
                 () => true,
-                0,
-                (p, _) => p.IsReady,
                 priority: AudioPriority.Medium,
                 lifespan: audioLength,
                 maxDistance: 100,
@@ -296,12 +294,10 @@ namespace NS_site27_heavy.heavy.Module.dage
                             DefaultAudioManager.Instance.StopAudio(sid);
                         }
 
-                        sid = DefaultAudioManager.Instance.PlayTrackingAudio<int>(
+                        sid = DefaultAudioManager.Instance.PlayTrackingAudio(
                             "dage",
                             () => { if (pass_player == null) { if (DefaultAudioManager.Instance.IsValidSession(sid)) { DefaultAudioManager.Instance.StopAudio(sid); } return Vector3.zero; } return pass_player.Position; },
                             () => true,
-                            0,
-                            (p, _) => p.IsReady,
                             priority: AudioPriority.Medium,
                             lifespan: audioLength,
                             maxDistance: 100,

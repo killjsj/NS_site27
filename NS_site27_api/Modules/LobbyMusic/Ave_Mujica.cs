@@ -509,7 +509,7 @@ namespace NS_site27_api.Modules.LobbyMusic
                     return;
                 }
                 DefaultAudioManager.Instance.RegisterAudio(guid.ToString(), () => File.OpenRead(tempOggFile));
-                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio<int>(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f, state: 1, validPlayersFilter: (p, _) => p.IsReady);
+                sessionId = DefaultAudioManager.Instance.PlayGlobalAudio(guid.ToString(), queue: false, fadeInDuration: 0, volume: 0.8f, validPlayersFilter: (p) => p.IsReady);
                 CurrentSongName = name;
                 _songStartTime = Time.time;
                 StartLyrics(lrc);

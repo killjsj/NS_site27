@@ -25,8 +25,7 @@ namespace NS_site27_heavy.heavy.Module.commanderBattle
         public override uint Id { get; set; } = 83471;
         public override int MaxHealth { get; set; } = 100;
         public override RoleTypeId Role { get; set; } = RoleTypeId.Spectator;
-        //public static MainRole r;
-        public override void Init()
+                public override void Init()
         {
             base.Init();
             Exiled.Events.Handlers.Player.ChangingRole += cr;

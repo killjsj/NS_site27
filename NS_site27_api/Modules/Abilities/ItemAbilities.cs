@@ -108,7 +108,7 @@ namespace NS_site27_api.Modules.Abilities
                 {
                     if (activeAbilities.TryGetValue(pressedPlayer, out var abilities))
                     {
-                        foreach (var a in abilities.Where(x => x.KeyCode == KeyCode).ToList())
+                        foreach (var a in abilities.Where(x => x.setting?.Id == keyId).ToList())
                             a.OnTriggerInternal(pressedPlayer);
                     }
                 });

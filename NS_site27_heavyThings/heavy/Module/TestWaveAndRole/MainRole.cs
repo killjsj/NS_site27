@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
 {
     [CustomRole(PlayerRoles.RoleTypeId.Tutorial)]
-    public class MainRole : CustomRolePlus
+2
     {
         public override uint Id { get; set; } = 37198;
         public override int MaxHealth { get; set; } = 100;
@@ -41,8 +41,10 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
             player.Position = new UnityEngine.Vector3(123, 289, 21);
             Timing.CallDelayed(0.3f, () =>
             {
-                WhipS.Ins.Give(player);
-                AM.Ins.Give(player);
+                if (WhipS.Ins != null && !player.Items.Any(item => item.GetItemsCustom() == WhipS.Ins))
+                    WhipS.Ins.Give(player);
+                if (AM.Ins != null && !player.Items.Any(item => item.GetItemsCustom() == AM.Ins))
+                    AM.Ins.Give(player);
             });
 
         }

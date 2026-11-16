@@ -198,11 +198,12 @@ namespace NS_site27_api.Modules.PlayerManagement
         public static HashSet<Player> HasRenamedPlayers = new HashSet<Player>();
         public static void HandlePlayerRenamer(Player player)
         {
-            if(player == null) return;
+            if (player == null) return;
             var pstr = PhaseManager.GetPhaseProgressString(player);
-            if(!HasRenamedPlayers.Contains(player))
+            var displayNickname = $"{pstr}{player.Nickname}";
+            if (!HasRenamedPlayers.Contains(player) || player.DisplayNickname != displayNickname)
             {
-                player.DisplayNickname = $"{pstr}{player.Nickname}";
+                player.DisplayNickname = displayNickname;
                 HasRenamedPlayers.Add(player);
             }
         }

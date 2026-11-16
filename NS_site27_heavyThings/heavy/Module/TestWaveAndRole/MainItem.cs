@@ -28,6 +28,7 @@ namespace NS_site27_heavy.heavy.Module.TestWaveAndRole
         {
             Type = ItemType.Coin;
             this.abilities.Add(new TestAbility1());
+            base.Init();
             Ins = this;
         }
         public override void Destroy()

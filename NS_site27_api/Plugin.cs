@@ -28,7 +28,7 @@ namespace NS_site27_api
     {
         public override string Name => "NS_site27";
         public override string Author => "killjsj";
-        public override PluginPriority Priority => PluginPriority.Low;
+        public override PluginPriority Priority => PluginPriority.Highest;
 
         public static Plugin Instance { get; private set; }
         public MySQLConnect connect = new MySQLConnect();

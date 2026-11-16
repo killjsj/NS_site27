@@ -51,10 +51,14 @@ namespace NS_site27_api.Modules.SettingManagement
                 PlayerMenuCache[player] = playerMenu;
             }
 
-            var result = SettingBase.Register(
-                player,
-                settings.Where(x => bypassCheck || !playerMenu.Any(y => y.Id == x.Id))
-            ).ToList();
+            IEnumerable<SettingBase> settingsToRegister = settings;
+            if (!bypassCheck)
+            {
+                var registeredIds = new HashSet<int>(playerMenu.Select(x => x.Id));
+                settingsToRegister = settings.Where(x => x != null && registeredIds.Add(x.Id));
+            }
+
+            var result = SettingBase.Register(player, settingsToRegister).ToList();
 
             playerMenu.AddRange(result);
             return result;

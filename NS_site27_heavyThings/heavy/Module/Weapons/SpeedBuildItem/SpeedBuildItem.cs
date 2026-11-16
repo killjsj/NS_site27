@@ -41,7 +41,7 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
 
         public static uint SpeedBuildItemID = 5096;
 
-        public override string ModuleName => throw new NotImplementedException();
+        public override string ModuleName => "速凝掩体";
 
         [CustomItem(ItemType.GrenadeFlash)]
         public class SpeedBuildItem : CustomItemPlus
@@ -74,6 +74,11 @@ namespace NS_site27_heavy.Modules.Weapons.SpeedBuildItem
             {
                 var b = SettingManager.Instance.MenuCache.First(x => x.Id == ytButton);
                 var k = SettingManager.Instance.MenuCache.First(x => x.Id == ytKey);
+                if(b == null || k == null)
+                {
+                    Log.Warn("MenuCache is null!");
+                    return;
+                }
                 if (ev.Player.Role.Type.IsScp())
                 {
                     SettingManager.Instance.Unregister(ev.Player, new SettingBase[] { b, k });
